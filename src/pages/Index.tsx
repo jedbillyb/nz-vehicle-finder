@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { SearchField } from "@/components/SearchField";
 import { VehicleDetail } from "@/components/VehicleDetail";
 import { searchVehicles, SearchFilters } from "@/lib/vehicleApi";
