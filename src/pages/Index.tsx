@@ -59,16 +59,22 @@ export default function Index() {
   const [sort, setSort] = useState<SortConfig>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
 
-  const handleSearch = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await searchVehicles(filters);
-      setResults(data.vehicles);
-      setTotal(data.total);
-      setSort(null);
-    } finally {
-      setLoading(false);
-    }
+  const debounceRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const data = await searchVehicles(filters);
+        setResults(data.vehicles);
+        setTotal(data.total);
+        setSort(null);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
   }, [filters]);
 
   const handleClear = () => {
@@ -161,14 +167,11 @@ export default function Index() {
                 ))}
               </div>
               <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border/30">
-                <Button onClick={handleSearch} disabled={loading} className="font-mono text-xs gap-1.5">
-                  <Search className="w-3.5 h-3.5" />
-                  {loading ? "Searching..." : "Search"}
-                </Button>
                 <Button onClick={handleClear} variant="outline" className="font-mono text-xs gap-1.5">
                   <RotateCcw className="w-3.5 h-3.5" />
                   Clear
                 </Button>
+                {loading && <span className="text-xs text-muted-foreground font-mono animate-pulse">Searching...</span>}
               </div>
             </div>
           )}
