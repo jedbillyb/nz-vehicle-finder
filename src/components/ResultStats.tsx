@@ -27,7 +27,7 @@ function breakdown(vehicles: Vehicle[], field: keyof Vehicle): { value: string; 
 }
 
 export function ResultStats({ vehicles }: ResultStatsProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   if (vehicles.length === 0) return null;
 
@@ -46,7 +46,10 @@ export function ResultStats({ vehicles }: ResultStatsProps) {
           <BarChart3 size={11} color="#3bff7e" />
           <span style={{ color: "#3bff7e" }}>RESULT BREAKDOWN</span>
         </span>
-        {expanded ? <ChevronUp size={13} color="#444" /> : <ChevronDown size={13} color="#444" />}
+        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555" }}>
+          <span>{expanded ? "CLICK TO HIDE" : "CLICK TO SHOW"}</span>
+          {expanded ? <ChevronUp size={13} color="#444" /> : <ChevronDown size={13} color="#444" />}
+        </span>
       </button>
 
       {expanded && (

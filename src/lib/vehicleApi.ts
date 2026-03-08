@@ -31,7 +31,8 @@ export interface SearchFilters {
   POWER_RATING_MAX?: string;
 }
 
-const API = "http://localhost:3001";
+const API =
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
 
 export async function searchVehicles(
   filters: SearchFilters,
@@ -41,7 +42,13 @@ export async function searchVehicles(
   for (const [k, v] of Object.entries(filters)) {
     if (v && v.trim()) params.set(k, v.trim());
   }
+
   const res = await fetch(`${API}/api/vehicles?${params}`);
+
+  if (!res.ok) {
+    throw new Error(`Search failed with status ${res.status}`);
+  }
+
   return res.json();
 }
 
@@ -56,6 +63,12 @@ export async function getSuggestions(
       if (v) params.set(k, v);
     }
   }
+
   const res = await fetch(`${API}/api/suggestions/${field}?${params}`);
+
+  if (!res.ok) {
+    throw new Error(`Suggestions failed with status ${res.status}`);
+  }
+
   return res.json();
 }

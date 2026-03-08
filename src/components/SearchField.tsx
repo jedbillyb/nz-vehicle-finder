@@ -35,6 +35,10 @@ export function SearchField({ label, field, value, onChange, filterBy }: SearchF
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      // Let the parent form or global handler trigger the actual search.
+      return;
+    }
     if (!showSuggestions || suggestions.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();

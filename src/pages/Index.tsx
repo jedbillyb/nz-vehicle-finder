@@ -8,7 +8,8 @@ import { ResultStats } from "@/components/ResultStats";
 import { searchVehicles, SearchFilters } from "@/lib/vehicleApi";
 import { exportToCsv } from "@/lib/csvExport";
 import { Vehicle } from "@/lib/mockData";
-import { Search, RotateCcw, ChevronUp, ChevronDown, Download } from "lucide-react";
+import { toast } from "sonner";
+import { Search, RotateCcw, ChevronUp, ChevronDown, Download, Link2 } from "lucide-react";
 
 const filterFields: { key: keyof SearchFilters; label: string }[] = [
   { key: "MAKE", label: "Make" },
@@ -45,6 +46,14 @@ type SortConfig = { key: keyof Vehicle; dir: "asc" | "desc" } | null;
 
 const emptyFilters = (): SearchFilters => ({});
 
+type SavedSearch = {
+  id: string;
+  label: string;
+  params: Record<string, string>;
+};
+
+const RECENT_SEARCHES_KEY = "nz-fleet-search:recent";
+
 // Parse URL search params into filters
 function filtersFromParams(params: URLSearchParams): SearchFilters {
   const filters: SearchFilters = {};
@@ -79,46 +88,84 @@ export default function Index() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [sort, setSort] = useState<SortConfig>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [recentSearches, setRecentSearches] = useState<SavedSearch[]>([]);
   const initialLoad = useRef(true);
+  const [copiedLink, setCopiedLink] = useState(false);
 
-  const doSearch = useCallback(async (f: SearchFilters, p: number) => {
-    setLoading(true);
+  const persistRecentSearch = useCallback(
+    (currentFilters: SearchFilters) => {
+      const params = filtersToParams(currentFilters);
+      if (Object.keys(params).length === 0) return;
+
+      const label = Object.entries(params)
+        .slice(0, 3)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(" · ");
+
+      const id = JSON.stringify(params);
+
+      setRecentSearches((prev) => {
+        const existing = prev.filter((s) => s.id !== id);
+        const next: SavedSearch[] = [{ id, label, params }, ...existing].slice(0, 5);
+        localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+        return next;
+      });
+    },
+    []
+  );
+
+  const doSearch = useCallback(
+    async (f: SearchFilters, p: number) => {
+      setLoading(true);
+      setErrorMessage(null);
+      try {
+        const data = await searchVehicles(f, p);
+        setResults(data.vehicles);
+        setTotal(data.total);
+        setPages(data.pages);
+        setSort(null);
+        if (data.total === 0) {
+          toast("No records found", {
+            description: "Try broadening your search filters.",
+          });
+        } else {
+          persistRecentSearch(f);
+        }
+      } catch (err) {
+        console.error(err);
+        const message =
+          err instanceof Error ? err.message : "An unexpected error occurred while searching.";
+        setErrorMessage(message);
+        toast.error("Search failed", {
+          description:
+            "We couldn’t reach the vehicle database. Please check your connection and try again.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [persistRecentSearch]
+  );
+
+  useEffect(() => {
     try {
-      const data = await searchVehicles(f, p);
-      setResults(data.vehicles);
-      setTotal(data.total);
-      setPages(data.pages);
-      setSort(null);
-    } finally {
-      setLoading(false);
+      const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as SavedSearch[];
+      setRecentSearches(parsed);
+    } catch {
+      // ignore parse errors
     }
   }, []);
 
-  // Auto-search on filter change (debounced)
   useEffect(() => {
-    // On initial load, if URL has filters, search immediately
-    if (initialLoad.current) {
-      initialLoad.current = false;
-      const hasFilters = Object.values(filters).some((v) => v && v.trim());
-      if (hasFilters) {
-        doSearch(filters, 1);
-        return;
-      }
+    if (!initialLoad.current) return;
+    initialLoad.current = false;
+    const hasFilters = Object.values(filters).some((v) => v && v?.trim());
+    if (hasFilters) {
+      doSearch(filters, 1);
     }
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      const hasFilters = Object.values(filters).some((v) => v && v.trim());
-      if (hasFilters) {
-        setPage(1);
-        doSearch(filters, 1);
-      } else {
-        setResults([]);
-        setTotal(null);
-      }
-    }, 300);
-    return () => clearTimeout(debounceRef.current);
   }, [filters, doSearch]);
 
   // Sync filters to URL
@@ -138,6 +185,23 @@ export default function Index() {
     setTotal(null);
     setPage(1);
     setSort(null);
+    setErrorMessage(null);
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopiedLink(true);
+      toast("Search link copied", {
+        description: "You can paste this URL to share the current filters.",
+      });
+      setTimeout(() => setCopiedLink(false), 1500);
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not copy link", {
+        description: "Your browser blocked clipboard access.",
+      });
+    }
   };
 
   const handleSort = (key: keyof Vehicle) => {
@@ -207,7 +271,10 @@ export default function Index() {
             <span style={{ color: "#333" }}>·</span>
             <span>{filterFields.length + 7} PARAMETERS</span>
           </span>
-          {filtersExpanded ? <ChevronUp size={13} color="#444" /> : <ChevronDown size={13} color="#444" />}
+          <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555" }}>
+            <span>{filtersExpanded ? "CLICK TO HIDE" : "CLICK TO SHOW"}</span>
+            {filtersExpanded ? <ChevronUp size={13} color="#444" /> : <ChevronDown size={13} color="#444" />}
+          </span>
         </button>
 
         {filtersExpanded && (
@@ -239,6 +306,71 @@ export default function Index() {
               <RangeField label="AXLES (MIN)" fieldMin="NUMBER_OF_AXLES_MIN" fieldMax="NUMBER_OF_AXLES_MIN" valueMin={filters.NUMBER_OF_AXLES_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_AXLES_MIN", v)} onChangeMax={() => {}} min={1} max={9} />
             </div>
 
+            {recentSearches.length > 0 && (
+              <div
+                style={{
+                  marginTop: 16,
+                  paddingTop: 12,
+                  borderTop: "1px dashed #1f2933",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 9,
+                    color: "#4b5563",
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  RECENT QUERIES
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 8,
+                  }}
+                >
+                  {recentSearches.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => {
+                        const nextFilters: SearchFilters = { ...filters };
+                        for (const key of Object.keys(nextFilters) as (keyof SearchFilters)[]) {
+                          delete nextFilters[key];
+                        }
+                        for (const [k, v] of Object.entries(s.params)) {
+                          (nextFilters as any)[k] = v;
+                        }
+                        setFilters(nextFilters);
+                      }}
+                      style={{
+                        borderRadius: 999,
+                        border: "1px solid #1f2933",
+                        padding: "4px 10px",
+                        fontSize: 10,
+                        fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+                        background: "#020617",
+                        color: "#9ca3af",
+                        cursor: "pointer",
+                        maxWidth: "100%",
+                        whiteSpace: "nowrap",
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
+                      }}
+                      title={s.label}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 20, paddingTop: 16, borderTop: "1px solid #1a1a1a" }}>
               <button
                 onClick={handleClear}
@@ -248,6 +380,38 @@ export default function Index() {
               >
                 <RotateCcw size={11} />
                 CLEAR
+              </button>
+              <button
+                onClick={() => {
+                  const hasFilters = Object.values(filters).some((v) => v && v.trim());
+                  if (!hasFilters) {
+                    toast("No filters set", {
+                      description: "Enter at least one parameter before running a search.",
+                    });
+                    return;
+                  }
+                  setPage(1);
+                  doSearch(filters, 1);
+                }}
+                disabled={loading}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "8px 18px",
+                  background: loading ? "#1c3f28" : "#3bff7e",
+                  color: "#000",
+                  border: "1px solid #3bff7e",
+                  cursor: loading ? "default" : "pointer",
+                  fontSize: 11,
+                  fontFamily: "inherit",
+                  letterSpacing: "0.15em",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                }}
+              >
+                <Search size={11} />
+                {loading ? "SEARCHING..." : "RUN SEARCH"}
               </button>
               {results.length > 0 && (
                 <button
@@ -260,8 +424,53 @@ export default function Index() {
                   EXPORT CSV
                 </button>
               )}
+              {total !== null && (
+                <button
+                  onClick={handleCopyLink}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 16px",
+                    background: "transparent",
+                    color: copiedLink ? "#3bff7e" : "#555",
+                    border: copiedLink ? "1px solid #3bff7e" : "1px solid #222",
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontFamily: "inherit",
+                    letterSpacing: "0.15em",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#444")}
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.borderColor = copiedLink ? "#3bff7e" : "#222")
+                  }
+                >
+                  <Link2 size={11} />
+                  {copiedLink ? "LINK COPIED" : "COPY LINK"}
+                </button>
+              )}
               {loading && <span style={{ fontSize: 10, color: "#3bff7e", letterSpacing: "0.15em", opacity: 0.7 }}>▋ QUERYING DATABASE...</span>}
             </div>
+
+            {errorMessage && (
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: "10px 12px",
+                  borderRadius: 4,
+                  border: "1px solid #3b1f1f",
+                  background: "#140909",
+                  color: "#fda4a4",
+                  fontSize: 11,
+                  fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+                }}
+              >
+                <div style={{ fontWeight: 700, letterSpacing: "0.12em", marginBottom: 4 }}>
+                  SEARCH ERROR
+                </div>
+                <div style={{ color: "#fca5a5" }}>{errorMessage}</div>
+              </div>
+            )}
           </div>
         )}
       </div>
