@@ -1,0 +1,78 @@
+import { Vehicle } from "@/lib/mockData";
+import { useState } from "react";
+import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
+
+interface ResultStatsProps {
+  vehicles: Vehicle[];
+}
+
+const statFields: { key: keyof Vehicle; label: string }[] = [
+  { key: "MOTIVE_POWER", label: "Fuel Type" },
+  { key: "BASIC_COLOUR", label: "Colour" },
+  { key: "BODY_TYPE", label: "Body Type" },
+  { key: "TRANSMISSION_TYPE", label: "Transmission" },
+  { key: "MAKE", label: "Make" },
+];
+
+function breakdown(vehicles: Vehicle[], field: keyof Vehicle): { value: string; count: number }[] {
+  const counts: Record<string, number> = {};
+  for (const v of vehicles) {
+    const val = v[field] || "UNKNOWN";
+    counts[val] = (counts[val] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+}
+
+export function ResultStats({ vehicles }: ResultStatsProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (vehicles.length === 0) return null;
+
+  return (
+    <div style={{ borderBottom: "1px solid #1a1a1a" }}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "8px 24px", background: "#111", border: "none",
+          borderBottom: expanded ? "1px solid #1a1a1a" : "none",
+          cursor: "pointer", color: "#888",
+        }}
+      >
+        <span style={{ fontSize: 10, letterSpacing: "0.2em", display: "flex", alignItems: "center", gap: 8 }}>
+          <BarChart3 size={11} color="#3bff7e" />
+          <span style={{ color: "#3bff7e" }}>RESULT BREAKDOWN</span>
+        </span>
+        {expanded ? <ChevronUp size={13} color="#444" /> : <ChevronDown size={13} color="#444" />}
+      </button>
+
+      {expanded && (
+        <div style={{ padding: "16px 24px", background: "#0d0d0d", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 20 }}>
+          {statFields.map((sf) => {
+            const data = breakdown(vehicles, sf.key);
+            const max = data[0]?.count || 1;
+            return (
+              <div key={sf.key}>
+                <div style={{ fontSize: 9, color: "#555", letterSpacing: "0.2em", marginBottom: 8, fontWeight: 700 }}>{sf.label.toUpperCase()}</div>
+                {data.map((d) => (
+                  <div key={d.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                    <div style={{ width: 70, fontSize: 10, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={d.value}>
+                      {d.value}
+                    </div>
+                    <div style={{ flex: 1, height: 10, background: "#1a1a1a", position: "relative" }}>
+                      <div style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "#3bff7e", opacity: 0.7 }} />
+                    </div>
+                    <div style={{ fontSize: 9, color: "#555", minWidth: 24, textAlign: "right" }}>{d.count}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
