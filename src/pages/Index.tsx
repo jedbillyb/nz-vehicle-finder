@@ -283,7 +283,7 @@ export default function Index() {
             )}
           </div>
 
-          <div style={{ overflowX: "auto", maxHeight: "calc(100vh - 320px)", overflowY: "auto" }}>
+          <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed" }}>
               <thead style={{ position: "sticky", top: 0, background: "#111", zIndex: 10 }}>
                 <tr>
