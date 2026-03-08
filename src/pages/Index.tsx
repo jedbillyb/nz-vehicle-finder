@@ -268,7 +268,7 @@ export default function Index() {
 
       {/* Results */}
       {total !== null && (
-        <div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
           <ResultStats vehicles={results} />
 
           <div style={{ padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
