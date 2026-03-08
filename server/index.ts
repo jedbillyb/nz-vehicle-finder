@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
 
-const db = new Database(path.resolve(__dirname, "../public/vehicles.db"), { readonly: true });
+const db = new Database(path.resolve(__dirname, "../../database/vehicles.db"), { readonly: true });
 db.pragma("journal_mode = WAL");
 db.pragma("cache_size = -64000");
 db.pragma("temp_store = MEMORY");
