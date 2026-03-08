@@ -1,11 +1,12 @@
-import { Vehicle, mockVehicles, getDistinctValues } from "./mockData";
+import { Vehicle } from "@/lib/mockData";
 
 export interface SearchFilters {
   MAKE?: string;
   MODEL?: string;
   SUBMODEL?: string;
   BASIC_COLOUR?: string;
-  VEHICLE_YEAR?: string;
+  VEHICLE_YEAR_MIN?: string;
+  VEHICLE_YEAR_MAX?: string;
   MOTIVE_POWER?: string;
   BODY_TYPE?: string;
   TRANSMISSION_TYPE?: string;
@@ -13,43 +14,48 @@ export interface SearchFilters {
   POSTCODE?: string;
   IMPORT_STATUS?: string;
   ORIGINAL_COUNTRY?: string;
-  NUMBER_OF_SEATS?: string;
-  NUMBER_OF_AXLES?: string;
+  NUMBER_OF_SEATS_MIN?: string;
+  NUMBER_OF_AXLES_MIN?: string;
   CLASS?: string;
   INDUSTRY_CLASS?: string;
   ROAD_TRANSPORT_CODE?: string;
   VEHICLE_USAGE?: string;
   NZ_ASSEMBLED?: string;
-  GROSS_VEHICLE_MASS?: string;
-  WIDTH?: string;
-  CC_RATING?: string;
-  POWER_RATING?: string;
+  GROSS_VEHICLE_MASS_MIN?: string;
+  GROSS_VEHICLE_MASS_MAX?: string;
+  WIDTH_MIN?: string;
+  WIDTH_MAX?: string;
+  CC_RATING_MIN?: string;
+  CC_RATING_MAX?: string;
+  POWER_RATING_MIN?: string;
+  POWER_RATING_MAX?: string;
 }
 
-// ─── MOCK IMPLEMENTATION ───
-// Replace these functions with real API calls when you have a backend.
-// e.g. const res = await fetch(`https://your-api.com/vehicles?make=TOYOTA&...`);
+const API = "http://localhost:3001";
 
-export async function searchVehicles(filters: SearchFilters): Promise<{ vehicles: Vehicle[]; total: number }> {
-  // Simulate network delay
-  await new Promise((r) => setTimeout(r, 150));
-
-  const activeFilters = Object.entries(filters).filter(([, v]) => v && v.trim() !== "");
-
-  const results = mockVehicles.filter((vehicle) =>
-    activeFilters.every(([key, value]) => {
-      const vehicleValue = vehicle[key as keyof Vehicle]?.toUpperCase() || "";
-      const searchValue = value!.toUpperCase();
-      return vehicleValue.includes(searchValue);
-    })
-  );
-
-  return { vehicles: results, total: results.length };
+export async function searchVehicles(
+  filters: SearchFilters,
+  page = 1
+): Promise<{ vehicles: Vehicle[]; total: number; pages: number }> {
+  const params = new URLSearchParams({ page: String(page) });
+  for (const [k, v] of Object.entries(filters)) {
+    if (v && v.trim()) params.set(k, v.trim());
+  }
+  const res = await fetch(`${API}/api/vehicles?${params}`);
+  return res.json();
 }
 
-export async function getSuggestions(field: keyof Vehicle, query: string): Promise<string[]> {
-  await new Promise((r) => setTimeout(r, 50));
-  const all = getDistinctValues(field);
-  if (!query) return all.slice(0, 20);
-  return all.filter((v) => v.toUpperCase().includes(query.toUpperCase())).slice(0, 20);
+export async function getSuggestions(
+  field: keyof Vehicle,
+  query: string,
+  filterBy?: Partial<Record<keyof Vehicle, string>>
+): Promise<string[]> {
+  const params = new URLSearchParams({ q: query });
+  if (filterBy) {
+    for (const [k, v] of Object.entries(filterBy)) {
+      if (v) params.set(k, v);
+    }
+  }
+  const res = await fetch(`${API}/api/suggestions/${field}?${params}`);
+  return res.json();
 }

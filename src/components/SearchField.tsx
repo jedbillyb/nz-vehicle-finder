@@ -9,9 +9,10 @@ interface SearchFieldProps {
   field: keyof Vehicle;
   value: string;
   onChange: (value: string) => void;
+  filterBy?: Partial<Record<keyof Vehicle, string>>; // e.g. { MAKE: "FORD" }
 }
 
-export function SearchField({ label, field, value, onChange }: SearchFieldProps) {
+export function SearchField({ label, field, value, onChange, filterBy }: SearchFieldProps) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -19,9 +20,9 @@ export function SearchField({ label, field, value, onChange }: SearchFieldProps)
 
   useEffect(() => {
     if (showSuggestions) {
-      getSuggestions(field, value).then(setSuggestions);
+      getSuggestions(field, value, filterBy).then(setSuggestions);
     }
-  }, [value, field, showSuggestions]);
+  }, [value, field, showSuggestions, JSON.stringify(filterBy)]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
