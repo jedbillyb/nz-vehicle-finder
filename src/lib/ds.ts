@@ -1,4 +1,5 @@
 import initSqlJs, { Database } from "sql.js";
+import { Vehicle } from "@/lib/mockData";
 
 let db: Database | null = null;
 
