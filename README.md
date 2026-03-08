@@ -1,73 +1,110 @@
-# Welcome to your Lovable project
+# NZ Fleet Search — Vehicle Register Lookup
 
-## Project info
+Search the New Zealand motor vehicle fleet by make, model, colour, region and more, using a fast terminal‑style UI backed by a local SQLite/Express API.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- **Rich filtering UI**: Make, model, submodel, colour, fuel type, body type, transmission, region, postcode, import status, usage, NZ assembled, and more.
+- **Numeric ranges**: Year, CC rating, power (kW), gross vehicle mass, width, seats, axles.
+- **Autocomplete suggestions**: Type‑ahead suggestions for text fields based on existing data.
+- **Manual search trigger**: Filters only run when you click **RUN SEARCH** (or press Enter), avoiding constant backend load.
+- **Result table**: Sortable columns, zebra‑striped rows, click a row to open full vehicle details.
+- **Result breakdown**: Optional breakdown panel showing top fuel types, colours, body types, transmissions, and makes.
+- **CSV export**: Download current results as CSV.
+- **Sharable URLs**: Filters are encoded into the URL; a **COPY LINK** button puts the current search on your clipboard.
+- **Recent queries**: Last few successful searches are saved locally and can be recalled with one click.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Tech stack
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend**: Vite, React, TypeScript, shadcn‑ui, Tailwind CSS
+- **Routing**: `react-router-dom`
+- **Data fetching / cache**: `@tanstack/react-query`
+- **Backend**: Node.js + Express + `better-sqlite3`
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Getting started (local development)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Requirements:
 
-Follow these steps:
+- Node.js 18+ and npm
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Install dependencies:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```bash
+cd nz-vehicle-finder
+npm install
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 1. Start the API server
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm run server
+```
+
+By default this listens on `http://localhost:3001` and serves:
+
+- `GET /api/vehicles` — paged vehicle search
+- `GET /api/suggestions/:field` — autocomplete suggestions for a given field
+
+### 2. Start the frontend
+
+In a second terminal:
+
+```bash
+cd nz-vehicle-finder
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open the URL Vite prints (usually `http://localhost:5173`) in your browser.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## Configuration
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+The frontend talks to the API via a base URL defined in `src/lib/vehicleApi.ts`:
 
-## What technologies are used for this project?
+- **Environment variable**: `VITE_API_BASE_URL`
+- **Default**: `http://localhost:3001`
 
-This project is built with:
+When running in production (e.g. on a VPS), set:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+VITE_API_BASE_URL="https://your-api-domain-or-host:port"
+```
 
-## How can I deploy this project?
+in your environment (or a `.env` file consumed by your process manager) before running the frontend build.
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## Building and previewing
 
-Yes, you can!
+Create a production build:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```bash
+npm run build
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Preview the built app locally:
+
+```bash
+npm run preview
+```
+
+You still need the API server (`npm run server`) running for search to work.
+
+---
+
+## Deployment notes (VPS + domain)
+
+High‑level approach:
+
+1. **API**: Run `npm run server` under a process manager like `pm2` or `systemd`, reverse‑proxied by nginx/Caddy on your chosen API host/domain.
+2. **Frontend**: Run `npm run build` and serve the static `dist/` directory via nginx/Caddy (or a static hosting provider).
+3. Ensure `VITE_API_BASE_URL` for the frontend points at the public URL of your API (HTTPS recommended).
+
+Once deployed, the app should behave the same as locally: open the frontend URL, set filters, click **RUN SEARCH**, and explore vehicles.
