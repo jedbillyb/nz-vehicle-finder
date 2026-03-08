@@ -166,7 +166,7 @@ export default function Index() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0a", fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#e0e0e0" }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#0a0a0a", fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#e0e0e0", overflow: "hidden" }}>
       {/* Header */}
       <header style={{ borderBottom: "1px solid #1a1a1a", background: "#0a0a0a", position: "sticky", top: 0, zIndex: 40 }}>
         <div style={{ background: "#3bff7e", padding: "2px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -268,7 +268,7 @@ export default function Index() {
 
       {/* Results */}
       {total !== null && (
-        <div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
           <ResultStats vehicles={results} />
 
           <div style={{ padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -283,7 +283,7 @@ export default function Index() {
             )}
           </div>
 
-          <div style={{ overflowX: "auto", maxHeight: "calc(100vh - 320px)", overflowY: "auto" }}>
+          <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed" }}>
               <thead style={{ position: "sticky", top: 0, background: "#111", zIndex: 10 }}>
                 <tr>
