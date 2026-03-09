@@ -1,5 +1,5 @@
 import { Vehicle } from "@/lib/mockData";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 
 interface ResultStatsProps {
@@ -28,6 +28,10 @@ function breakdown(vehicles: Vehicle[], field: keyof Vehicle): { value: string; 
 
 export function ResultStats({ vehicles }: ResultStatsProps) {
   const [expanded, setExpanded] = useState(true);
+  const breakdownByField = useMemo(
+    () => statFields.map((sf) => ({ ...sf, data: breakdown(vehicles, sf.key) })),
+    [vehicles]
+  );
 
   if (vehicles.length === 0) return null;
 
@@ -54,12 +58,11 @@ export function ResultStats({ vehicles }: ResultStatsProps) {
 
       {expanded && (
         <div style={{ padding: "16px 24px", background: "#0d0d0d", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 20 }}>
-          {statFields.map((sf) => {
-            const data = breakdown(vehicles, sf.key);
+          {breakdownByField.map(({ key, label, data }) => {
             const max = data[0]?.count || 1;
             return (
-              <div key={sf.key}>
-                <div style={{ fontSize: 9, color: "#555", letterSpacing: "0.2em", marginBottom: 8, fontWeight: 700 }}>{sf.label.toUpperCase()}</div>
+              <div key={key}>
+                <div style={{ fontSize: 9, color: "#555", letterSpacing: "0.2em", marginBottom: 8, fontWeight: 700 }}>{label.toUpperCase()}</div>
                 {data.map((d) => (
                   <div key={d.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                     <div style={{ width: 70, fontSize: 10, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={d.value}>

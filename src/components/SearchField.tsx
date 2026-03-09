@@ -4,6 +4,10 @@ import { getSuggestions } from "@/lib/vehicleApi";
 import { Vehicle } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
 
+/** Short debounce only while typing; open/focus uses preloaded cache so we fetch immediately. */
+const DEBOUNCE_TYPING_MS = 60;
+const DEBOUNCE_WHEN_EMPTY_MS = 0;
+
 interface SearchFieldProps {
   label: string;
   field: keyof Vehicle;
@@ -19,9 +23,23 @@ export function SearchField({ label, field, value, onChange, filterBy }: SearchF
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (showSuggestions) {
-      getSuggestions(field, value, filterBy).then(setSuggestions);
-    }
+    if (!showSuggestions) return;
+
+    const ac = new AbortController();
+    const delay =
+      value.trim() === "" ? DEBOUNCE_WHEN_EMPTY_MS : DEBOUNCE_TYPING_MS;
+    const timeoutId = setTimeout(() => {
+      getSuggestions(field, value, filterBy, ac.signal)
+        .then(setSuggestions)
+        .catch((err) => {
+          if (err?.name !== "AbortError") setSuggestions([]);
+        });
+    }, delay);
+
+    return () => {
+      clearTimeout(timeoutId);
+      ac.abort();
+    };
   }, [value, field, showSuggestions, JSON.stringify(filterBy)]);
 
   useEffect(() => {
