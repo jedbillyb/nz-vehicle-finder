@@ -17,7 +17,7 @@ let db: InstanceType<typeof Database> | null = null;
 try {
   db = new Database(dbPath, { readonly: true });
   db.pragma("journal_mode = WAL");
-  db.pragma("cache_size = -64000");
+  db.pragma("cache_size = -16000");
   db.pragma("temp_store = MEMORY");
   console.log("Database opened:", dbPath);
 } catch (err) {
