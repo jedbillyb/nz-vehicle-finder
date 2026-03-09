@@ -80,15 +80,19 @@ const makeModelCache: Record<string, string[]> = {};
 
 export async function preloadModelsForMake(make: string) {
   if (makeModelCache[make]) return;
-  const res = await fetch(`${API_BASE}/api/suggestions/MODEL?MAKE=${encodeURIComponent(make)}`);
-  const data = await res.json();
-  makeModelCache[make] = data;
+  try {
+    const res = await fetch(`${API_BASE}/api/suggestions/MODEL?MAKE=${encodeURIComponent(make)}`);
+    const data = await res.json();
+    makeModelCache[make] = data;
+  } catch {
+    // API unavailable — fall through to static data
+  }
 }
 
 export function getModelsForMake(make: string, prefix: string): string[] {
-  const vals = makeModelCache[make] || [];
-  if (!prefix.trim()) return vals.slice(0, 8);
-  const p = prefix.toUpperCase();
+  const vals = makeModelCache[make] || suggestionCache["MODEL"] || [];
+  const p = prefix.trim().toUpperCase();
+  if (!p) return vals.slice(0, 8);
   return vals.filter(v => v.toUpperCase().startsWith(p)).slice(0, 8);
 }
 
