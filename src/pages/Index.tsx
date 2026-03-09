@@ -99,7 +99,7 @@ export default function Index() {
   const [apiReachable, setApiReachable] = useState<boolean | null>(null);
 
   useEffect(() => {
-    filterFields.forEach(f => preloadSuggestions(f.key));
+    preloadSuggestions();
   }, []);
 
   const updateFilter = (key: keyof SearchFilters, value: string) => {
