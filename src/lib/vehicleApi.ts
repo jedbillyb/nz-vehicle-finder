@@ -92,13 +92,20 @@ export function getModelsForMake(make: string, prefix: string): string[] {
   return vals.filter(v => v.toUpperCase().startsWith(p)).slice(0, 8);
 }
 
-const suggestionCache: Record<string, string[]> = {};
+let suggestionCache: Record<string, string[]> = {};
+let suggestionsLoaded = false;
 
-export async function preloadSuggestions(field: string) {
-  if (suggestionCache[field]) return;
-  const res = await fetch(`${API_BASE}/suggestions/${field}`);
-  const data = await res.json();
-  suggestionCache[field] = data.suggestions;
+export async function preloadSuggestions(_field?: string) {
+  if (suggestionsLoaded) return;
+  suggestionsLoaded = true;
+  try {
+    const res = await fetch("/autocomplete.json");
+    if (res.ok) {
+      suggestionCache = await res.json();
+    }
+  } catch {
+    suggestionsLoaded = false;
+  }
 }
 
 export function getSuggestionsLocal(
