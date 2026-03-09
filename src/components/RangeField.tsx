@@ -29,7 +29,7 @@ export function RangeField({
         display: "block",
         fontSize: 9,
         fontWeight: 700,
-        color: "#444",
+        color: "#6b7280",
         marginBottom: 6,
         letterSpacing: "0.2em",
         fontFamily: "inherit",
@@ -47,18 +47,19 @@ export function RangeField({
           step={step}
           style={{
             width: "100%",
-            background: "#111",
-            border: "1px solid #222",
-            color: valueMin ? "#e0e0e0" : "#333",
+            background: "#ffffff",
+            border: "1px solid #d1d5db",
+            borderRadius: 6,
+            color: valueMin ? "#111827" : "#9ca3af",
             padding: "5px 8px",
             fontSize: 11,
             fontFamily: "inherit",
             outline: "none",
           }}
-          onFocus={e => e.currentTarget.style.borderColor = "#3bff7e"}
-          onBlur={e => e.currentTarget.style.borderColor = "#222"}
+          onFocus={e => e.currentTarget.style.borderColor = "#0ea5e9"}
+          onBlur={e => e.currentTarget.style.borderColor = "#d1d5db"}
         />
-        <span style={{ color: "#333", fontSize: 10, flexShrink: 0 }}>–</span>
+        <span style={{ color: "#9ca3af", fontSize: 10, flexShrink: 0 }}>–</span>
         <input
           type="number"
           value={valueMax}
@@ -69,16 +70,17 @@ export function RangeField({
           step={step}
           style={{
             width: "100%",
-            background: "#111",
-            border: "1px solid #222",
-            color: valueMax ? "#e0e0e0" : "#333",
+            background: "#ffffff",
+            border: "1px solid #d1d5db",
+            borderRadius: 6,
+            color: valueMax ? "#111827" : "#9ca3af",
             padding: "5px 8px",
             fontSize: 11,
             fontFamily: "inherit",
             outline: "none",
           }}
-          onFocus={e => e.currentTarget.style.borderColor = "#3bff7e"}
-          onBlur={e => e.currentTarget.style.borderColor = "#222"}
+          onFocus={e => e.currentTarget.style.borderColor = "#0ea5e9"}
+          onBlur={e => e.currentTarget.style.borderColor = "#d1d5db"}
         />
       </div>
     </div>

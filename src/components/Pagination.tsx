@@ -19,9 +19,9 @@ export function Pagination({ page, pages, onPageChange }: PaginationProps) {
 
   const btnStyle = (active = false): React.CSSProperties => ({
     padding: "4px 10px",
-    background: active ? "#3bff7e" : "transparent",
-    color: active ? "#000" : "#555",
-    border: "1px solid " + (active ? "#3bff7e" : "#222"),
+    background: active ? "#0ea5e9" : "#ffffff",
+    color: active ? "#ffffff" : "#4b5563",
+    border: "1px solid " + (active ? "#0ea5e9" : "#e5e7eb"),
     cursor: "pointer",
     fontSize: 10,
     fontFamily: "inherit",
@@ -31,7 +31,16 @@ export function Pagination({ page, pages, onPageChange }: PaginationProps) {
   });
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 24px", background: "#0d0d0d", borderTop: "1px solid #1a1a1a" }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+        padding: "8px 24px",
+        background: "#ffffff",
+        borderTop: "1px solid #e5e7eb",
+      }}
+    >
       <button onClick={() => onPageChange(1)} disabled={page === 1} style={{ ...btnStyle(), opacity: page === 1 ? 0.3 : 1 }}>
         <ChevronsLeft size={12} />
       </button>
@@ -56,8 +65,8 @@ export function Pagination({ page, pages, onPageChange }: PaginationProps) {
         <ChevronsRight size={12} />
       </button>
 
-      <span style={{ fontSize: 10, color: "#444", letterSpacing: "0.1em", marginLeft: 8 }}>
-        PAGE <span style={{ color: "#3bff7e" }}>{page}</span> OF <span style={{ color: "#888" }}>{pages}</span>
+      <span style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", marginLeft: 8 }}>
+        PAGE <span style={{ color: "#0f172a" }}>{page}</span> OF <span style={{ color: "#4b5563" }}>{pages}</span>
       </span>
     </div>
   );
