@@ -244,15 +244,25 @@ export default function Index() {
   };
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#0a0a0a", fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#e0e0e0", overflow: "hidden" }}>
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        background: "#f3f4f6",
+        fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        color: "#111827",
+        overflow: "hidden",
+      }}
+    >
       {apiReachable === false && (
         <div
           style={{
-            background: "#3b1f1f",
-            borderBottom: "1px solid #5f2a2a",
+            background: "#fef2f2",
+            borderBottom: "1px solid #fecaca",
             padding: "10px 24px",
             fontSize: 11,
-            color: "#fca5a5",
+            color: "#b91c1c",
             display: "flex",
             alignItems: "center",
             gap: 12,
@@ -261,33 +271,56 @@ export default function Index() {
         >
           <strong style={{ letterSpacing: "0.1em" }}>BACKEND NOT REACHABLE</strong>
           <span>
-            Start the API server in another terminal: <code style={{ background: "#1a0a0a", padding: "2px 6px" }}>npm run server</code>
+            Start the API server in another terminal:{" "}
+            <code style={{ background: "#fee2e2", padding: "2px 6px", borderRadius: 4 }}>npm run server</code>
           </span>
-          <span style={{ color: "#888" }}>API: {API_BASE}</span>
+          <span style={{ color: "#6b7280" }}>API: {API_BASE}</span>
         </div>
       )}
       {/* Header */}
-      <header style={{ borderBottom: "1px solid #1a1a1a", background: "#0a0a0a", position: "sticky", top: 0, zIndex: 40 }}>
-        <div style={{ background: "#3bff7e", padding: "2px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: "10px", color: "#000", fontWeight: 700, letterSpacing: "0.15em" }}>
+      <header style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff", position: "sticky", top: 0, zIndex: 40 }}>
+        <div style={{ background: "#0ea5e9", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: "10px", color: "#f9fafb", fontWeight: 600, letterSpacing: "0.16em" }}>
             WAKA KOTAHI · MOTOR VEHICLE REGISTER · PUBLIC ACCESS TERMINAL
           </span>
-          <span style={{ fontSize: "10px", color: "#000", letterSpacing: "0.1em" }}>
+          <span style={{ fontSize: "10px", color: "#e0f2fe", letterSpacing: "0.1em" }}>
             {new Date().toISOString().split("T")[0]}
           </span>
         </div>
-        <div style={{ padding: "12px 24px", display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ width: 36, height: 36, border: "1px solid #3bff7e", display: "flex", alignItems: "center", justifyContent: "center", color: "#3bff7e", fontSize: 18, flexShrink: 0 }}>⊞</div>
+        <div style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: "2px solid #0ea5e9",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#0ea5e9",
+              fontSize: 18,
+              flexShrink: 0,
+              background: "#f0f9ff",
+            }}
+          >
+            ⊞
+          </div>
           <div>
-            <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "0.05em", margin: 0 }}>NZ FLEET SEARCH</h1>
-            <p style={{ fontSize: 10, color: "#555", letterSpacing: "0.2em", margin: 0 }}>MOTOR VEHICLE REGISTER · 5,879,915 RECORDS</p>
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: "0.02em", margin: 0 }}>NZ Fleet Search</h1>
+            <p style={{ fontSize: 11, color: "#6b7280", letterSpacing: "0.12em", margin: 0, textTransform: "uppercase" }}>
+              Motor Vehicle Register · 5,879,915 records
+            </p>
           </div>
           {total !== null && (
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
-              {loading && <span style={{ fontSize: 10, color: "#3bff7e", letterSpacing: "0.15em", opacity: 0.7 }}>▋ QUERYING...</span>}
+              {loading && (
+                <span style={{ fontSize: 10, color: "#0ea5e9", letterSpacing: "0.15em", opacity: 0.8 }}>
+                  ▋ QUERYING...
+                </span>
+              )}
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "#3bff7e", lineHeight: 1 }}>{total.toLocaleString()}</div>
-                <div style={{ fontSize: 9, color: "#555", letterSpacing: "0.15em" }}>MATCHES FOUND</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
+                <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.15em" }}>MATCHES FOUND</div>
               </div>
             </div>
           )}
@@ -295,25 +328,50 @@ export default function Index() {
       </header>
 
       {/* Filters */}
-      <div style={{ borderBottom: "1px solid #1a1a1a" }}>
+      <div style={{ borderBottom: "1px solid #e5e7eb", background: "#f3f4f6" }}>
         <button
           onClick={() => setFiltersExpanded(!filtersExpanded)}
-          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 24px", background: "#111", border: "none", borderBottom: filtersExpanded ? "1px solid #1a1a1a" : "none", cursor: "pointer", color: "#888" }}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "8px 24px",
+            background: "#f9fafb",
+            border: "none",
+            borderBottom: filtersExpanded ? "1px solid #e5e7eb" : "none",
+            cursor: "pointer",
+            color: "#4b5563",
+          }}
         >
           <span style={{ fontSize: 10, letterSpacing: "0.2em", display: "flex", alignItems: "center", gap: 8 }}>
-            <Search size={11} color="#3bff7e" />
-            <span style={{ color: "#3bff7e" }}>SEARCH FILTERS</span>
-            <span style={{ color: "#333" }}>·</span>
+            <Search size={11} color="#0ea5e9" />
+            <span style={{ color: "#0f172a" }}>SEARCH FILTERS</span>
+            <span style={{ color: "#d1d5db" }}>·</span>
             <span>{filterFields.length + 7} PARAMETERS</span>
           </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "#6b7280" }}>
             <span>{filtersExpanded ? "CLICK TO HIDE" : "CLICK TO SHOW"}</span>
             {filtersExpanded ? <ChevronUp size={13} color="#444" /> : <ChevronDown size={13} color="#444" />}
           </span>
         </button>
 
         {filtersExpanded && (
-          <div style={{ padding: "16px 24px 20px", background: "#0d0d0d" }}>
+          <div
+            style={{
+              padding: "16px 24px 20px",
+              background: "#f9fafb",
+            }}
+          >
+            <div
+              style={{
+                padding: 16,
+                borderRadius: 12,
+                background: "#ffffff",
+                boxShadow: "0 10px 25px -15px rgba(15,23,42,0.25)",
+                border: "1px solid #e5e7eb",
+              }}
+            >
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px" }}>
               {filterFields.map((f) => (
                 <SearchField
@@ -346,7 +404,7 @@ export default function Index() {
                 style={{
                   marginTop: 16,
                   paddingTop: 12,
-                  borderTop: "1px dashed #1f2933",
+                  borderTop: "1px dashed #F0F0F0",
                   display: "flex",
                   flexDirection: "column",
                   gap: 8,
@@ -355,7 +413,7 @@ export default function Index() {
                 <div
                   style={{
                     fontSize: 9,
-                    color: "#4b5563",
+                    color: "#s",
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
                   }}
@@ -385,11 +443,11 @@ export default function Index() {
                       }}
                       style={{
                         borderRadius: 999,
-                        border: "1px solid #1f2933",
+                        border: "1px solid #D9D9D9",
                         padding: "4px 10px",
                         fontSize: 10,
                         fontFamily: "'JetBrains Mono', 'Courier New', monospace",
-                        background: "#020617",
+                        background: "#F0F0F0",
                         color: "#9ca3af",
                         cursor: "pointer",
                         maxWidth: "100%",
@@ -406,12 +464,25 @@ export default function Index() {
               </div>
             )}
 
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 20, paddingTop: 16, borderTop: "1px solid #1a1a1a" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 20, paddingTop: 16, borderTop: "1px solid #e5e7eb" }}>
               <button
                 onClick={handleClear}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#555", border: "1px solid #222", cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em" }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#444")}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#222")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "8px 16px",
+                  background: "transparent",
+                  color: "#6b7280",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 999,
+                  cursor: "pointer",
+                  fontSize: 11,
+                  fontFamily: "inherit",
+                  letterSpacing: "0.12em",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
               >
                 <RotateCcw size={11} />
                 CLEAR
@@ -434,9 +505,10 @@ export default function Index() {
                   alignItems: "center",
                   gap: 8,
                   padding: "8px 18px",
-                  background: loading ? "#1c3f28" : "#3bff7e",
-                  color: "#000",
-                  border: "1px solid #3bff7e",
+                  background: loading ? "#bae6fd" : "#0ea5e9",
+                  color: "#ffffff",
+                  border: "1px solid #0ea5e9",
+                  borderRadius: 999,
                   cursor: loading ? "default" : "pointer",
                   fontSize: 11,
                   fontFamily: "inherit",
@@ -451,9 +523,22 @@ export default function Index() {
               {results.length > 0 && (
                 <button
                   onClick={() => exportToCsv(results)}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#555", border: "1px solid #222", cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#444")}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#222")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 16px",
+                    background: "transparent",
+                    color: "#4b5563",
+                    border: "1px solid #d1d5db",
+                    borderRadius: 999,
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontFamily: "inherit",
+                    letterSpacing: "0.15em",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
                 >
                   <Download size={11} />
                   EXPORT CSV
@@ -467,24 +552,29 @@ export default function Index() {
                     alignItems: "center",
                     gap: 8,
                     padding: "8px 16px",
-                    background: "transparent",
-                    color: copiedLink ? "#3bff7e" : "#555",
-                    border: copiedLink ? "1px solid #3bff7e" : "1px solid #222",
+                    background: copiedLink ? "#dcfce7" : "transparent",
+                    color: copiedLink ? "#15803d" : "#4b5563",
+                    border: copiedLink ? "1px solid #22c55e" : "1px solid #d1d5db",
+                    borderRadius: 999,
                     cursor: "pointer",
                     fontSize: 11,
                     fontFamily: "inherit",
                     letterSpacing: "0.15em",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#444")}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
                   onMouseLeave={(e) =>
-                    (e.currentTarget.style.borderColor = copiedLink ? "#3bff7e" : "#222")
+                    (e.currentTarget.style.borderColor = copiedLink ? "#22c55e" : "#d1d5db")
                   }
                 >
                   <Link2 size={11} />
                   {copiedLink ? "LINK COPIED" : "COPY LINK"}
                 </button>
               )}
-              {loading && <span style={{ fontSize: 10, color: "#3bff7e", letterSpacing: "0.15em", opacity: 0.7 }}>▋ QUERYING DATABASE...</span>}
+              {loading && (
+                <span style={{ fontSize: 10, color: "#0ea5e9", letterSpacing: "0.15em", opacity: 0.8 }}>
+                  ▋ QUERYING DATABASE...
+                </span>
+              )}
             </div>
 
             {errorMessage && (
@@ -506,57 +596,131 @@ export default function Index() {
                 <div style={{ color: "#fca5a5" }}>{errorMessage}</div>
               </div>
             )}
+            </div>
           </div>
         )}
       </div>
 
       {/* Results */}
       {total !== null && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            overflow: "hidden",
+            background: "#f3f4f6",
+          }}
+        >
           <ResultStats vehicles={results} />
 
-          <div style={{ padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 10, color: "#555", letterSpacing: "0.1em" }}>
-              SHOWING <span style={{ color: "#888" }}>{sortedResults.length.toLocaleString()}</span> OF <span style={{ color: "#3bff7e" }}>{total.toLocaleString()}</span> RECORDS
-              {pages > 1 && <> · PAGE <span style={{ color: "#888" }}>{page}</span>/<span style={{ color: "#888" }}>{pages}</span></>}
+          <div
+            style={{
+              padding: "6px 24px",
+              background: "#ffffff",
+              borderBottom: "1px solid #e5e7eb",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em" }}>
+              SHOWING <span style={{ color: "#111827" }}>{sortedResults.length.toLocaleString()}</span> OF{" "}
+              <span style={{ color: "#0f766e" }}>{total.toLocaleString()}</span> RECORDS
+              {pages > 1 && (
+                <>
+                  {" "}
+                  · PAGE <span style={{ color: "#111827" }}>{page}</span>/
+                  <span style={{ color: "#4b5563" }}>{pages}</span>
+                </>
+              )}
             </span>
             {sort && (
-              <span style={{ fontSize: 10, color: "#555", letterSpacing: "0.1em" }}>
-                SORT: <span style={{ color: "#3bff7e" }}>{sort.key}</span> <span style={{ color: "#888" }}>{sort.dir === "asc" ? "↑" : "↓"}</span>
+              <span style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em" }}>
+                SORT: <span style={{ color: "#0ea5e9" }}>{sort.key}</span>{" "}
+                <span style={{ color: "#4b5563" }}>{sort.dir === "asc" ? "↑" : "↓"}</span>
               </span>
             )}
           </div>
 
           <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed" }}>
-              <thead style={{ position: "sticky", top: 0, background: "#111", zIndex: 10 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
+              <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 10 }}>
                 <tr>
                   {resultColumns.map((col) => (
                     <th
                       key={col.key}
                       onClick={() => handleSort(col.key)}
-                      style={{ padding: "8px 16px", textAlign: "left", fontSize: 9, letterSpacing: "0.2em", color: sort?.key === col.key ? "#3bff7e" : "#444", cursor: "pointer", borderBottom: "1px solid #1a1a1a", whiteSpace: "nowrap", fontWeight: 700, userSelect: "none", overflow: "hidden", textOverflow: "ellipsis", width: `${100 / resultColumns.length}%` }}
+                      style={{
+                        padding: "8px 16px",
+                        textAlign: "left",
+                        fontSize: 9,
+                        letterSpacing: "0.2em",
+                        color: sort?.key === col.key ? "#0ea5e9" : "#6b7280",
+                        cursor: "pointer",
+                        borderBottom: "1px solid #e5e7eb",
+                        whiteSpace: "nowrap",
+                        fontWeight: 700,
+                        userSelect: "none",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        width: `${100 / resultColumns.length}%`,
+                      }}
                     >
-                      {col.label}{sort?.key === col.key && <span style={{ marginLeft: 4, color: "#3bff7e" }}>{sort.dir === "asc" ? "↑" : "↓"}</span>}
+                      {col.label}
+                      {sort?.key === col.key && (
+                        <span style={{ marginLeft: 4, color: "#0ea5e9" }}>{sort.dir === "asc" ? "↑" : "↓"}</span>
+                      )}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {sortedResults.length === 0 ? (
-                  <tr><td colSpan={resultColumns.length} style={{ padding: "60px 24px", textAlign: "center", color: "#333", fontSize: 11, letterSpacing: "0.1em" }}>NO RECORDS MATCH YOUR QUERY</td></tr>
+                  <tr>
+                    <td
+                      colSpan={resultColumns.length}
+                      style={{
+                        padding: "60px 24px",
+                        textAlign: "center",
+                        color: "#9ca3af",
+                        fontSize: 11,
+                        letterSpacing: "0.1em",
+                      }}
+                    >
+                      NO RECORDS MATCH YOUR QUERY
+                    </td>
+                  </tr>
                 ) : (
                   sortedResults.map((v, i) => (
                     <tr
                       key={i}
                       onClick={() => setSelectedVehicle(v)}
-                      style={{ cursor: "pointer", borderBottom: "1px solid #111", background: i % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "#141a14")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? "#0a0a0a" : "#0d0d0d")}
+                      style={{
+                        cursor: "pointer",
+                        borderBottom: "1px solid #e5e7eb",
+                        background: i % 2 === 0 ? "#ffffff" : "#f9fafb",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#eff6ff")}
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = i % 2 === 0 ? "#ffffff" : "#f9fafb")
+                      }
                     >
                       {resultColumns.map((col, ci) => (
-                        <td key={col.key} style={{ padding: "7px 16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: ci === 0 ? "#e0e0e0" : ci === 8 ? "#555" : "#888", fontWeight: ci === 0 ? 600 : 400, fontSize: 11 }}>
-                          {v[col.key] || <span style={{ color: "#2a2a2a" }}>—</span>}
+                        <td
+                          key={col.key}
+                          style={{
+                            padding: "7px 16px",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            color: ci === 0 ? "#111827" : ci === 8 ? "#9ca3af" : "#4b5563",
+                            fontWeight: ci === 0 ? 600 : 400,
+                            fontSize: 11,
+                          }}
+                        >
+                          {v[col.key] || <span style={{ color: "#d1d5db" }}>—</span>}
                         </td>
                       ))}
                     </tr>
