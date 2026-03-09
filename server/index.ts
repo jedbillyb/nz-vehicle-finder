@@ -9,20 +9,53 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
 
-const db = new Database(path.resolve(__dirname, "../../database/vehicles.db"), { readonly: true });
-db.pragma("journal_mode = WAL");
-db.pragma("cache_size = -64000");
-db.pragma("temp_store = MEMORY");
+const dbPath = path.resolve(__dirname, "../../database/vehicles.db");
+const autocompletePath = path.resolve(__dirname, "../public/autocomplete.json");
 
-const distinctCache: Record<string, string[]> = JSON.parse(
-  readFileSync(path.resolve(__dirname, "../public/autocomplete.json"), "utf-8")
-);
-console.log("Autocomplete cache loaded. API ready on http://localhost:3001");
+let db: InstanceType<typeof Database> | null = null;
+try {
+  db = new Database(dbPath, { readonly: true });
+  db.pragma("journal_mode = WAL");
+  db.pragma("cache_size = -64000");
+  db.pragma("temp_store = MEMORY");
+  console.log("Database opened:", dbPath);
+} catch (err) {
+  console.error("Database failed to open:", (err as Error).message);
+  console.error("Expected database at:", dbPath);
+  console.error("Search and filtered suggestions will not work until the database is available.");
+}
+
+const distinctCache: Record<string, string[]> = (() => {
+  try {
+    return JSON.parse(readFileSync(autocompletePath, "utf-8"));
+  } catch (err) {
+    console.error("Autocomplete file failed to load:", (err as Error).message);
+    console.error("Expected at:", autocompletePath);
+    return {};
+  }
+})();
+
+const ALLOWED_FIELDS = new Set([
+  "MAKE", "MODEL", "SUBMODEL", "BASIC_COLOUR", "MOTIVE_POWER", "BODY_TYPE", "TRANSMISSION_TYPE",
+  "TLA", "POSTCODE", "IMPORT_STATUS", "ORIGINAL_COUNTRY", "CLASS", "INDUSTRY_CLASS",
+  "ROAD_TRANSPORT_CODE", "VEHICLE_USAGE", "NZ_ASSEMBLED", "VEHICLE_YEAR",
+  "CC_RATING", "POWER_RATING", "GROSS_VEHICLE_MASS", "WIDTH", "NUMBER_OF_SEATS", "NUMBER_OF_AXLES",
+]);
+console.log("API listening on http://localhost:3001");
+
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true, db: !!db });
+});
 
 app.get("/api/suggestions/:field", (req, res) => {
   const { field } = req.params;
+  if (!ALLOWED_FIELDS.has(field)) {
+    return res.status(400).json([]);
+  }
   const { q = "", ...filterBy } = req.query as Record<string, string>;
-  const activeFilters = Object.entries(filterBy).filter(([, v]) => v && v.trim() !== "");
+  const activeFilters = Object.entries(filterBy).filter(
+    ([k, v]) => v && v.trim() !== "" && ALLOWED_FIELDS.has(k)
+  );
 
   if (activeFilters.length === 0) {
     const all = distinctCache[field] || [];
@@ -30,6 +63,10 @@ app.get("/api/suggestions/:field", (req, res) => {
       ? all.filter((v) => v.toUpperCase().startsWith(q.toUpperCase())).slice(0, 20)
       : all.slice(0, 20);
     return res.json(results);
+  }
+
+  if (!db) {
+    return res.status(503).json([]);
   }
 
   const params: string[] = [];
@@ -49,6 +86,15 @@ app.get("/api/suggestions/:field", (req, res) => {
 });
 
 app.get("/api/vehicles", (req, res) => {
+  if (!db) {
+    return res.status(503).json({
+      error: "Database not available",
+      vehicles: [],
+      total: 0,
+      page: 1,
+      pages: 0,
+    });
+  }
   const { page = "1", ...filters } = req.query as Record<string, string>;
   const limit = 50;
   const offset = (parseInt(page) - 1) * limit;

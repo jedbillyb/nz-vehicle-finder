@@ -31,8 +31,28 @@ export interface SearchFilters {
   POWER_RATING_MAX?: string;
 }
 
-const API =
+export const API_BASE =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
+
+async function fetchApi(path: string, options?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(`${API_BASE}${path}`, options);
+  } catch (err) {
+    const msg =
+      err instanceof TypeError && (err as TypeError).message?.includes("fetch")
+        ? `Cannot reach the API at ${API_BASE}. Start the backend with: npm run server (in another terminal).`
+        : err instanceof Error
+          ? err.message
+          : "Network error";
+    throw new Error(msg);
+  }
+}
+
+export async function checkHealth(): Promise<{ ok: boolean; db: boolean }> {
+  const res = await fetchApi("/api/health");
+  if (!res.ok) return { ok: false, db: false };
+  return res.json();
+}
 
 export async function searchVehicles(
   filters: SearchFilters,
@@ -43,8 +63,12 @@ export async function searchVehicles(
     if (v && v.trim()) params.set(k, v.trim());
   }
 
-  const res = await fetch(`${API}/api/vehicles?${params}`);
+  const res = await fetchApi(`/api/vehicles?${params}`);
 
+  if (res.status === 503) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error || "Database not available. Check the server logs.");
+  }
   if (!res.ok) {
     throw new Error(`Search failed with status ${res.status}`);
   }
@@ -55,7 +79,8 @@ export async function searchVehicles(
 export async function getSuggestions(
   field: keyof Vehicle,
   query: string,
-  filterBy?: Partial<Record<keyof Vehicle, string>>
+  filterBy?: Partial<Record<keyof Vehicle, string>>,
+  signal?: AbortSignal
 ): Promise<string[]> {
   const params = new URLSearchParams({ q: query });
   if (filterBy) {
@@ -64,8 +89,22 @@ export async function getSuggestions(
     }
   }
 
-  const res = await fetch(`${API}/api/suggestions/${field}?${params}`);
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/suggestions/${field}?${params}`, { signal });
+  } catch (err) {
+    const msg =
+      err instanceof TypeError && (err as TypeError).message?.includes("fetch")
+        ? `Cannot reach the API at ${API_BASE}. Start the backend with: npm run server (in another terminal).`
+        : err instanceof Error
+          ? err.message
+          : "Network error";
+    throw new Error(msg);
+  }
 
+  if (res.status === 503) {
+    throw new Error("Database not available. Search and filtered suggestions are disabled.");
+  }
   if (!res.ok) {
     throw new Error(`Suggestions failed with status ${res.status}`);
   }

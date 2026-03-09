@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SearchField } from "@/components/SearchField";
 import { RangeField } from "@/components/RangeField";
-import { VehicleDetail } from "@/components/VehicleDetail";
 import { Pagination } from "@/components/Pagination";
 import { ResultStats } from "@/components/ResultStats";
-import { searchVehicles, SearchFilters } from "@/lib/vehicleApi";
+import { searchVehicles, SearchFilters, checkHealth, API_BASE } from "@/lib/vehicleApi";
 import { exportToCsv } from "@/lib/csvExport";
 import { Vehicle } from "@/lib/mockData";
 import { toast } from "sonner";
@@ -54,6 +53,10 @@ type SavedSearch = {
 
 const RECENT_SEARCHES_KEY = "nz-fleet-search:recent";
 
+const VehicleDetail = lazy(() =>
+  import("@/components/VehicleDetail").then((m) => ({ default: m.VehicleDetail }))
+);
+
 // Parse URL search params into filters
 function filtersFromParams(params: URLSearchParams): SearchFilters {
   const filters: SearchFilters = {};
@@ -92,6 +95,13 @@ export default function Index() {
   const [recentSearches, setRecentSearches] = useState<SavedSearch[]>([]);
   const initialLoad = useRef(true);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [apiReachable, setApiReachable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    checkHealth()
+      .then(({ ok }) => setApiReachable(ok))
+      .catch(() => setApiReachable(false));
+  }, []);
 
   const persistRecentSearch = useCallback(
     (currentFilters: SearchFilters) => {
@@ -211,14 +221,18 @@ export default function Index() {
     });
   };
 
-  const sortedResults = sort
-    ? [...results].sort((a, b) => {
-        const av = a[sort.key] || "";
-        const bv = b[sort.key] || "";
-        const cmp = av.localeCompare(bv, undefined, { numeric: true });
-        return sort.dir === "asc" ? cmp : -cmp;
-      })
-    : results;
+  const sortedResults = useMemo(
+    () =>
+      sort
+        ? [...results].sort((a, b) => {
+            const av = a[sort.key] || "";
+            const bv = b[sort.key] || "";
+            const cmp = av.localeCompare(bv, undefined, { numeric: true });
+            return sort.dir === "asc" ? cmp : -cmp;
+          })
+        : results,
+    [results, sort]
+  );
 
   const updateFilter = (key: keyof SearchFilters, value: string) => {
     setFilters((prev) => {
@@ -231,6 +245,27 @@ export default function Index() {
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#0a0a0a", fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#e0e0e0", overflow: "hidden" }}>
+      {apiReachable === false && (
+        <div
+          style={{
+            background: "#3b1f1f",
+            borderBottom: "1px solid #5f2a2a",
+            padding: "10px 24px",
+            fontSize: 11,
+            color: "#fca5a5",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <strong style={{ letterSpacing: "0.1em" }}>BACKEND NOT REACHABLE</strong>
+          <span>
+            Start the API server in another terminal: <code style={{ background: "#1a0a0a", padding: "2px 6px" }}>npm run server</code>
+          </span>
+          <span style={{ color: "#888" }}>API: {API_BASE}</span>
+        </div>
+      )}
       {/* Header */}
       <header style={{ borderBottom: "1px solid #1a1a1a", background: "#0a0a0a", position: "sticky", top: 0, zIndex: 40 }}>
         <div style={{ background: "#3bff7e", padding: "2px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -539,11 +574,15 @@ export default function Index() {
         <div style={{ textAlign: "center", padding: "80px 24px" }}>
           <div style={{ fontSize: 48, color: "#1a1a1a", marginBottom: 24 }}>⊞</div>
           <p style={{ fontSize: 11, color: "#333", letterSpacing: "0.2em", margin: "0 0 8px" }}>ENTER SEARCH PARAMETERS ABOVE</p>
-          <p style={{ fontSize: 10, color: "#222", letterSpacing: "0.15em", margin: 0 }}>RESULTS UPDATE AUTOMATICALLY AS YOU TYPE</p>
+          <p style={{ fontSize: 10, color: "#222", letterSpacing: "0.15em", margin: 0 }}>SET FILTERS ABOVE, THEN CLICK RUN SEARCH</p>
         </div>
       )}
 
-      {selectedVehicle && <VehicleDetail vehicle={selectedVehicle} onClose={() => setSelectedVehicle(null)} />}
+      {selectedVehicle && (
+        <Suspense fallback={null}>
+          <VehicleDetail vehicle={selectedVehicle} onClose={() => setSelectedVehicle(null)} />
+        </Suspense>
+      )}
     </div>
   );
 }
