@@ -8,6 +8,7 @@ import { readFileSync } from "fs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
+app.use(express.static(path.join(__dirname, "public")));
 
 const dbPath = path.resolve(__dirname, "../../database/vehicles.db");
 const autocompletePath = path.resolve(__dirname, "../public/autocomplete.json");

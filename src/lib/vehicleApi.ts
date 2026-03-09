@@ -76,6 +76,42 @@ export async function searchVehicles(
   return res.json();
 }
 
+const makeModelCache: Record<string, string[]> = {};
+
+export async function preloadModelsForMake(make: string) {
+  if (makeModelCache[make]) return;
+  const res = await fetch(`${API_BASE}/api/suggestions/MODEL?MAKE=${encodeURIComponent(make)}`);
+  const data = await res.json();
+  makeModelCache[make] = data;
+}
+
+export function getModelsForMake(make: string, prefix: string): string[] {
+  const vals = makeModelCache[make] || [];
+  if (!prefix.trim()) return vals.slice(0, 8);
+  const p = prefix.toUpperCase();
+  return vals.filter(v => v.toUpperCase().startsWith(p)).slice(0, 8);
+}
+
+const suggestionCache: Record<string, string[]> = {};
+
+export async function preloadSuggestions(field: string) {
+  if (suggestionCache[field]) return;
+  const res = await fetch(`${API_BASE}/suggestions/${field}`);
+  const data = await res.json();
+  suggestionCache[field] = data.suggestions;
+}
+
+export function getSuggestionsLocal(
+  field: string, 
+  prefix: string,
+  filterBy?: Partial<Record<string, string>>
+): string[] {
+  const vals = suggestionCache[field] || [];
+  if (!prefix.trim() && !filterBy) return vals.slice(0, 8);
+  const p = prefix.toUpperCase();
+  return vals.filter(v => !p || v.toUpperCase().startsWith(p)).slice(0, 8);
+}
+
 export async function getSuggestions(
   field: keyof Vehicle,
   query: string,

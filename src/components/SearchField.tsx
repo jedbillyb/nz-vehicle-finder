@@ -1,74 +1,48 @@
-import { useState, useEffect, useRef } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { getSuggestions } from "@/lib/vehicleApi";
+import { getSuggestionsLocal } from "@/lib/vehicleApi";
 import { Vehicle } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
-
-/** Short debounce only while typing; open/focus uses preloaded cache so we fetch immediately. */
-const DEBOUNCE_TYPING_MS = 60;
-const DEBOUNCE_WHEN_EMPTY_MS = 0;
+import { getModelsForMake } from "@/lib/vehicleApi";
 
 interface SearchFieldProps {
   label: string;
   field: keyof Vehicle;
   value: string;
   onChange: (value: string) => void;
-  filterBy?: Partial<Record<keyof Vehicle, string>>; // e.g. { MAKE: "FORD" }
+  filterBy?: Partial<Record<keyof Vehicle, string>>;
 }
 
 export function SearchField({ label, field, value, onChange, filterBy }: SearchFieldProps) {
-  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!showSuggestions) return;
-
-    const ac = new AbortController();
-    const delay =
-      value.trim() === "" ? DEBOUNCE_WHEN_EMPTY_MS : DEBOUNCE_TYPING_MS;
-    const timeoutId = setTimeout(() => {
-      getSuggestions(field, value, filterBy, ac.signal)
-        .then(setSuggestions)
-        .catch((err) => {
-          if (err?.name !== "AbortError") setSuggestions([]);
-        });
-    }, delay);
-
-    return () => {
-      clearTimeout(timeoutId);
-      ac.abort();
-    };
-  }, [value, field, showSuggestions, JSON.stringify(filterBy)]);
+  const suggestions = useMemo(() => {
+    if (field === "MODEL" && filterBy?.MAKE) {
+      return getModelsForMake(filterBy.MAKE as string, value);
+    }
+    return getSuggestionsLocal(field as string, value);
+  }, [field, value, filterBy]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node))
         setShowSuggestions(false);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      // Let the parent form or global handler trigger the actual search.
-      return;
-    }
     if (!showSuggestions || suggestions.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setHighlightedIndex((i) => Math.min(i + 1, suggestions.length - 1));
+      setHighlightedIndex(i => Math.min(i + 1, suggestions.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setHighlightedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" && highlightedIndex >= 0) {
-      e.preventDefault();
-      onChange(suggestions[highlightedIndex]);
-      setShowSuggestions(false);
-    } else if (e.key === "Tab" && suggestions.length > 0) {
+      setHighlightedIndex(i => Math.max(i - 1, 0));
+    } else if (e.key === "Tab" || (e.key === "Enter" && highlightedIndex >= 0)) {
       e.preventDefault();
       onChange(suggestions[highlightedIndex >= 0 ? highlightedIndex : 0]);
       setShowSuggestions(false);
@@ -84,10 +58,7 @@ export function SearchField({ label, field, value, onChange, filterBy }: SearchF
       </label>
       <Input
         value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-          setHighlightedIndex(-1);
-        }}
+        onChange={e => { onChange(e.target.value); setHighlightedIndex(-1); }}
         onFocus={() => setShowSuggestions(true)}
         onKeyDown={handleKeyDown}
         className="bg-secondary/50 border-border/60 text-foreground placeholder:text-muted-foreground/50 h-9 text-sm font-mono"
@@ -102,10 +73,7 @@ export function SearchField({ label, field, value, onChange, filterBy }: SearchF
                 "w-full text-left px-3 py-1.5 text-sm font-mono hover:bg-accent hover:text-accent-foreground transition-colors",
                 i === highlightedIndex && "bg-accent text-accent-foreground"
               )}
-              onMouseDown={() => {
-                onChange(s);
-                setShowSuggestions(false);
-              }}
+              onMouseDown={() => { onChange(s); setShowSuggestions(false); }}
             >
               {s}
             </button>

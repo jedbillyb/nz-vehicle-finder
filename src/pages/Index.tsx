@@ -4,11 +4,12 @@ import { SearchField } from "@/components/SearchField";
 import { RangeField } from "@/components/RangeField";
 import { Pagination } from "@/components/Pagination";
 import { ResultStats } from "@/components/ResultStats";
-import { searchVehicles, SearchFilters, checkHealth, API_BASE } from "@/lib/vehicleApi";
+import { searchVehicles, SearchFilters, checkHealth, API_BASE, preloadModelsForMake } from "@/lib/vehicleApi";
 import { exportToCsv } from "@/lib/csvExport";
 import { Vehicle } from "@/lib/mockData";
 import { toast } from "sonner";
 import { Search, RotateCcw, ChevronUp, ChevronDown, Download, Link2 } from "lucide-react";
+import { preloadSuggestions } from "@/lib/vehicleApi";
 
 const filterFields: { key: keyof SearchFilters; label: string }[] = [
   { key: "MAKE", label: "Make" },
@@ -96,6 +97,22 @@ export default function Index() {
   const initialLoad = useRef(true);
   const [copiedLink, setCopiedLink] = useState(false);
   const [apiReachable, setApiReachable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    filterFields.forEach(f => preloadSuggestions(f.key));
+  }, []);
+
+  const updateFilter = (key: keyof SearchFilters, value: string) => {
+    setFilters((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === "MAKE") {
+        next.MODEL = "";
+        if (value) preloadModelsForMake(value); // add this
+      }
+      if (key === "MAKE" || key === "MODEL") next.SUBMODEL = "";
+      return next;
+    });
+  };
 
   useEffect(() => {
     checkHealth()
@@ -233,15 +250,6 @@ export default function Index() {
         : results,
     [results, sort]
   );
-
-  const updateFilter = (key: keyof SearchFilters, value: string) => {
-    setFilters((prev) => {
-      const next = { ...prev, [key]: value };
-      if (key === "MAKE") next.MODEL = "";
-      if (key === "MAKE" || key === "MODEL") next.SUBMODEL = "";
-      return next;
-    });
-  };
 
   return (
     <div
