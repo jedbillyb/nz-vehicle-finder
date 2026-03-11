@@ -1,6 +1,7 @@
 import express from "express";
 import Database from "better-sqlite3";
 import cors from "cors";
+import compression from "compression";
 import path from "path";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
@@ -8,6 +9,7 @@ import { readFileSync } from "fs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
+app.use(compression());
 app.use(express.static(path.join(__dirname, "public")));
 
 const dbPath = path.resolve(__dirname, "../../database/vehicles.db");
@@ -19,6 +21,7 @@ try {
   db.pragma("journal_mode = WAL");
   db.pragma("cache_size = -16000");
   db.pragma("temp_store = MEMORY");
+  db.pragma("mmap_size = 268435456"); // 256MB mmap — lets OS handle caching without Node RAM
   console.log("Database opened:", dbPath);
 } catch (err) {
   console.error("Database failed to open:", (err as Error).message);
@@ -42,6 +45,55 @@ const ALLOWED_FIELDS = new Set([
   "ROAD_TRANSPORT_CODE", "VEHICLE_USAGE", "NZ_ASSEMBLED", "VEHICLE_YEAR",
   "CC_RATING", "POWER_RATING", "GROSS_VEHICLE_MASS", "WIDTH", "NUMBER_OF_SEATS", "NUMBER_OF_AXLES",
 ]);
+
+// Prepared statement cache — avoid re-parsing SQL on every request
+const stmtCache = new Map<string, any>();
+function getStmt(sql: string) {
+  if (!db) return null;
+  let stmt = stmtCache.get(sql);
+  if (!stmt) {
+    stmt = db.prepare(sql);
+    stmtCache.set(sql, stmt);
+  }
+  return stmt;
+}
+
+// In-memory suggestion response cache (TTL: 5 min, max 500 entries)
+const suggestionResponseCache = new Map<string, { data: string[]; ts: number }>();
+const SUGGESTION_TTL = 5 * 60 * 1000;
+const SUGGESTION_CACHE_MAX = 500;
+
+function getCachedSuggestion(key: string): string[] | null {
+  const entry = suggestionResponseCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > SUGGESTION_TTL) {
+    suggestionResponseCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedSuggestion(key: string, data: string[]) {
+  if (suggestionResponseCache.size >= SUGGESTION_CACHE_MAX) {
+    // Evict oldest
+    const firstKey = suggestionResponseCache.keys().next().value;
+    if (firstKey) suggestionResponseCache.delete(firstKey);
+  }
+  suggestionResponseCache.set(key, { data, ts: Date.now() });
+}
+
+// Result columns for vehicles endpoint — only send what the frontend needs
+const RESULT_COLUMNS = [
+  "MAKE", "MODEL", "SUBMODEL", "VEHICLE_YEAR", "BASIC_COLOUR", "BODY_TYPE",
+  "MOTIVE_POWER", "TRANSMISSION_TYPE", "TLA", "POSTCODE", "VIN11", "CHASSIS7",
+  "ENGINE_NUMBER", "CC_RATING", "POWER_RATING", "GROSS_VEHICLE_MASS", "WIDTH",
+  "HEIGHT", "NUMBER_OF_SEATS", "NUMBER_OF_AXLES", "IMPORT_STATUS", "ORIGINAL_COUNTRY",
+  "PREVIOUS_COUNTRY", "CLASS", "INDUSTRY_CLASS", "ROAD_TRANSPORT_CODE", "VEHICLE_USAGE",
+  "NZ_ASSEMBLED", "FIRST_NZ_REGISTRATION_YEAR", "FIRST_NZ_REGISTRATION_MONTH",
+  "VDAM_WEIGHT", "VEHICLE_TYPE", "INDUSTRY_MODEL_CODE", "MVMA_MODEL_CODE",
+  "ALTERNATIVE_MOTIVE_POWER", "SYNTHETIC_GREENHOUSE_GAS", "FC_COMBINED", "FC_URBAN", "FC_EXTRA_URBAN",
+].map(c => `"${c}"`).join(", ");
+
 console.log("API listening on http://localhost:3001");
 
 app.get("/api/health", (_req, res) => {
@@ -70,6 +122,11 @@ app.get("/api/suggestions/:field", (req, res) => {
     return res.status(503).json([]);
   }
 
+  // Check response cache
+  const cacheKey = `${field}|${q}|${JSON.stringify(activeFilters)}`;
+  const cached = getCachedSuggestion(cacheKey);
+  if (cached) return res.json(cached);
+
   const params: string[] = [];
   const clauses = activeFilters.map(([key, value]) => {
     params.push(`%${value.toUpperCase()}%`);
@@ -80,10 +137,11 @@ app.get("/api/suggestions/:field", (req, res) => {
     clauses.push(`UPPER("${field}") LIKE ?`);
   }
   const where = "WHERE " + clauses.join(" AND ");
-  const rows = db.prepare(
-    `SELECT DISTINCT "${field}" FROM fleet ${where} ORDER BY "${field}" LIMIT 20`
-  ).all(...params) as any[];
-  res.json(rows.map((r: any) => r[field]).filter(Boolean));
+  const sql = `SELECT DISTINCT "${field}" FROM fleet ${where} ORDER BY "${field}" LIMIT 20`;
+  const rows = (getStmt(sql) || db.prepare(sql)).all(...params) as any[];
+  const result = rows.map((r: any) => r[field]).filter(Boolean);
+  setCachedSuggestion(cacheKey, result);
+  res.json(result);
 });
 
 app.get("/api/vehicles", (req, res) => {
@@ -120,7 +178,7 @@ app.get("/api/vehicles", (req, res) => {
 
   const where = clauses.length ? "WHERE " + clauses.join(" AND ") : "";
   const total = (db.prepare(`SELECT COUNT(*) as count FROM fleet ${where}`).get(...params) as any).count;
-  const vehicles = db.prepare(`SELECT * FROM fleet ${where} LIMIT ? OFFSET ?`).all(...params, limit, offset);
+  const vehicles = db.prepare(`SELECT ${RESULT_COLUMNS} FROM fleet ${where} LIMIT ? OFFSET ?`).all(...params, limit, offset);
   res.json({ vehicles, total, page: parseInt(page), pages: Math.ceil(total / limit) });
 });
 
