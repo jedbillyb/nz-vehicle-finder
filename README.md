@@ -108,3 +108,7 @@ High‑level approach:
 3. Ensure `VITE_API_BASE_URL` for the frontend points at the public URL of your API (HTTPS recommended).
 
 Once deployed, the app should behave the same as locally: open the frontend URL, set filters, click **RUN SEARCH**, and explore vehicles.
+
+## license
+
+MIT
