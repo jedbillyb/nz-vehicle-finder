@@ -294,6 +294,7 @@ export default function Index() {
         color: "#111827",
       }}
     >
+      <div style={{ flex: 1 }}>
       {apiReachable === false && (
         <div
           style={{
@@ -568,6 +569,7 @@ export default function Index() {
           <VehicleDetail vehicle={selectedVehicle} onClose={() => setSelectedVehicle(null)} />
         </Suspense>
       )}
+      </div>
 
       <footer style={{ padding: "12px 24px", background: "#ffffff", borderTop: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#6b7280", letterSpacing: "0.1em" }}>
         <span>DEVELOPED BY <a href="https://jedbillyb.com" target="_blank" rel="noopener noreferrer" style={{ color: "#0ea5e9", textDecoration: "none", fontWeight: 700 }}>JED BLENKHORN</a></span>
