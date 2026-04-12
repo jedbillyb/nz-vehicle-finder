@@ -44,8 +44,8 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
         padding: isInline ? "0" : "16px 24px",
         background: isInline ? "transparent" : "#ffffff",
         display: "grid",
-        gridTemplateColumns: isInline ? "repeat(auto-fill, minmax(180px, 1fr))" : "repeat(auto-fill, minmax(200px, 1fr))",
-        gap: isInline ? 32 : 20,
+        gridTemplateColumns: isInline ? "repeat(auto-fit, minmax(240px, 1fr))" : "repeat(auto-fill, minmax(200px, 1fr))",
+        gap: isInline ? 40 : 20,
         borderTop: !isInline && expanded && !hideHeader ? "1px solid #e5e7eb" : "none",
       }}
     >
