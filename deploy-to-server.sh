@@ -7,7 +7,7 @@ KEY="~/downloads/Other/ssh-key-2026-03-14.key"
 
 echo "🚀 Syncing with server..."
 # Sync files (excluding node_modules and build artifacts)
-rsync -avz --exclude 'node_modules' --exclude 'dist' --exclude '.git' ./ $SERVER:$REMOTE_DIR/
+rsync -avz -e "ssh -i ~/downloads/Other/ssh-key-2026-03-14.key" --exclude 'node_modules' --exclude 'dist' --exclude '.git' ./ $SERVER:$REMOTE_DIR/
 
 echo "🛠️ Restarting app on server..."
 # Example: If running via PM2 or a custom start script, adjust this command
