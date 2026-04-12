@@ -28,6 +28,7 @@ const filterFields: { key: keyof SearchFilters; label: string }[] = [
   { key: "ROAD_TRANSPORT_CODE", label: "Road Code" },
   { key: "VEHICLE_USAGE", label: "Usage" },
   { key: "NZ_ASSEMBLED", label: "NZ Assembled" },
+  { key: "VIN11", label: "VIN" },
 ];
 
 const resultColumns: { key: keyof Vehicle; label: string }[] = [

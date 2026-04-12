@@ -21,6 +21,7 @@ export interface SearchFilters {
   ROAD_TRANSPORT_CODE?: string;
   VEHICLE_USAGE?: string;
   NZ_ASSEMBLED?: string;
+  VIN11?: string;
   GROSS_VEHICLE_MASS_MIN?: string;
   GROSS_VEHICLE_MASS_MAX?: string;
   WIDTH_MIN?: string;
