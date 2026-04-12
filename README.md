@@ -18,7 +18,7 @@ A powerful, high-performance search application for the New Zealand Motor Vehicl
 
 ## Live Deployment
 You can access the live version of this project at: 
-[https://server.jedbillyb.com/nz-vehicle-finder](https://server.jedbillyb.com/nz-vehicle-finder)
+[https://nz-vehicle-finder.co.nz](https://nz-vehicle-finder.co.nz)
 
 ## Tech Stack
 
