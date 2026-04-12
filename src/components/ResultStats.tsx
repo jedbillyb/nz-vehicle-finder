@@ -1,39 +1,42 @@
-import { Vehicle } from "@/lib/mockData";
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
+import { API_BASE } from "@/lib/vehicleApi";
+import { SearchFilters } from "@/lib/vehicleApi";
 
 interface ResultStatsProps {
-  vehicles: Vehicle[];
+  filters: SearchFilters;
 }
 
-const statFields: { key: keyof Vehicle; label: string }[] = [
-  { key: "MOTIVE_POWER", label: "Fuel Type" },
-  { key: "BASIC_COLOUR", label: "Colour" },
-  { key: "BODY_TYPE", label: "Body Type" },
-  { key: "TRANSMISSION_TYPE", label: "Transmission" },
-  { key: "MAKE", label: "Make" },
-];
-
-function breakdown(vehicles: Vehicle[], field: keyof Vehicle): { value: string; count: number }[] {
-  const counts: Record<string, number> = {};
-  for (const v of vehicles) {
-    const val = v[field] || "UNKNOWN";
-    counts[val] = (counts[val] || 0) + 1;
-  }
-  return Object.entries(counts)
-    .map(([value, count]) => ({ value, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 8);
-}
-
-export function ResultStats({ vehicles }: ResultStatsProps) {
+export function ResultStats({ filters }: ResultStatsProps) {
   const [expanded, setExpanded] = useState(true);
-  const breakdownByField = useMemo(
-    () => statFields.map((sf) => ({ ...sf, data: breakdown(vehicles, sf.key) })),
-    [vehicles]
-  );
+  const [data, setData] = useState<Record<string, { value: string; count: number }[]>>({});
+  const [loading, setLoading] = useState(false);
 
-  if (vehicles.length === 0) return null;
+  useEffect(() => {
+    const fetchBreakdown = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams(filters as Record<string, string>);
+        const res = await fetch(`${API_BASE}/api/breakdown?${params}`);
+        if (res.ok) setData(await res.json());
+      } catch (err) {
+        console.error("Failed to fetch breakdown:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBreakdown();
+  }, [filters]);
+
+  const labels: Record<string, string> = {
+    MOTIVE_POWER: "Fuel Type",
+    BASIC_COLOUR: "Colour",
+    BODY_TYPE: "Body Type",
+    TRANSMISSION_TYPE: "Transmission",
+    MAKE: "Make",
+  };
+
+  if (Object.keys(data).length === 0) return null;
 
   return (
     <div style={{ borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
@@ -67,7 +70,7 @@ export function ResultStats({ vehicles }: ResultStatsProps) {
             color: "#6b7280",
           }}
         >
-          <span>{expanded ? "CLICK TO HIDE" : "CLICK TO SHOW"}</span>
+          {loading ? "LOADING..." : expanded ? "CLICK TO HIDE" : "CLICK TO SHOW"}
           {expanded ? <ChevronUp size={13} color="#9ca3af" /> : <ChevronDown size={13} color="#9ca3af" />}
         </span>
       </button>
@@ -83,8 +86,8 @@ export function ResultStats({ vehicles }: ResultStatsProps) {
             borderTop: "1px solid #e5e7eb",
           }}
         >
-          {breakdownByField.map(({ key, label, data }) => {
-            const max = data[0]?.count || 1;
+          {Object.entries(data).map(([key, items]) => {
+            const max = items[0]?.count || 1;
             return (
               <div key={key}>
                 <div
@@ -96,9 +99,9 @@ export function ResultStats({ vehicles }: ResultStatsProps) {
                     fontWeight: 700,
                   }}
                 >
-                  {label.toUpperCase()}
+                  {labels[key].toUpperCase()}
                 </div>
-                {data.map((d) => (
+                {items.map((d) => (
                   <div key={d.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                     <div
                       style={{
@@ -131,7 +134,9 @@ export function ResultStats({ vehicles }: ResultStatsProps) {
                         }}
                       />
                     </div>
-                    <div style={{ fontSize: 9, color: "#6b7280", minWidth: 24, textAlign: "right" }}>{d.count}</div>
+                    <div style={{ fontSize: 9, color: "#6b7280", minWidth: 45, textAlign: "right" }}>
+                      {d.count.toLocaleString()} ({((d.count / (items.reduce((sum, i) => sum + i.count, 0))) * 100).toFixed(1)}%)
+                    </div>
                   </div>
                 ))}
               </div>

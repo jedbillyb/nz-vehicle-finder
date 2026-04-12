@@ -53,9 +53,9 @@ export function VehicleDetail({ vehicle, onClose }: VehicleDetailProps) {
   const entries = Object.entries(fieldLabels);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-border">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col p-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between pb-4 border-b border-border mb-4">
           <div>
             <h2 className="text-lg font-bold text-foreground font-mono">
               {vehicle.VEHICLE_YEAR} {vehicle.MAKE} {vehicle.MODEL}
@@ -66,8 +66,8 @@ export function VehicleDetail({ vehicle, onClose }: VehicleDetailProps) {
             <X className="h-4 w-4" />
           </Button>
         </div>
-        <div className="overflow-auto p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="overflow-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {entries.map(([key, label]) => {
               const val = vehicle[key as keyof Vehicle];
               if (!val) return null;

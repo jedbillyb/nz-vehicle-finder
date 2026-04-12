@@ -146,6 +146,40 @@ app.get("/api/suggestions/:field", (req, res) => {
   res.json(result);
 });
 
+const breakdownCache = new Map<string, { data: any; ts: number }>();
+const BREAKDOWN_TTL = 60 * 1000; // 1 min
+
+app.get("/api/breakdown", (req, res) => {
+  if (!db) return res.status(503).json({});
+  const filters = req.query as Record<string, string>;
+  const activeFilters = Object.entries(filters).filter(([k, v]) => v && v.trim() && ALLOWED_FIELDS.has(k));
+  
+  const cacheKey = JSON.stringify(activeFilters);
+  const cached = breakdownCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < BREAKDOWN_TTL) return res.json(cached.data);
+
+  const params: any[] = [];
+  const clauses: string[] = [];
+
+  for (const [key, value] of activeFilters) {
+    clauses.push(`"${key}" LIKE ? COLLATE NOCASE`);
+    params.push(`%${value}%`);
+  }
+
+  const where = clauses.length ? "WHERE " + clauses.join(" AND ") : "";
+  const fields = ["MOTIVE_POWER", "BASIC_COLOUR", "BODY_TYPE", "TRANSMISSION_TYPE", "MAKE"];
+  const breakdown: Record<string, { value: string; count: number }[]> = {};
+
+  for (const field of fields) {
+    const sql = `SELECT "${field}" as val, COUNT(*) as count FROM fleet ${where} GROUP BY "${field}" ORDER BY count DESC LIMIT 8`;
+    const rows = db.prepare(sql).all(...params) as { val: string; count: number }[];
+    breakdown[field] = rows.map((r) => ({ value: r.val || "UNKNOWN", count: r.count }));
+  }
+
+  breakdownCache.set(cacheKey, { data: breakdown, ts: Date.now() });
+  res.json(breakdown);
+});
+
 app.get("/api/vehicles", (req, res) => {
   if (!db) {
     return res.status(503).json({
