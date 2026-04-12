@@ -75,7 +75,7 @@ export function ResultStats({ filters }: ResultStatsProps) {
             color: "#6b7280",
           }}
         >
-          {loading ? "LOADING..." : expanded ? "CLICK TO HIDE" : "CLICK TO SHOW"}
+          {loading ? "LOADING..." : !hasData ? "NO DATA" : expanded ? "CLICK TO HIDE" : "CLICK TO SHOW"}
           {expanded ? <ChevronUp size={13} color="#9ca3af" /> : <ChevronDown size={13} color="#9ca3af" />}
         </span>
       </button>
