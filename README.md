@@ -5,31 +5,30 @@
 
 A powerful, high-performance search application for the New Zealand Motor Vehicle Register. Designed with a clean, terminal-inspired interface, it allows users to filter millions of vehicle records by make, model, geography, and technical specifications.
 
-## Key Features
+---
 
-- **Advanced Filtering**: Search across 17+ dimensions including Make, Model, Colour, Region, Fuel Type, and VIN.
-- **Precision Tools**: Filter using numeric ranges for Year, CC Rating, Power (kW), and Dimensions.
-- **High-Performance**: Utilizes SQLite for local data storage and a fast Express API.
-- **Productivity First**: 
-    - **Autocomplete**: Context-aware suggestions for search fields.
-    - **Sharable Search**: One-click "Copy Link" generates deep-linked URLs for any filtered query.
-    - **Data Export**: Export search results directly to CSV.
-    - **Query History**: Automatically remembers recent searches for quick recall.
-- **Smart UI**: Interactive result tables, sortable data, and dynamic visual breakdowns of search results (fuel types, makes, etc.).
+## 🚀 Key Features
 
-## Tech Stack
+*   **Advanced Filtering**: Search across 17+ dimensions including Make, Model, Colour, Region, Fuel Type, and VIN.
+*   **Precision Tools**: Filter using numeric ranges for Year, CC Rating, Power (kW), and Dimensions.
+*   **High-Performance**: Utilizes SQLite for local data storage and a fast Express API.
+*   **Productivity First**: 
+    *   **Autocomplete**: Context-aware suggestions for search fields.
+    *   **Sharable Search**: One-click "Copy Link" generates deep-linked URLs for any filtered query.
+    *   **Data Export**: Download your filtered datasets as CSV files.
+    *   **Query History**: Automatically remembers recent searches for quick recall.
+*   **Smart UI**: Interactive result tables, sortable data, and dynamic visual breakdowns (fuel types, makes, body types).
 
-- **Framework**: Vite + React 18 + TypeScript
-- **Styling**: Tailwind CSS + shadcn/ui
-- **Icons**: Lucide React
-- **Backend**: Node.js + Express + `better-sqlite3`
-- **State/Caching**: `@tanstack/react-query`
+## 🛠 Tech Stack
 
-## Development Setup
+*   **Frontend**: Vite, React 18, TypeScript, Tailwind CSS, shadcn/ui, Lucide React, @tanstack/react-query
+*   **Backend**: Node.js, Express, better-sqlite3
+
+## 💻 Development Setup
 
 ### Prerequisites
-- Node.js 18+
-- npm (or bun)
+*   Node.js 18+
+*   npm (or bun)
 
 ### Installation
 ```bash
@@ -50,22 +49,23 @@ npm install
    npm run dev
    ```
 
-## Deployment & Auto-Sync
+## 🚀 Deployment & Automation
 
-This project includes automated deployment capabilities for VPS environments.
+This project features automated deployment workflows for efficient updates.
 
-### Automated Sync
-A `post-commit` Git hook is configured. Every time you run `git commit`, the project automatically:
-1. Syncs your local changes to the remote production server via `rsync`.
-2. Re-installs dependencies (`npm install`).
-3. Re-builds the production bundle (`npm run build`).
+### Automated Sync (Post-Commit)
+A configured Git `post-commit` hook ensures your production environment stays in sync without manual effort. Every time you run `git commit`, the project:
+1. **Syncs**: Uses `rsync` to mirror your workspace to the VPS.
+2. **Installs**: Refreshes dependencies (`npm install`).
+3. **Builds**: Generates the production build (`npm run build`).
 
-**Server Requirements**:
-- Ensure your SSH key is added to the remote server's `authorized_keys`.
-- The `deploy-to-server.sh` script handles the transfer and build process.
+### Deployment Script
+The `deploy-to-server.sh` script manages the process. 
+*   **Prerequisites**: SSH key-based access to the production server.
+*   **Configuration**: Adjust `SERVER`, `REMOTE_DIR`, and `KEY` in the script if your path changes.
 
-## Branding
-- **Logo/Favicon**: The project uses a custom-designed "magnifier" SVG favicon, symbolizing precise vehicle lookup capabilities.
+## 🎨 Branding
+- **Logo/Favicon**: The project uses a custom-designed "magnifier" SVG favicon, representing the precision of the vehicle search tools.
 
-## License
+## 📝 License
 This project is licensed under the [MIT License](LICENSE).
