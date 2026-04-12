@@ -17,7 +17,7 @@ import {
 import { exportToCsv } from "@/lib/csvExport";
 import { Vehicle } from "@/lib/mockData";
 import { toast } from "sonner";
-import { Search, RotateCcw, Download, Link2, SearchIcon } from "lucide-react"; // Added SearchIcon, assuming it might be needed or was intended
+import { Search, RotateCcw, Download, Link2 } from "lucide-react";
 
 const filterFields: { key: keyof SearchFilters; label: string }[] = [
   { key: "MAKE", label: "Make" },
@@ -292,7 +292,7 @@ export default function Index() {
           </span>
         </div>
         <div style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", border: '1px solid #d1d5db', borderColor: '#d1d5db' }} onClick={handleClear} title="Clear filters" onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")} onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }} onClick={handleClear} title="Clear filters">
             <img src="/favicon.svg" alt="Logo" style={{ width: "100%", height: "100%" }} />
           </div>
           <div>
