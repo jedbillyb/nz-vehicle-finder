@@ -171,7 +171,7 @@ app.get("/api/breakdown", (req, res) => {
 
   // Single-pass query: compute all 5 breakdowns in one table scan
   const unions = fields.map(f =>
-    `SELECT '${f}' as grp, COALESCE("${f}",'UNKNOWN') as val, COUNT(*) as cnt FROM fleet ${where} GROUP BY "${f}" ORDER BY cnt DESC LIMIT 8`
+    `SELECT * FROM (SELECT '${f}' as grp, COALESCE("${f}",'UNKNOWN') as val, COUNT(*) as cnt FROM fleet ${where} GROUP BY "${f}" ORDER BY cnt DESC LIMIT 8)`
   );
   const sql = unions.join(" UNION ALL ");
   const allParams = Array(fields.length).fill(params).flat();
