@@ -6,6 +6,7 @@ interface ResultStatsProps {
   data: BreakdownData;
   loading: boolean;
   isInline?: boolean;
+  hideHeader?: boolean;
 }
 
 const labels: Record<string, string> = {
@@ -31,7 +32,7 @@ function SkeletonBar({ width }: { width: number }) {
   );
 }
 
-export function ResultStats({ data, loading, isInline = false }: ResultStatsProps) {
+export function ResultStats({ data, loading, isInline = false, hideHeader = false }: ResultStatsProps) {
   const [expanded, setExpanded] = useState(true);
   const hasData = Object.keys(data).length > 0;
 
@@ -45,7 +46,7 @@ export function ResultStats({ data, loading, isInline = false }: ResultStatsProp
         display: "grid",
         gridTemplateColumns: isInline ? "1fr" : "repeat(auto-fill, minmax(200px, 1fr))",
         gap: isInline ? 24 : 20,
-        borderTop: !isInline && expanded ? "1px solid #e5e7eb" : "none",
+        borderTop: !isInline && expanded && !hideHeader ? "1px solid #e5e7eb" : "none",
       }}
     >
       {loading && !hasData
@@ -84,7 +85,7 @@ export function ResultStats({ data, loading, isInline = false }: ResultStatsProp
     </div>
   );
 
-  if (isInline) {
+  if (isInline || hideHeader) {
     return (
       <>
         <style>{`
