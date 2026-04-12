@@ -1,5 +1,8 @@
 # NZ Vehicle Finder
 
+[![Live Demo](https://img.shields.io/badge/live-website-brightgreen.svg)](https://server.jedbillyb.com/nz-vehicle-finder)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/jedbillyb/nz-vehicle-finder/blob/main/LICENSE)
+
 A powerful, high-performance search application for the New Zealand Motor Vehicle Register. Designed with a clean, terminal-inspired interface, it allows users to filter millions of vehicle records by make, model, geography, and technical specifications.
 
 ## Key Features
@@ -65,4 +68,4 @@ A `post-commit` Git hook is configured. Every time you run `git commit`, the pro
 - **Logo/Favicon**: The project uses a custom-designed "magnifier" SVG favicon, symbolizing precise vehicle lookup capabilities.
 
 ## License
-MIT
+This project is licensed under the [MIT License](LICENSE).
