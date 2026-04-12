@@ -111,10 +111,11 @@ app.get("/api/suggestions/:field", (req, res) => {
   );
 
   if (activeFilters.length === 0) {
-    const all = distinctCache[field] || [];
+    const all = (distinctCache[field] || []).map(v => String(v || "").trim()).filter(Boolean);
+    const unique = Array.from(new Set(all));
     const results = q
-      ? all.filter((v) => v.toUpperCase().startsWith(q.toUpperCase())).slice(0, 100)
-      : all.slice(0, 100);
+      ? unique.filter((v) => v.toUpperCase().startsWith(q.toUpperCase())).slice(0, 100)
+      : unique.slice(0, 100);
     return res.json(results);
   }
 
@@ -139,7 +140,7 @@ app.get("/api/suggestions/:field", (req, res) => {
   const where = "WHERE " + clauses.join(" AND ");
   const sql = `SELECT DISTINCT "${field}" FROM fleet ${where} ORDER BY "${field}" LIMIT 100`;
   const rows = (getStmt(sql) || db.prepare(sql)).all(...params) as any[];
-  const result = rows.map((r: any) => r[field]).filter(Boolean);
+  const result = Array.from(new Set(rows.map((r: any) => String(r[field] || "").trim()).filter(Boolean)));
   setCachedSuggestion(cacheKey, result);
   res.json(result);
 });
