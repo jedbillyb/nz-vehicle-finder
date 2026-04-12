@@ -328,11 +328,11 @@ export default function Index() {
           </span>
         </div>
         <div style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, border: "2px solid #0ea5e9", display: "flex", alignItems: "center", justifyContent: "center", color: "#0ea5e9", fontSize: 18, flexShrink: 0, background: "#f0f9ff" }}>
-            ⊞
+          <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <img src="/favicon.svg" alt="Logo" style={{ width: "100%", height: "100%" }} />
           </div>
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: "0.02em", margin: 0 }}>NZ Fleet Search</h1>
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: "0.02em", margin: 0 }}>NZ Vehicle Finder</h1>
             <p style={{ fontSize: 11, color: "#6b7280", letterSpacing: "0.12em", margin: 0, textTransform: "uppercase" }}>
               Motor Vehicle Register · 5,879,915 records
             </p>
