@@ -22,4 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-*.dbdatabase/vehicles.db-*
+*.db
+database/vehicles.db-*
