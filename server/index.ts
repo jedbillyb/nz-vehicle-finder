@@ -168,12 +168,19 @@ app.get("/api/breakdown", (req, res) => {
 
   const where = clauses.length ? "WHERE " + clauses.join(" AND ") : "";
   const fields = ["MOTIVE_POWER", "BASIC_COLOUR", "BODY_TYPE", "TRANSMISSION_TYPE", "MAKE"];
-  const breakdown: Record<string, { value: string; count: number }[]> = {};
 
-  for (const field of fields) {
-    const sql = `SELECT "${field}" as val, COUNT(*) as count FROM fleet ${where} GROUP BY "${field}" ORDER BY count DESC LIMIT 8`;
-    const rows = db.prepare(sql).all(...params) as { val: string; count: number }[];
-    breakdown[field] = rows.map((r) => ({ value: r.val || "UNKNOWN", count: r.count }));
+  // Single-pass query: compute all 5 breakdowns in one table scan
+  const unions = fields.map(f =>
+    `SELECT '${f}' as grp, COALESCE("${f}",'UNKNOWN') as val, COUNT(*) as cnt FROM fleet ${where} GROUP BY "${f}" ORDER BY cnt DESC LIMIT 8`
+  );
+  const sql = unions.join(" UNION ALL ");
+  const allParams = Array(fields.length).fill(params).flat();
+  const rows = db!.prepare(sql).all(...allParams) as { grp: string; val: string; cnt: number }[];
+
+  const breakdown: Record<string, { value: string; count: number }[]> = {};
+  for (const row of rows) {
+    if (!breakdown[row.grp]) breakdown[row.grp] = [];
+    breakdown[row.grp].push({ value: row.val || "UNKNOWN", count: row.cnt });
   }
 
   breakdownCache.set(cacheKey, { data: breakdown, ts: Date.now() });
