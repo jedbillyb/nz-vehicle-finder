@@ -320,6 +320,27 @@ export default function Index() {
               Motor Vehicle Register · 5,879,915 records
             </p>
           </div>
+          {total === null && (
+            <div style={{ marginLeft: "auto" }}>
+              <a 
+                href="https://buymeacoffee.com/jedbillyb" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "#0ea5e9",
+                  textDecoration: "none",
+                  padding: "4px 8px",
+                  border: "1px solid #0ea5e9",
+                  borderRadius: 4,
+                  letterSpacing: "0.1em"
+                }}
+              >
+                SPONSOR
+              </a>
+            </div>
+          )}
           {total !== null && (
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
               {loading && (
@@ -331,6 +352,23 @@ export default function Index() {
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
                 <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.15em" }}>MATCHES FOUND</div>
               </div>
+              <a 
+                href="https://buymeacoffee.com/jedbillyb" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "#0ea5e9",
+                  textDecoration: "none",
+                  padding: "4px 8px",
+                  border: "1px solid #0ea5e9",
+                  borderRadius: 4,
+                  letterSpacing: "0.1em"
+                }}
+              >
+                SPONSOR
+              </a>
             </div>
           )}
         </div>
@@ -756,6 +794,27 @@ export default function Index() {
           <VehicleDetail vehicle={selectedVehicle} onClose={() => setSelectedVehicle(null)} />
         </Suspense>
       )}
+
+      {/* Footer */}
+      <footer style={{ 
+        padding: "12px 24px", 
+        background: "#ffffff", 
+        borderTop: "1px solid #e5e7eb", 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "center",
+        gap: 16,
+        fontSize: 10,
+        fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+        color: "#6b7280",
+        letterSpacing: "0.1em"
+      }}>
+        <span>DEVELOPED BY <a href="https://jedbillyb.com" target="_blank" rel="noopener noreferrer" style={{ color: "#0ea5e9", textDecoration: "none", fontWeight: 700 }}>JED BLENKHORN</a></span>
+        <span style={{ color: "#d1d5db" }}>·</span>
+        <a href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer" style={{ color: "#0ea5e9", textDecoration: "none", fontWeight: 700 }}>SUPPORT THE PROJECT</a>
+        <span style={{ color: "#d1d5db" }}>·</span>
+        <span>© {new Date().getFullYear()}</span>
+      </footer>
     </div>
   );
 }
