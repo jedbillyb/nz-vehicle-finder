@@ -5,6 +5,7 @@ import { type BreakdownData } from "@/lib/vehicleApi";
 interface ResultStatsProps {
   data: BreakdownData;
   loading: boolean;
+  isInline?: boolean;
 }
 
 const labels: Record<string, string> = {
@@ -30,11 +31,72 @@ function SkeletonBar({ width }: { width: number }) {
   );
 }
 
-export function ResultStats({ data, loading }: ResultStatsProps) {
+export function ResultStats({ data, loading, isInline = false }: ResultStatsProps) {
   const [expanded, setExpanded] = useState(true);
   const hasData = Object.keys(data).length > 0;
 
   if (!hasData && !loading) return null;
+
+  const content = (
+    <div
+      style={{
+        padding: isInline ? "0" : "16px 24px",
+        background: isInline ? "transparent" : "#ffffff",
+        display: "grid",
+        gridTemplateColumns: isInline ? "1fr" : "repeat(auto-fill, minmax(200px, 1fr))",
+        gap: isInline ? 24 : 20,
+        borderTop: !isInline && expanded ? "1px solid #e5e7eb" : "none",
+      }}
+    >
+      {loading && !hasData
+        ? SKELETON_FIELDS.map((label) => (
+            <div key={label}>
+              <div style={{ fontSize: 9, color: "#d1d5db", letterSpacing: "0.18em", marginBottom: 8, fontWeight: 700 }}>
+                {label.toUpperCase()}
+              </div>
+              {SKELETON_ROWS.map((w, i) => <SkeletonBar key={i} width={w} />)}
+            </div>
+          ))
+        : Object.entries(data).map(([key, items]) => {
+            const max = items[0]?.count || 1;
+            const total = items.reduce((sum, item) => sum + item.count, 0) || 1;
+            return (
+              <div key={key}>
+                <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", marginBottom: 8, fontWeight: 700 }}>
+                  {(labels[key] ?? key).toUpperCase()}
+                </div>
+                {items.map((d) => (
+                  <div key={d.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                    <div style={{ width: 90, fontSize: 10, color: "#4b5563", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={d.value}>
+                      {d.value}
+                    </div>
+                    <div style={{ flex: 1, height: 8, background: "#f3f4f6", position: "relative", borderRadius: 999, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
+                    </div>
+                    <div style={{ fontSize: 9, color: "#6b7280", minWidth: 45, textAlign: "right" }}>
+                      {d.count.toLocaleString()} ({((d.count / total) * 100).toFixed(1)}%)
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+    </div>
+  );
+
+  if (isInline) {
+    return (
+      <>
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+          }
+        `}</style>
+        {content}
+      </>
+    );
+  }
 
   return (
     <>
@@ -75,52 +137,7 @@ export function ResultStats({ data, loading }: ResultStatsProps) {
           </span>
         </button>
 
-        {expanded && (
-          <div
-            style={{
-              padding: "16px 24px",
-              background: "#ffffff",
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-              gap: 20,
-              borderTop: "1px solid #e5e7eb",
-            }}
-          >
-            {loading && !hasData
-              ? SKELETON_FIELDS.map((label) => (
-                  <div key={label}>
-                    <div style={{ fontSize: 9, color: "#d1d5db", letterSpacing: "0.18em", marginBottom: 8, fontWeight: 700 }}>
-                      {label.toUpperCase()}
-                    </div>
-                    {SKELETON_ROWS.map((w, i) => <SkeletonBar key={i} width={w} />)}
-                  </div>
-                ))
-              : Object.entries(data).map(([key, items]) => {
-                  const max = items[0]?.count || 1;
-                  const total = items.reduce((sum, item) => sum + item.count, 0) || 1;
-                  return (
-                    <div key={key}>
-                      <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", marginBottom: 8, fontWeight: 700 }}>
-                        {(labels[key] ?? key).toUpperCase()}
-                      </div>
-                      {items.map((d) => (
-                        <div key={d.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                          <div style={{ width: 90, fontSize: 10, color: "#4b5563", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={d.value}>
-                            {d.value}
-                          </div>
-                          <div style={{ flex: 1, height: 8, background: "#f3f4f6", position: "relative", borderRadius: 999, overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
-                          </div>
-                          <div style={{ fontSize: 9, color: "#6b7280", minWidth: 45, textAlign: "right" }}>
-                            {d.count.toLocaleString()} ({((d.count / total) * 100).toFixed(1)}%)
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
-          </div>
-        )}
+        {expanded && content}
       </div>
     </>
   );

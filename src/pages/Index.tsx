@@ -383,99 +383,113 @@ export default function Index() {
         {filtersExpanded && (
           <div style={{ padding: "16px 24px 20px", background: "#f9fafb" }}>
             <div style={{ padding: 16, borderRadius: 12, background: "#ffffff", boxShadow: "0 10px 25px -15px rgba(15,23,42,0.25)", border: "1px solid #e5e7eb" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px" }}>
-                {filterFields.map((f) => (
-                  <SearchField
-                    key={f.key}
-                    label={f.label}
-                    field={f.key as keyof Vehicle}
-                    value={(filters[f.key] as string) || ""}
-                    onChange={(v) => updateFilter(f.key, v)}
-                    filterBy={
-                      f.key === "MODEL" && filters.MAKE
-                        ? { MAKE: filters.MAKE }
-                        : f.key === "SUBMODEL" && filters.MAKE
-                        ? { MAKE: filters.MAKE, ...(filters.MODEL ? { MODEL: filters.MODEL } : {}) }
-                        : undefined
-                    }
-                  />
-                ))}
-                <RangeField label="YEAR" fieldMin="VEHICLE_YEAR_MIN" fieldMax="VEHICLE_YEAR_MAX" valueMin={filters.VEHICLE_YEAR_MIN || ""} valueMax={filters.VEHICLE_YEAR_MAX || ""} onChangeMin={(v) => updateFilter("VEHICLE_YEAR_MIN", v)} onChangeMax={(v) => updateFilter("VEHICLE_YEAR_MAX", v)} min={1950} max={2026} />
-                <RangeField label="CC RATING" fieldMin="CC_RATING_MIN" fieldMax="CC_RATING_MAX" valueMin={filters.CC_RATING_MIN || ""} valueMax={filters.CC_RATING_MAX || ""} onChangeMin={(v) => updateFilter("CC_RATING_MIN", v)} onChangeMax={(v) => updateFilter("CC_RATING_MAX", v)} min={0} max={8000} />
-                <RangeField label="POWER (KW)" fieldMin="POWER_RATING_MIN" fieldMax="POWER_RATING_MAX" valueMin={filters.POWER_RATING_MIN || ""} valueMax={filters.POWER_RATING_MAX || ""} onChangeMin={(v) => updateFilter("POWER_RATING_MIN", v)} onChangeMax={(v) => updateFilter("POWER_RATING_MAX", v)} min={0} max={500} />
-                <RangeField label="GROSS MASS" fieldMin="GROSS_VEHICLE_MASS_MIN" fieldMax="GROSS_VEHICLE_MASS_MAX" valueMin={filters.GROSS_VEHICLE_MASS_MIN || ""} valueMax={filters.GROSS_VEHICLE_MASS_MAX || ""} onChangeMin={(v) => updateFilter("GROSS_VEHICLE_MASS_MIN", v)} onChangeMax={(v) => updateFilter("GROSS_VEHICLE_MASS_MAX", v)} min={0} max={50000} />
-                <RangeField label="WIDTH (MM)" fieldMin="WIDTH_MIN" fieldMax="WIDTH_MAX" valueMin={filters.WIDTH_MIN || ""} valueMax={filters.WIDTH_MAX || ""} onChangeMin={(v) => updateFilter("WIDTH_MIN", v)} onChangeMax={(v) => updateFilter("WIDTH_MAX", v)} min={0} max={3500} />
-                <RangeField label="SEATS (MIN)" fieldMin="NUMBER_OF_SEATS_MIN" fieldMax="NUMBER_OF_SEATS_MIN" valueMin={filters.NUMBER_OF_SEATS_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_SEATS_MIN", v)} onChangeMax={() => {}} min={1} max={20} />
-                <RangeField label="AXLES (MIN)" fieldMin="NUMBER_OF_AXLES_MIN" fieldMax="NUMBER_OF_AXLES_MIN" valueMin={filters.NUMBER_OF_AXLES_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_AXLES_MIN", v)} onChangeMax={() => {}} min={1} max={9} />
-              </div>
-
-              {recentSearches.length > 0 && (
-                <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px dashed #F0F0F0", display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 9, color: "#9ca3af", letterSpacing: "0.18em", textTransform: "uppercase" }}>RECENT QUERIES</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {recentSearches.map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => {
-                          const nextFilters: SearchFilters = { ...filters };
-                          for (const key of Object.keys(nextFilters) as (keyof SearchFilters)[]) delete nextFilters[key];
-                          for (const [k, v] of Object.entries(s.params)) (nextFilters as any)[k] = v;
-                          setFilters(nextFilters);
-                        }}
-                        style={{ borderRadius: 999, border: "1px solid #D9D9D9", padding: "4px 10px", fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", background: "#F0F0F0", color: "#9ca3af", cursor: "pointer", maxWidth: "100%", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}
-                        title={s.label}
-                      >
-                        {s.label}
-                      </button>
+              <div style={{ display: "flex", gap: 32, alignItems: "flex-start" }}>
+                <div style={{ flex: "1", minWidth: 0 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px" }}>
+                    {filterFields.map((f) => (
+                      <SearchField
+                        key={f.key}
+                        label={f.label}
+                        field={f.key as keyof Vehicle}
+                        value={(filters[f.key] as string) || ""}
+                        onChange={(v) => updateFilter(f.key, v)}
+                        filterBy={
+                          f.key === "MODEL" && filters.MAKE
+                            ? { MAKE: filters.MAKE }
+                            : f.key === "SUBMODEL" && filters.MAKE
+                            ? { MAKE: filters.MAKE, ...(filters.MODEL ? { MODEL: filters.MODEL } : {}) }
+                            : undefined
+                        }
+                      />
                     ))}
+                    <RangeField label="YEAR" fieldMin="VEHICLE_YEAR_MIN" fieldMax="VEHICLE_YEAR_MAX" valueMin={filters.VEHICLE_YEAR_MIN || ""} valueMax={filters.VEHICLE_YEAR_MAX || ""} onChangeMin={(v) => updateFilter("VEHICLE_YEAR_MIN", v)} onChangeMax={(v) => updateFilter("VEHICLE_YEAR_MAX", v)} min={1950} max={2026} />
+                    <RangeField label="CC RATING" fieldMin="CC_RATING_MIN" fieldMax="CC_RATING_MAX" valueMin={filters.CC_RATING_MIN || ""} valueMax={filters.CC_RATING_MAX || ""} onChangeMin={(v) => updateFilter("CC_RATING_MIN", v)} onChangeMax={(v) => updateFilter("CC_RATING_MAX", v)} min={0} max={8000} />
+                    <RangeField label="POWER (KW)" fieldMin="POWER_RATING_MIN" fieldMax="POWER_RATING_MAX" valueMin={filters.POWER_RATING_MIN || ""} valueMax={filters.POWER_RATING_MAX || ""} onChangeMin={(v) => updateFilter("POWER_RATING_MIN", v)} onChangeMax={(v) => updateFilter("POWER_RATING_MAX", v)} min={0} max={500} />
+                    <RangeField label="GROSS MASS" fieldMin="GROSS_VEHICLE_MASS_MIN" fieldMax="GROSS_VEHICLE_MASS_MAX" valueMin={filters.GROSS_VEHICLE_MASS_MIN || ""} valueMax={filters.GROSS_VEHICLE_MASS_MAX || ""} onChangeMin={(v) => updateFilter("GROSS_VEHICLE_MASS_MIN", v)} onChangeMax={(v) => updateFilter("GROSS_VEHICLE_MASS_MAX", v)} min={0} max={50000} />
+                    <RangeField label="WIDTH (MM)" fieldMin="WIDTH_MIN" fieldMax="WIDTH_MAX" valueMin={filters.WIDTH_MIN || ""} valueMax={filters.WIDTH_MAX || ""} onChangeMin={(v) => updateFilter("WIDTH_MIN", v)} onChangeMax={(v) => updateFilter("WIDTH_MAX", v)} min={0} max={3500} />
+                    <RangeField label="SEATS (MIN)" fieldMin="NUMBER_OF_SEATS_MIN" fieldMax="NUMBER_OF_SEATS_MIN" valueMin={filters.NUMBER_OF_SEATS_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_SEATS_MIN", v)} onChangeMax={() => {}} min={1} max={20} />
+                    <RangeField label="AXLES (MIN)" fieldMin="NUMBER_OF_AXLES_MIN" fieldMax="NUMBER_OF_AXLES_MIN" valueMin={filters.NUMBER_OF_AXLES_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_AXLES_MIN", v)} onChangeMax={() => {}} min={1} max={9} />
+                  </div>
+
+                  {recentSearches.length > 0 && (
+                    <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px dashed #F0F0F0", display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ fontSize: 9, color: "#9ca3af", letterSpacing: "0.18em", textTransform: "uppercase" }}>RECENT QUERIES</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {recentSearches.map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => {
+                              const nextFilters: SearchFilters = { ...filters };
+                              for (const key of Object.keys(nextFilters) as (keyof SearchFilters)[]) delete nextFilters[key];
+                              for (const [k, v] of Object.entries(s.params)) (nextFilters as any)[k] = v;
+                              setFilters(nextFilters);
+                            }}
+                            style={{ borderRadius: 999, border: "1px solid #D9D9D9", padding: "4px 10px", fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", background: "#F0F0F0", color: "#9ca3af", cursor: "pointer", maxWidth: "100%", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}
+                            title={s.label}
+                          >
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 20, paddingTop: 16, borderTop: "1px solid #e5e7eb" }}>
+                    <button onClick={handleClear}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.12em" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
+                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
+                    >
+                      <RotateCcw size={11} />
+                      CLEAR
+                    </button>
+                    <button
+                      onClick={() => {
+                        const hasFilters = Object.values(filters).some((v) => v && v.trim());
+                        if (!hasFilters) { toast("No filters set", { description: "Enter at least one parameter before running a search." }); return; }
+                        setPage(1);
+                        doSearch(filters, 1);
+                      }}
+                      disabled={loading}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 18px", background: loading ? "#bae6fd" : "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, cursor: loading ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", fontWeight: 700, textTransform: "uppercase" }}
+                    >
+                      <Search size={11} />
+                      {loading ? "SEARCHING..." : "RUN SEARCH"}
+                    </button>
+                    {results.length > 0 && (
+                      <button onClick={() => exportToCsv(results)}
+                        style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
+                        onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
+                      >
+                        <Download size={11} />
+                        EXPORT CSV
+                      </button>
+                    )}
+                    {total !== null && (
+                      <button onClick={handleCopyLink}
+                        style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: copiedLink ? "#dcfce7" : "transparent", color: copiedLink ? "#15803d" : "#4b5563", border: copiedLink ? "1px solid #22c55e" : "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
+                        onMouseLeave={(e) => (e.currentTarget.style.borderColor = copiedLink ? "#22c55e" : "#d1d5db")}
+                      >
+                        <Link2 size={11} />
+                        {copiedLink ? "LINK COPIED" : "COPY LINK"}
+                      </button>
+                    )}
+                    {loading && <span style={{ fontSize: 10, color: "#0ea5e9", letterSpacing: "0.15em", opacity: 0.8 }}>▋ QUERYING DATABASE...</span>}
                   </div>
                 </div>
-              )}
 
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 20, paddingTop: 16, borderTop: "1px solid #e5e7eb" }}>
-                <button onClick={handleClear}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.12em" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
-                >
-                  <RotateCcw size={11} />
-                  CLEAR
-                </button>
-                <button
-                  onClick={() => {
-                    const hasFilters = Object.values(filters).some((v) => v && v.trim());
-                    if (!hasFilters) { toast("No filters set", { description: "Enter at least one parameter before running a search." }); return; }
-                    setPage(1);
-                    doSearch(filters, 1);
-                  }}
-                  disabled={loading}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 18px", background: loading ? "#bae6fd" : "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, cursor: loading ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", fontWeight: 700, textTransform: "uppercase" }}
-                >
-                  <Search size={11} />
-                  {loading ? "SEARCHING..." : "RUN SEARCH"}
-                </button>
-                {results.length > 0 && (
-                  <button onClick={() => exportToCsv(results)}
-                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
-                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
-                  >
-                    <Download size={11} />
-                    EXPORT CSV
-                  </button>
+                {(total !== null || breakdownLoading) && (
+                  <div style={{ flex: "0 0 32%", borderLeft: "1px solid #f3f4f6", paddingLeft: 24, overflowY: "auto", maxHeight: 450 }}>
+                    <div style={{ fontSize: 10, color: "#0f172a", fontWeight: 700, letterSpacing: "0.2em", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                      <Search size={11} color="#0ea5e9" />
+                      RESULT BREAKDOWN
+                    </div>
+                    <ResultStats data={breakdown} loading={breakdownLoading} isInline />
+                  </div>
                 )}
-                {total !== null && (
-                  <button onClick={handleCopyLink}
-                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: copiedLink ? "#dcfce7" : "transparent", color: copiedLink ? "#15803d" : "#4b5563", border: copiedLink ? "1px solid #22c55e" : "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
-                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = copiedLink ? "#22c55e" : "#d1d5db")}
-                  >
-                    <Link2 size={11} />
-                    {copiedLink ? "LINK COPIED" : "COPY LINK"}
-                  </button>
-                )}
-                {loading && <span style={{ fontSize: 10, color: "#0ea5e9", letterSpacing: "0.15em", opacity: 0.8 }}>▋ QUERYING DATABASE...</span>}
               </div>
 
               {errorMessage && (
@@ -491,8 +505,6 @@ export default function Index() {
 
       {total !== null && (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#f3f4f6" }}>
-          <ResultStats data={breakdown} loading={breakdownLoading} />
-
           <div style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em" }}>
               SHOWING <span style={{ color: "#111827" }}>{sortedResults.length.toLocaleString()}</span> OF{" "}
