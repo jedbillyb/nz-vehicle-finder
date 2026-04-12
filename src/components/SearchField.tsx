@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { getSuggestionsLocal } from "@/lib/vehicleApi";
+import { getSuggestionsLocal, getSuggestions, getModelsForMake } from "@/lib/vehicleApi";
 import { Vehicle } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
-import { getModelsForMake } from "@/lib/vehicleApi";
+import { useQuery } from "@tanstack/react-query";
 
 interface SearchFieldProps {
   label: string;
@@ -16,14 +16,37 @@ interface SearchFieldProps {
 export function SearchField({ label, field, value, onChange, filterBy }: SearchFieldProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [debouncedValue, setDebouncedValue] = useState(value);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedValue(value), 150);
+    return () => clearTimeout(t);
+  }, [value]);
+
+  const { data: remoteSuggestions = [] } = useQuery({
+    queryKey: ["suggestions", field, debouncedValue, filterBy],
+    queryFn: ({ signal }) => getSuggestions(field, debouncedValue, filterBy, signal),
+    enabled: showSuggestions && (debouncedValue.length > 0 || !!filterBy),
+    staleTime: 60 * 1000,
+  });
+
   const suggestions = useMemo(() => {
-    if (field === "MODEL" && filterBy?.MAKE) {
-      return getModelsForMake(filterBy.MAKE as string, value);
+    // If we have remote suggestions, use them as they are most accurate (filtered by other fields)
+    if (remoteSuggestions.length > 0) {
+      return remoteSuggestions.slice(0, 10);
     }
-    return getSuggestionsLocal(field as string, value);
-  }, [field, value, filterBy]);
+    
+    // Fallback/Initial suggestions while remote is loading or if it returns nothing
+    // We prioritize model-specific local search if a make is selected
+    if (field === "MODEL" && filterBy?.MAKE) {
+      const models = getModelsForMake(filterBy.MAKE as string, value);
+      if (models.length > 0) return models;
+    }
+
+    // General local fallback (e.g. from the big autocomplete.json)
+    return getSuggestionsLocal(field as string, value, filterBy);
+  }, [field, value, filterBy, remoteSuggestions]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

@@ -90,10 +90,11 @@ export async function preloadModelsForMake(make: string) {
 }
 
 export function getModelsForMake(make: string, prefix: string): string[] {
-  const vals = makeModelCache[make] || suggestionCache["MODEL"] || [];
+  const vals = makeModelCache[make];
+  if (!vals) return []; // Don't fall back to all models if we have a specific make
   const p = prefix.trim().toUpperCase();
-  if (!p) return vals.slice(0, 8);
-  return vals.filter(v => v.toUpperCase().startsWith(p)).slice(0, 8);
+  if (!p) return vals.slice(0, 10);
+  return vals.filter(v => v.toUpperCase().startsWith(p)).slice(0, 10);
 }
 
 let suggestionCache: Record<string, string[]> = {};
@@ -115,12 +116,15 @@ export async function preloadSuggestions(_field?: string) {
 export function getSuggestionsLocal(
   field: string, 
   prefix: string,
-  filterBy?: Partial<Record<string, string>>
+  _filterBy?: Partial<Record<string, string>>
 ): string[] {
+  // We use the local cache (loaded from autocomplete.json) as a fast fallback.
+  // It doesn't handle complex cross-filtering (like only models for a make),
+  // which is why it's used as a second priority after remote/specialized local calls.
   const vals = suggestionCache[field] || [];
-  if (!prefix.trim() && !filterBy) return vals.slice(0, 8);
-  const p = prefix.toUpperCase();
-  return vals.filter(v => !p || v.toUpperCase().startsWith(p)).slice(0, 8);
+  const p = prefix.trim().toUpperCase();
+  if (!p) return vals.slice(0, 10);
+  return vals.filter(v => v.toUpperCase().startsWith(p)).slice(0, 10);
 }
 
 export async function getSuggestions(
