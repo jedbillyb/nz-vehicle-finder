@@ -80,7 +80,7 @@ export function ResultStats({ filters }: ResultStatsProps) {
         </span>
       </button>
 
-      {expanded && (
+      {expanded && hasData && (
         <div
           style={{
             padding: "16px 24px",
