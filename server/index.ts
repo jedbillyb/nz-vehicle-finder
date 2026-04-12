@@ -15,26 +15,43 @@ app.use(express.static(path.join(__dirname, "public")));
 const dbPath = path.resolve(__dirname, "../database/vehicles.db");
 const autocompletePath = path.resolve(__dirname, "../public/autocomplete.json");
 
+// --- Database (must be declared before anything uses it) ---
 let db: InstanceType<typeof Database> | null = null;
 try {
   db = new Database(dbPath, { readonly: true });
   db.pragma("journal_mode = WAL");
   db.pragma("cache_size = -16000");
   db.pragma("temp_store = MEMORY");
-  db.pragma("mmap_size = 268435456"); // 256MB mmap — lets OS handle caching without Node RAM
+  db.pragma("mmap_size = 268435456");
   console.log("Database opened:", dbPath);
 } catch (err) {
   console.error("Database failed to open:", (err as Error).message);
   console.error("Expected database at:", dbPath);
-  console.error("Search and filtered suggestions will not work until the database is available.");
 }
 
+// --- Global breakdown: precomputed at startup from breakdown_cache table ---
+let globalBreakdown: Record<string, { value: string; count: number }[]> = {};
+if (db) {
+  try {
+    const rows = db
+      .prepare(`SELECT field, value, count FROM breakdown_cache ORDER BY count DESC`)
+      .all() as { field: string; value: string; count: number }[];
+    for (const row of rows) {
+      if (!globalBreakdown[row.field]) globalBreakdown[row.field] = [];
+      globalBreakdown[row.field].push({ value: row.value, count: row.count });
+    }
+    console.log("Global breakdown loaded from breakdown_cache table");
+  } catch {
+    console.warn("breakdown_cache table not found — run build-breakdown-cache.ts to create it");
+  }
+}
+
+// --- Autocomplete ---
 const distinctCache: Record<string, string[]> = (() => {
   try {
     return JSON.parse(readFileSync(autocompletePath, "utf-8"));
   } catch (err) {
     console.error("Autocomplete file failed to load:", (err as Error).message);
-    console.error("Expected at:", autocompletePath);
     return {};
   }
 })();
@@ -47,7 +64,6 @@ const ALLOWED_FIELDS = new Set([
   "VIN11",
 ]);
 
-// Prepared statement cache — avoid re-parsing SQL on every request
 const stmtCache = new Map<string, any>();
 function getStmt(sql: string) {
   if (!db) return null;
@@ -59,7 +75,6 @@ function getStmt(sql: string) {
   return stmt;
 }
 
-// In-memory suggestion response cache (TTL: 5 min, max 500 entries)
 const suggestionResponseCache = new Map<string, { data: string[]; ts: number }>();
 const SUGGESTION_TTL = 5 * 60 * 1000;
 const SUGGESTION_CACHE_MAX = 500;
@@ -76,14 +91,12 @@ function getCachedSuggestion(key: string): string[] | null {
 
 function setCachedSuggestion(key: string, data: string[]) {
   if (suggestionResponseCache.size >= SUGGESTION_CACHE_MAX) {
-    // Evict oldest
     const firstKey = suggestionResponseCache.keys().next().value;
     if (firstKey) suggestionResponseCache.delete(firstKey);
   }
   suggestionResponseCache.set(key, { data, ts: Date.now() });
 }
 
-// Result columns for vehicles endpoint — only send what the frontend needs
 const RESULT_COLUMNS = [
   "MAKE", "MODEL", "SUBMODEL", "VEHICLE_YEAR", "BASIC_COLOUR", "BODY_TYPE",
   "MOTIVE_POWER", "TRANSMISSION_TYPE", "TLA", "POSTCODE", "VIN11", "CHASSIS7",
@@ -97,15 +110,16 @@ const RESULT_COLUMNS = [
 
 console.log("API listening on http://localhost:3001");
 
+// --- Routes ---
+
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, db: !!db });
 });
 
 app.get("/api/suggestions/:field", (req, res) => {
   const { field } = req.params;
-  if (!ALLOWED_FIELDS.has(field)) {
-    return res.status(400).json([]);
-  }
+  if (!ALLOWED_FIELDS.has(field)) return res.status(400).json([]);
+
   const { q = "", ...filterBy } = req.query as Record<string, string>;
   const activeFilters = Object.entries(filterBy).filter(
     ([k, v]) => v && v.trim() !== "" && ALLOWED_FIELDS.has(k)
@@ -120,11 +134,8 @@ app.get("/api/suggestions/:field", (req, res) => {
     return res.json(results);
   }
 
-  if (!db) {
-    return res.status(503).json([]);
-  }
+  if (!db) return res.status(503).json([]);
 
-  // Check response cache
   const cacheKey = `${field}|${q}|${JSON.stringify(activeFilters)}`;
   const cached = getCachedSuggestion(cacheKey);
   if (cached) return res.json(cached);
@@ -147,35 +158,44 @@ app.get("/api/suggestions/:field", (req, res) => {
 });
 
 const breakdownCache = new Map<string, { data: any; ts: number }>();
-const BREAKDOWN_TTL = 60 * 1000; // 1 min
+const BREAKDOWN_TTL = 5 * 60 * 1000; // 5 min
 
 app.get("/api/breakdown", (req, res) => {
   if (!db) return res.status(503).json({});
+
   const filters = req.query as Record<string, string>;
-  const activeFilters = Object.entries(filters).filter(([k, v]) => v && v.trim() && ALLOWED_FIELDS.has(k));
-  
+  const activeFilters = Object.entries(filters).filter(
+    ([k, v]) => v && v.trim() && ALLOWED_FIELDS.has(k)
+  );
+
+  // No filters → return instant precomputed result
+  if (activeFilters.length === 0) return res.json(globalBreakdown);
+
+  // Check per-filter cache
   const cacheKey = JSON.stringify(activeFilters);
   const cached = breakdownCache.get(cacheKey);
   if (cached && Date.now() - cached.ts < BREAKDOWN_TTL) return res.json(cached.data);
 
   const params: any[] = [];
   const clauses: string[] = [];
-
   for (const [key, value] of activeFilters) {
-    clauses.push(`"${key}" LIKE ? COLLATE NOCASE`);
-    params.push(`%${value}%`);
+    clauses.push(`UPPER("${key}") = UPPER(?)`);
+    params.push(value);
   }
 
-  const where = clauses.length ? "WHERE " + clauses.join(" AND ") : "";
+  const where = "WHERE " + clauses.join(" AND ");
   const fields = ["MOTIVE_POWER", "BASIC_COLOUR", "BODY_TYPE", "TRANSMISSION_TYPE", "MAKE"];
 
-  // Single-pass query: compute all 5 breakdowns in one table scan
-  const unions = fields.map(f =>
-    `SELECT * FROM (SELECT '${f}' as grp, COALESCE("${f}",'UNKNOWN') as val, COUNT(*) as cnt FROM fleet ${where} GROUP BY "${f}" ORDER BY cnt DESC LIMIT 8)`
-  );
-  const sql = unions.join(" UNION ALL ");
+  const unions = fields
+    .map(f =>
+      `SELECT * FROM (SELECT '${f}' as grp, COALESCE("${f}",'UNKNOWN') as val, COUNT(*) as cnt FROM fleet ${where} GROUP BY "${f}" ORDER BY cnt DESC LIMIT 8)`
+    )
+    .join(" UNION ALL ");
+
   const allParams = Array(fields.length).fill(params).flat();
-  const rows = (getStmt(sql) || db!.prepare(sql)).all(...allParams) as { grp: string; val: string; cnt: number }[];
+  const rows = (getStmt(unions) || db!.prepare(unions)).all(...allParams) as {
+    grp: string; val: string; cnt: number;
+  }[];
 
   const breakdown: Record<string, { value: string; count: number }[]> = {};
   for (const row of rows) {
@@ -189,14 +209,9 @@ app.get("/api/breakdown", (req, res) => {
 
 app.get("/api/vehicles", (req, res) => {
   if (!db) {
-    return res.status(503).json({
-      error: "Database not available",
-      vehicles: [],
-      total: 0,
-      page: 1,
-      pages: 0,
-    });
+    return res.status(503).json({ error: "Database not available", vehicles: [], total: 0, page: 1, pages: 0 });
   }
+
   const { page = "1", ...filters } = req.query as Record<string, string>;
   const limit = 50;
   const offset = (parseInt(page) - 1) * limit;
@@ -214,8 +229,8 @@ app.get("/api/vehicles", (req, res) => {
       clauses.push(`CAST("${col}" AS INTEGER) <= ?`);
       params.push(parseInt(value));
     } else {
-      clauses.push(`"${key}" LIKE ? COLLATE NOCASE`);
-      params.push(`%${value}%`);
+      clauses.push(`UPPER("${key}") = UPPER(?)`);
+      params.push(value);
     }
   }
 
