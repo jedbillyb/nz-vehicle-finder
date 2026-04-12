@@ -12,7 +12,7 @@ app.use(cors());
 app.use(compression());
 app.use(express.static(path.join(__dirname, "public")));
 
-const dbPath = path.resolve(__dirname, "../../database/vehicles.db");
+const dbPath = path.resolve(__dirname, "../database/vehicles.db");
 const autocompletePath = path.resolve(__dirname, "../public/autocomplete.json");
 
 let db: InstanceType<typeof Database> | null = null;
