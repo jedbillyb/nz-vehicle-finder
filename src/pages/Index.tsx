@@ -327,17 +327,23 @@ export default function Index() {
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: 700,
-                  color: "#0ea5e9",
+                  color: "#ef4444",
                   textDecoration: "none",
-                  padding: "4px 8px",
-                  border: "1px solid #0ea5e9",
-                  borderRadius: 4,
-                  letterSpacing: "0.1em"
+                  padding: "6px 12px",
+                  border: "1px solid #ef4444",
+                  borderRadius: 6,
+                  letterSpacing: "0.1em",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  lineHeight: 1.2
                 }}
               >
-                SPONSOR
+                <span>SPONSOR</span>
+                <span style={{ fontSize: 8, marginTop: 2 }}>THIS PROJECT</span>
               </a>
             </div>
           )}
@@ -357,17 +363,23 @@ export default function Index() {
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: 700,
-                  color: "#0ea5e9",
+                  color: "#ef4444",
                   textDecoration: "none",
-                  padding: "4px 8px",
-                  border: "1px solid #0ea5e9",
-                  borderRadius: 4,
-                  letterSpacing: "0.1em"
+                  padding: "6px 12px",
+                  border: "1px solid #ef4444",
+                  borderRadius: 6,
+                  letterSpacing: "0.1em",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  lineHeight: 1.2
                 }}
               >
-                SPONSOR
+                <span>SPONSOR</span>
+                <span style={{ fontSize: 8, marginTop: 2 }}>THIS PROJECT</span>
               </a>
             </div>
           )}
@@ -660,7 +672,7 @@ export default function Index() {
             background: "#f3f4f6",
           }}
         >
-          <ResultStats vehicles={results} />
+          <ResultStats filters={filters} />
 
           <div
             style={{
@@ -744,6 +756,7 @@ export default function Index() {
                     <tr
                       key={i}
                       onClick={() => setSelectedVehicle(v)}
+                      className="hover:bg-sky-50 transition-colors"
                       style={{
                         cursor: "pointer",
                         borderBottom: "1px solid #e5e7eb",
@@ -811,7 +824,7 @@ export default function Index() {
       }}>
         <span>DEVELOPED BY <a href="https://jedbillyb.com" target="_blank" rel="noopener noreferrer" style={{ color: "#0ea5e9", textDecoration: "none", fontWeight: 700 }}>JED BLENKHORN</a></span>
         <span style={{ color: "#d1d5db" }}>·</span>
-        <a href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer" style={{ color: "#0ea5e9", textDecoration: "none", fontWeight: 700 }}>SUPPORT THE PROJECT</a>
+        <a href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer" style={{ color: "#ef4444", textDecoration: "none", fontWeight: 700 }}>SPONSOR THIS PROJECT</a>
         <span style={{ color: "#d1d5db" }}>·</span>
         <span>© {new Date().getFullYear()}</span>
       </footer>
