@@ -286,13 +286,12 @@ export default function Index() {
   return (
     <div
       style={{
-        height: "100vh",
+        minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
         background: "#f3f4f6",
         fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         color: "#111827",
-        overflow: "hidden",
       }}
     >
       {apiReachable === false && (
