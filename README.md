@@ -4,7 +4,7 @@ A powerful, high-performance search application for the New Zealand Motor Vehicl
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 *   **Advanced Filtering**: Search across 17+ dimensions including Make, Model, Colour, Region, Fuel Type, and VIN.
 *   **Precision Tools**: Filter using numeric ranges for Year, CC Rating, Power (kW), and Dimensions.
@@ -16,16 +16,16 @@ A powerful, high-performance search application for the New Zealand Motor Vehicl
     *   **Query History**: Automatically remembers recent searches for quick recall.
 *   **Smart UI**: Interactive result tables, sortable data, and dynamic visual breakdowns (fuel types, makes, body types).
 
-## 🌍 Live Deployment
+## Live Deployment
 You can access the live version of this project at: 
 [https://server.jedbillyb.com/nz-vehicle-finder](https://server.jedbillyb.com/nz-vehicle-finder)
 
-## 🛠 Tech Stack
+## Tech Stack
 
 *   **Frontend**: Vite, React 18, TypeScript, Tailwind CSS, shadcn/ui, Lucide React, @tanstack/react-query
 *   **Backend**: Node.js, Express, better-sqlite3
 
-## 💻 Development Setup
+## Development Setup
 
 ### Prerequisites
 *   Node.js 18+
@@ -50,7 +50,7 @@ npm install
    npm run dev
    ```
 
-## 🚀 Deployment & Automation
+## Deployment & Automation
 
 This project features automated deployment workflows for efficient updates.
 
@@ -65,8 +65,12 @@ The `deploy-to-server.sh` script manages the process.
 *   **Prerequisites**: SSH key-based access to the production server.
 *   **Configuration**: Adjust `SERVER`, `REMOTE_DIR`, and `KEY` in the script if your path changes.
 
-## 🎨 Branding
+## Branding
 - **Logo/Favicon**: The project uses a custom-designed "magnifier" SVG favicon, representing the precision of the vehicle search tools.
 
-## 📝 License
+## License
 This project is licensed under the [MIT License](LICENSE).
+
+---
+
+Made with ❤️ by [jedbillyb](https://github.com/jedbillyb)
