@@ -1,8 +1,5 @@
 # NZ Vehicle Finder
 
-[![Live Demo](https://img.shields.io/badge/live-website-brightgreen.svg)](https://server.jedbillyb.com/nz-vehicle-finder)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/jedbillyb/nz-vehicle-finder/blob/main/LICENSE)
-
 A powerful, high-performance search application for the New Zealand Motor Vehicle Register. Designed with a clean, terminal-inspired interface, it allows users to filter millions of vehicle records by make, model, geography, and technical specifications.
 
 ---
@@ -18,6 +15,10 @@ A powerful, high-performance search application for the New Zealand Motor Vehicl
     *   **Data Export**: Download your filtered datasets as CSV files.
     *   **Query History**: Automatically remembers recent searches for quick recall.
 *   **Smart UI**: Interactive result tables, sortable data, and dynamic visual breakdowns (fuel types, makes, body types).
+
+## 🌍 Live Deployment
+You can access the live version of this project at: 
+[https://server.jedbillyb.com/nz-vehicle-finder](https://server.jedbillyb.com/nz-vehicle-finder)
 
 ## 🛠 Tech Stack
 
