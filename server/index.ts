@@ -42,7 +42,7 @@ if (db) {
     }
     console.log("Global breakdown loaded from breakdown_cache table");
   } catch {
-    console.warn("breakdown_cache table not found — run build-breakdown-cache.ts to create it");
+    console.warn("breakdown_cache table not found - run build-breakdown-cache.ts to create it");
   }
 }
 

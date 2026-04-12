@@ -113,7 +113,7 @@ export async function preloadModelsForMake(make: string) {
     const data = await res.json();
     makeModelCache[make] = data;
   } catch {
-    // API unavailable — fall through to static data
+    // API unavailable - fall through to static data
   }
 }
 
