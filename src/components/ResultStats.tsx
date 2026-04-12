@@ -13,7 +13,7 @@ export function ResultStats({ filters }: ResultStatsProps) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchBreakdown = async () => {
+    const timer = setTimeout(async () => {
       setLoading(true);
       try {
         const params = new URLSearchParams(filters as Record<string, string>);
@@ -24,8 +24,8 @@ export function ResultStats({ filters }: ResultStatsProps) {
       } finally {
         setLoading(false);
       }
-    };
-    fetchBreakdown();
+    }, 600);
+    return () => clearTimeout(timer);
   }, [filters]);
 
   const labels: Record<string, string> = {
