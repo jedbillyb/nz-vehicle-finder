@@ -5,11 +5,11 @@ SERVER="ubuntu@server.jedbillyb.com"
 REMOTE_DIR="nz-vehicle-finder"
 KEY="~/downloads/Other/ssh-key-2026-03-14.key"
 
-echo "🚀 Syncing with server..."
+echo "Syncing with server..."
 # Sync files (excluding node_modules and build artifacts)
 rsync -avz -e "ssh -i ~/downloads/Other/ssh-key-2026-03-14.key" --exclude 'node_modules' --exclude 'dist' --exclude '.git' ./ $SERVER:$REMOTE_DIR/
 
-echo "🛠️ Restarting app on server..."
+echo "Restarting app on server..."
 # Example: If running via PM2 or a custom start script, adjust this command
 ssh -i $KEY $SERVER "cd $REMOTE_DIR && npm install && npm run build"
-echo "✅ Deployment complete!"
+echo "Deployment complete!"
