@@ -160,7 +160,7 @@ export default function Index() {
       }
 
       try {
-        // Results load first — breakdown fires after
+        // Results load first - breakdown fires after
         const data = await searchVehicles(f, p);
         setResults(data.vehicles);
         setTotal(data.total);
@@ -539,7 +539,7 @@ export default function Index() {
                         <td key={col.key}
                           style={{ padding: "7px 16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: ci === 0 ? "#111827" : ci === 8 ? "#9ca3af" : "#4b5563", fontWeight: ci === 0 ? 600 : 400, fontSize: 11 }}
                         >
-                          {v[col.key] || <span style={{ color: "#d1d5db" }}>—</span>}
+                          {v[col.key] || <span style={{ color: "#d1d5db" }}>-</span>}
                         </td>
                       ))}
                     </tr>
