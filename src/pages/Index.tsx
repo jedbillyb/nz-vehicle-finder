@@ -4,12 +4,20 @@ import { SearchField } from "@/components/SearchField";
 import { RangeField } from "@/components/RangeField";
 import { Pagination } from "@/components/Pagination";
 import { ResultStats } from "@/components/ResultStats";
-import { searchVehicles, SearchFilters, checkHealth, API_BASE, preloadModelsForMake } from "@/lib/vehicleApi";
+import {
+  API_BASE,
+  checkHealth,
+  fetchBreakdown,
+  preloadModelsForMake,
+  preloadSuggestions,
+  type BreakdownData,
+  type SearchFilters,
+  searchVehicles,
+} from "@/lib/vehicleApi";
 import { exportToCsv } from "@/lib/csvExport";
 import { Vehicle } from "@/lib/mockData";
 import { toast } from "sonner";
 import { Search, RotateCcw, ChevronUp, ChevronDown, Download, Link2 } from "lucide-react";
-import { preloadSuggestions } from "@/lib/vehicleApi";
 
 const filterFields: { key: keyof SearchFilters; label: string }[] = [
   { key: "MAKE", label: "Make" },
@@ -96,8 +104,11 @@ export default function Index() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [recentSearches, setRecentSearches] = useState<SavedSearch[]>([]);
   const initialLoad = useRef(true);
+  const breakdownAbortRef = useRef<AbortController | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [apiReachable, setApiReachable] = useState<boolean | null>(null);
+  const [breakdown, setBreakdown] = useState<BreakdownData>({});
+  const [breakdownLoading, setBreakdownLoading] = useState(false);
 
   useEffect(() => {
     preloadSuggestions();
@@ -119,6 +130,10 @@ export default function Index() {
     checkHealth()
       .then(({ ok }) => setApiReachable(ok))
       .catch(() => setApiReachable(false));
+  }, []);
+
+  useEffect(() => {
+    return () => breakdownAbortRef.current?.abort();
   }, []);
 
   const persistRecentSearch = useCallback(
@@ -147,6 +162,32 @@ export default function Index() {
     async (f: SearchFilters, p: number) => {
       setLoading(true);
       setErrorMessage(null);
+
+      if (p === 1) {
+        breakdownAbortRef.current?.abort();
+        const controller = new AbortController();
+        breakdownAbortRef.current = controller;
+        setBreakdown({});
+        setBreakdownLoading(true);
+
+        fetchBreakdown(f, controller.signal)
+          .then((nextBreakdown) => {
+            if (breakdownAbortRef.current === controller) {
+              setBreakdown(nextBreakdown);
+            }
+          })
+          .catch((err) => {
+            if (err instanceof Error && err.name === "AbortError") return;
+            console.error("Failed to fetch breakdown:", err);
+          })
+          .finally(() => {
+            if (breakdownAbortRef.current === controller) {
+              breakdownAbortRef.current = null;
+              setBreakdownLoading(false);
+            }
+          });
+      }
+
       try {
         const data = await searchVehicles(f, p);
         setResults(data.vehicles);
@@ -208,6 +249,10 @@ export default function Index() {
   };
 
   const handleClear = () => {
+    breakdownAbortRef.current?.abort();
+    breakdownAbortRef.current = null;
+    setBreakdown({});
+    setBreakdownLoading(false);
     setFilters(emptyFilters());
     setResults([]);
     setTotal(null);
@@ -672,7 +717,7 @@ export default function Index() {
             background: "#f3f4f6",
           }}
         >
-          <ResultStats filters={filters} />
+          <ResultStats data={breakdown} loading={breakdownLoading} />
 
           <div
             style={{

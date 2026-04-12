@@ -32,6 +32,8 @@ export interface SearchFilters {
   POWER_RATING_MAX?: string;
 }
 
+export type BreakdownData = Record<string, { value: string; count: number }[]>;
+
 export const API_BASE =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
 
@@ -39,6 +41,10 @@ async function fetchApi(path: string, options?: RequestInit): Promise<Response> 
   try {
     return await fetch(`${API_BASE}${path}`, options);
   } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw err;
+    }
+
     const msg =
       err instanceof TypeError && (err as TypeError).message?.includes("fetch")
         ? `Cannot reach the API at ${API_BASE}. Start the backend with: npm run server (in another terminal).`
@@ -72,6 +78,27 @@ export async function searchVehicles(
   }
   if (!res.ok) {
     throw new Error(`Search failed with status ${res.status}`);
+  }
+
+  return res.json();
+}
+
+export async function fetchBreakdown(
+  filters: SearchFilters,
+  signal?: AbortSignal
+): Promise<BreakdownData> {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(filters)) {
+    if (v && v.trim()) params.set(k, v.trim());
+  }
+
+  const res = await fetchApi(`/api/breakdown?${params}`, { signal });
+
+  if (res.status === 503) {
+    return {};
+  }
+  if (!res.ok) {
+    throw new Error(`Breakdown failed with status ${res.status}`);
   }
 
   return res.json();
