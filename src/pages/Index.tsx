@@ -17,7 +17,7 @@ import {
 import { exportToCsv } from "@/lib/csvExport";
 import { Vehicle } from "@/lib/mockData";
 import { toast } from "sonner";
-import { Search, RotateCcw, ChevronUp, ChevronDown, Download, Link2 } from "lucide-react";
+import { Search, RotateCcw, Download, Link2 } from "lucide-react";
 
 const filterFields: { key: keyof SearchFilters; label: string }[] = [
   { key: "MAKE", label: "Make" },
@@ -54,14 +54,6 @@ const resultColumns: { key: keyof Vehicle; label: string }[] = [
 type SortConfig = { key: keyof Vehicle; dir: "asc" | "desc" } | null;
 
 const emptyFilters = (): SearchFilters => ({});
-
-type SavedSearch = {
-  id: string;
-  label: string;
-  params: Record<string, string>;
-};
-
-const RECENT_SEARCHES_KEY = "nz-fleet-search:recent";
 
 const VehicleDetail = lazy(() =>
   import("@/components/VehicleDetail").then((m) => ({ default: m.VehicleDetail }))
@@ -100,7 +92,6 @@ export default function Index() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [sort, setSort] = useState<SortConfig>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [recentSearches, setRecentSearches] = useState<SavedSearch[]>([]);
   const initialLoad = useRef(true);
   const breakdownAbortRef = useRef<AbortController | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -132,19 +123,6 @@ export default function Index() {
     return () => breakdownAbortRef.current?.abort();
   }, []);
 
-  const persistRecentSearch = useCallback((currentFilters: SearchFilters) => {
-    const params = filtersToParams(currentFilters);
-    if (Object.keys(params).length === 0) return;
-    const label = Object.entries(params).slice(0, 3).map(([k, v]) => `${k}=${v}`).join(" · ");
-    const id = JSON.stringify(params);
-    setRecentSearches((prev) => {
-      const existing = prev.filter((s) => s.id !== id);
-      const next: SavedSearch[] = [{ id, label, params }, ...existing].slice(0, 5);
-      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
-      return next;
-    });
-  }, []);
-
   const doSearch = useCallback(
     async (f: SearchFilters, p: number) => {
       setLoading(true);
@@ -168,8 +146,6 @@ export default function Index() {
 
         if (data.total === 0) {
           toast("No records found", { description: "Try broadening your search filters." });
-        } else {
-          persistRecentSearch(f);
         }
 
         // Now kick off breakdown in the background
@@ -206,19 +182,8 @@ export default function Index() {
         setLoading(false);
       }
     },
-    [persistRecentSearch]
+    []
   );
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as SavedSearch[];
-      setRecentSearches(parsed);
-    } catch {
-      // ignore parse errors
-    }
-  }, []);
 
   useEffect(() => {
     if (!initialLoad.current) return;
@@ -443,31 +408,8 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Right Column: Recent + Result Breakdown */}
+            {/* Right Column: Result Breakdown */}
             <div style={{ flex: "1", borderLeft: "1px solid #f3f4f6", paddingLeft: 32, display: "flex", flexDirection: "column", minHeight: 0 }}>
-              {recentSearches.length > 0 && (
-                <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 9, color: "#9ca3af", letterSpacing: "0.18em", textTransform: "uppercase" }}>RECENT QUERIES</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {recentSearches.slice(0, 2).map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => {
-                          const nextFilters: SearchFilters = { ...filters };
-                          for (const key of Object.keys(nextFilters) as (keyof SearchFilters)[]) delete nextFilters[key];
-                          for (const [k, v] of Object.entries(s.params)) (nextFilters as any)[k] = v;
-                          setFilters(nextFilters);
-                        }}
-                        style={{ borderRadius: 999, border: "1px solid #D9D9D9", padding: "4px 10px", fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", background: "#F0F0F0", color: "#9ca3af", cursor: "pointer", maxWidth: "100%", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}
-                        title={s.label}
-                      >
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
               <div style={{ flex: 1, overflowY: "auto" }}>
                 <ResultStats data={breakdown} loading={breakdownLoading} hideHeader isInline />
               </div>
