@@ -1,114 +1,68 @@
-# NZ Fleet Search — Vehicle Register Lookup
+# NZ Vehicle Finder
 
-Search the New Zealand motor vehicle fleet by make, model, colour, region and more, using a fast terminal‑style UI backed by a local SQLite/Express API.
+A powerful, high-performance search application for the New Zealand Motor Vehicle Register. Designed with a clean, terminal-inspired interface, it allows users to filter millions of vehicle records by make, model, geography, and technical specifications.
 
----
+## Key Features
 
-## Features
+- **Advanced Filtering**: Search across 17+ dimensions including Make, Model, Colour, Region, Fuel Type, and VIN.
+- **Precision Tools**: Filter using numeric ranges for Year, CC Rating, Power (kW), and Dimensions.
+- **High-Performance**: Utilizes SQLite for local data storage and a fast Express API.
+- **Productivity First**: 
+    - **Autocomplete**: Context-aware suggestions for search fields.
+    - **Sharable Search**: One-click "Copy Link" generates deep-linked URLs for any filtered query.
+    - **Data Export**: Export search results directly to CSV.
+    - **Query History**: Automatically remembers recent searches for quick recall.
+- **Smart UI**: Interactive result tables, sortable data, and dynamic visual breakdowns of search results (fuel types, makes, etc.).
 
-- **Rich filtering UI**: Make, model, submodel, colour, fuel type, body type, transmission, region, postcode, import status, usage, NZ assembled, and more.
-- **Numeric ranges**: Year, CC rating, power (kW), gross vehicle mass, width, seats, axles.
-- **Autocomplete suggestions**: Type‑ahead suggestions for text fields based on existing data.
-- **Manual search trigger**: Filters only run when you click **RUN SEARCH** (or press Enter), avoiding constant backend load.
-- **Result table**: Sortable columns, zebra‑striped rows, click a row to open full vehicle details.
-- **Result breakdown**: Optional breakdown panel showing top fuel types, colours, body types, transmissions, and makes.
-- **CSV export**: Download current results as CSV.
-- **Sharable URLs**: Filters are encoded into the URL; a **COPY LINK** button puts the current search on your clipboard.
-- **Recent queries**: Last few successful searches are saved locally and can be recalled with one click.
+## Tech Stack
 
----
-
-## Tech stack
-
-- **Frontend**: Vite, React, TypeScript, shadcn‑ui, Tailwind CSS
-- **Routing**: `react-router-dom`
-- **Data fetching / cache**: `@tanstack/react-query`
+- **Framework**: Vite + React 18 + TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Icons**: Lucide React
 - **Backend**: Node.js + Express + `better-sqlite3`
+- **State/Caching**: `@tanstack/react-query`
 
----
+## Development Setup
 
-## Getting started (local development)
+### Prerequisites
+- Node.js 18+
+- npm (or bun)
 
-Requirements:
-
-- Node.js 18+ and npm
-
-Install dependencies:
-
+### Installation
 ```bash
+git clone https://github.com/jedbillyb/nz-vehicle-finder.git
 cd nz-vehicle-finder
 npm install
 ```
 
-### 1. Start the API server
+### Running Locally
+1. **Start the API Server**:
+   ```bash
+   npm run server
+   ```
+   (Runs on `http://localhost:3001` by default)
 
-```bash
-npm run server
-```
+2. **Start the Frontend**:
+   ```bash
+   npm run dev
+   ```
 
-By default this listens on `http://localhost:3001` and serves:
+## Deployment & Auto-Sync
 
-- `GET /api/vehicles` — paged vehicle search
-- `GET /api/suggestions/:field` — autocomplete suggestions for a given field
+This project includes automated deployment capabilities for VPS environments.
 
-### 2. Start the frontend
+### Automated Sync
+A `post-commit` Git hook is configured. Every time you run `git commit`, the project automatically:
+1. Syncs your local changes to the remote production server via `rsync`.
+2. Re-installs dependencies (`npm install`).
+3. Re-builds the production bundle (`npm run build`).
 
-In a second terminal:
+**Server Requirements**:
+- Ensure your SSH key is added to the remote server's `authorized_keys`.
+- The `deploy-to-server.sh` script handles the transfer and build process.
 
-```bash
-cd nz-vehicle-finder
-npm run dev
-```
+## Branding
+- **Logo/Favicon**: The project uses a custom-designed "magnifier" SVG favicon, symbolizing precise vehicle lookup capabilities.
 
-Open the URL Vite prints (usually `http://localhost:5173`) in your browser.
-
----
-
-## Configuration
-
-The frontend talks to the API via a base URL defined in `src/lib/vehicleApi.ts`:
-
-- **Environment variable**: `VITE_API_BASE_URL`
-- **Default**: `http://localhost:3001`
-
-When running in production (e.g. on a VPS), set:
-
-```bash
-VITE_API_BASE_URL="https://your-api-domain-or-host:port"
-```
-
-in your environment (or a `.env` file consumed by your process manager) before running the frontend build.
-
----
-
-## Building and previewing
-
-Create a production build:
-
-```bash
-npm run build
-```
-
-Preview the built app locally:
-
-```bash
-npm run preview
-```
-
-You still need the API server (`npm run server`) running for search to work.
-
----
-
-## Deployment notes (VPS + domain)
-
-High‑level approach:
-
-1. **API**: Run `npm run server` under a process manager like `pm2` or `systemd`, reverse‑proxied by nginx/Caddy on your chosen API host/domain.
-2. **Frontend**: Run `npm run build` and serve the static `dist/` directory via nginx/Caddy (or a static hosting provider).
-3. Ensure `VITE_API_BASE_URL` for the frontend points at the public URL of your API (HTTPS recommended).
-
-Once deployed, the app should behave the same as locally: open the frontend URL, set filters, click **RUN SEARCH**, and explore vehicles.
-
-## license
-
+## License
 MIT
