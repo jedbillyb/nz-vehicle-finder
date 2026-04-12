@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 import { API_BASE } from "@/lib/vehicleApi";
 import { SearchFilters } from "@/lib/vehicleApi";
@@ -11,8 +11,13 @@ export function ResultStats({ filters }: ResultStatsProps) {
   const [expanded, setExpanded] = useState(true);
   const [data, setData] = useState<Record<string, { value: string; count: number }[]>>({});
   const [loading, setLoading] = useState(false);
+  const prevKey = useRef("");
 
   useEffect(() => {
+    const key = JSON.stringify(filters);
+    if (key === prevKey.current) return;
+    prevKey.current = key;
+
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
@@ -36,7 +41,7 @@ export function ResultStats({ filters }: ResultStatsProps) {
     MAKE: "Make",
   };
 
-  if (Object.keys(data).length === 0) return null;
+  const hasData = Object.keys(data).length > 0;
 
   return (
     <div style={{ borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
