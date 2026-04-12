@@ -368,14 +368,12 @@ export default function Index() {
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 24 }}>
 
                 <button onClick={handleClear}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.12em" }}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.12em", width: 36, height: 36 }}
                   onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
                   onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
                 >
-                  <RotateCcw size={11} />
-                  CLEAR
-                </button>
-                <button
+                  <RotateCcw size={16} />
+                </button>                <button
                   onClick={() => {
                     const hasFilters = Object.values(filters).some((v) => v && v.trim());
                     if (!hasFilters) { toast("No filters set", { description: "Enter at least one parameter before running a search." }); return; }
