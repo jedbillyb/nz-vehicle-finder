@@ -175,7 +175,7 @@ app.get("/api/breakdown", (req, res) => {
   );
   const sql = unions.join(" UNION ALL ");
   const allParams = Array(fields.length).fill(params).flat();
-  const rows = db!.prepare(sql).all(...allParams) as { grp: string; val: string; cnt: number }[];
+  const rows = (getStmt(sql) || db!.prepare(sql)).all(...allParams) as { grp: string; val: string; cnt: number }[];
 
   const breakdown: Record<string, { value: string; count: number }[]> = {};
   for (const row of rows) {

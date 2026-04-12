@@ -1,47 +1,25 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
-import { API_BASE } from "@/lib/vehicleApi";
-import { SearchFilters } from "@/lib/vehicleApi";
+import { type BreakdownData } from "@/lib/vehicleApi";
 
 interface ResultStatsProps {
-  filters: SearchFilters;
+  data: BreakdownData;
+  loading: boolean;
 }
 
-export function ResultStats({ filters }: ResultStatsProps) {
+const labels: Record<string, string> = {
+  MOTIVE_POWER: "Fuel Type",
+  BASIC_COLOUR: "Colour",
+  BODY_TYPE: "Body Type",
+  TRANSMISSION_TYPE: "Transmission",
+  MAKE: "Make",
+};
+
+export function ResultStats({ data, loading }: ResultStatsProps) {
   const [expanded, setExpanded] = useState(true);
-  const [data, setData] = useState<Record<string, { value: string; count: number }[]>>({});
-  const [loading, setLoading] = useState(false);
-  const prevKey = useRef("");
-
-  useEffect(() => {
-    const key = JSON.stringify(filters);
-    if (key === prevKey.current) return;
-    prevKey.current = key;
-
-    const timer = setTimeout(async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams(filters as Record<string, string>);
-        const res = await fetch(`${API_BASE}/api/breakdown?${params}`);
-        if (res.ok) setData(await res.json());
-      } catch (err) {
-        console.error("Failed to fetch breakdown:", err);
-      } finally {
-        setLoading(false);
-      }
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [filters]);
-
-  const labels: Record<string, string> = {
-    MOTIVE_POWER: "Fuel Type",
-    BASIC_COLOUR: "Colour",
-    BODY_TYPE: "Body Type",
-    TRANSMISSION_TYPE: "Transmission",
-    MAKE: "Make",
-  };
-
   const hasData = Object.keys(data).length > 0;
+
+  if (!hasData && !loading) return null;
 
   return (
     <div style={{ borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
@@ -75,7 +53,7 @@ export function ResultStats({ filters }: ResultStatsProps) {
             color: "#6b7280",
           }}
         >
-          {loading ? "LOADING..." : !hasData ? "NO DATA" : expanded ? "CLICK TO HIDE" : "CLICK TO SHOW"}
+          {loading ? "LOADING..." : expanded ? "CLICK TO HIDE" : "CLICK TO SHOW"}
           {expanded ? <ChevronUp size={13} color="#9ca3af" /> : <ChevronDown size={13} color="#9ca3af" />}
         </span>
       </button>
@@ -93,6 +71,8 @@ export function ResultStats({ filters }: ResultStatsProps) {
         >
           {Object.entries(data).map(([key, items]) => {
             const max = items[0]?.count || 1;
+            const total = items.reduce((sum, item) => sum + item.count, 0) || 1;
+
             return (
               <div key={key}>
                 <div
@@ -104,7 +84,7 @@ export function ResultStats({ filters }: ResultStatsProps) {
                     fontWeight: 700,
                   }}
                 >
-                  {labels[key].toUpperCase()}
+                  {(labels[key] ?? key).toUpperCase()}
                 </div>
                 {items.map((d) => (
                   <div key={d.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
@@ -140,7 +120,7 @@ export function ResultStats({ filters }: ResultStatsProps) {
                       />
                     </div>
                     <div style={{ fontSize: 9, color: "#6b7280", minWidth: 45, textAlign: "right" }}>
-                      {d.count.toLocaleString()} ({((d.count / (items.reduce((sum, i) => sum + i.count, 0))) * 100).toFixed(1)}%)
+                      {d.count.toLocaleString()} ({((d.count / total) * 100).toFixed(1)}%)
                     </div>
                   </div>
                 ))}
