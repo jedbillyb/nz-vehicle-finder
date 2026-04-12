@@ -10,14 +10,14 @@ interface ResultStatsProps {
 }
 
 const labels: Record<string, string> = {
-  MOTIVE_POWER: "Fuel Type",
-  BASIC_COLOUR: "Colour",
-  BODY_TYPE: "Body Type",
-  TRANSMISSION_TYPE: "Transmission",
   MAKE: "Make",
+  BASIC_COLOUR: "Colour",
+  MOTIVE_POWER: "Fuel Type",
+  TRANSMISSION_TYPE: "Transmission",
+  BODY_TYPE: "Body Type",
 };
 
-const SKELETON_FIELDS = ["Fuel Type", "Colour", "Body Type", "Transmission", "Make"];
+const SKELETON_FIELDS = ["Make", "Colour", "Fuel Type", "Transmission", "Body Type"]; // Ensure this matches the desired output order
 const SKELETON_ROWS = [85, 60, 45, 30, 20, 12, 8, 5]; // bar widths %
 
 function SkeletonBar({ width }: { width: number }) {
@@ -58,30 +58,43 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
               {SKELETON_ROWS.map((w, i) => <SkeletonBar key={i} width={w} />)}
             </div>
           ))
-        : Object.entries(data).map(([key, items]) => {
-            const max = items[0]?.count || 1;
-            const total = items.reduce((sum, item) => sum + item.count, 0) || 1;
-            return (
-              <div key={key}>
-                <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", marginBottom: 8, fontWeight: 700 }}>
-                  {(labels[key] ?? key).toUpperCase()}
-                </div>
-                {items.map((d) => (
-                  <div key={d.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                    <div style={{ width: 90, fontSize: 10, color: "#4b5563", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={d.value}>
-                      {d.value}
-                    </div>
-                    <div style={{ flex: 1, height: 8, background: "#f3f4f6", position: "relative", borderRadius: 999, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
-                    </div>
-                    <div style={{ fontSize: 9, color: "#6b7280", minWidth: 45, textAlign: "right" }}>
-                      {d.count.toLocaleString()} ({((d.count / total) * 100).toFixed(1)}%)
-                    </div>
+        : Object.entries(data)
+            .sort(([a], [b]) => {
+              // Custom sort order: Make first, Colour second, Body Type last.
+              // Others maintain relative order or alphabetical if not specified.
+              const order = ["MAKE", "BASIC_COLOUR", "MOTIVE_POWER", "TRANSMISSION_TYPE", "BODY_TYPE"];
+              const indexA = order.indexOf(a);
+              const indexB = order.indexOf(b);
+
+              if (indexA === -1 && indexB === -1) return a.localeCompare(b); // Both not in order, sort alphabetically
+              if (indexA === -1) return 1; // A not in order, goes after B
+              if (indexB === -1) return -1; // B not in order, goes after A
+              return indexA - indexB; // Both in order, sort by index
+            })
+            .map(([key, items]) => {
+              const max = items[0]?.count || 1;
+              const total = items.reduce((sum, item) => sum + item.count, 0) || 1;
+              return (
+                <div key={key}>
+                  <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", marginBottom: 8, fontWeight: 700 }}>
+                    {(labels[key] ?? key).toUpperCase()}
                   </div>
-                ))}
-              </div>
-            );
-          })}
+                  {items.map((d) => (
+                    <div key={d.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                      <div style={{ width: 90, fontSize: 10, color: "#4b5563", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={d.value}>
+                        {d.value}
+                      </div>
+                      <div style={{ flex: 1, height: 8, background: "#f3f4f6", position: "relative", borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
+                      </div>
+                      <div style={{ fontSize: 9, color: "#6b7280", minWidth: 45, textAlign: "right" }}>
+                        {d.count.toLocaleString()} ({((d.count / total) * 100).toFixed(1)}%)
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
     </div>
   );
 
