@@ -52,9 +52,9 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
       {loading && !hasData
         ? SKELETON_FIELDS.map((label) => (
             <div key={label}>
-              <div style={{ fontSize: 9, color: "#d1d5db", letterSpacing: "0.18em", marginBottom: 8, fontWeight: 700 }}>
+              <h3 style={{ fontSize: 9, color: "#d1d5db", letterSpacing: "0.18em", marginBottom: 8, fontWeight: 700, margin: "0 0 8px" }}>
                 {label.toUpperCase()}
-              </div>
+              </h3>
               {SKELETON_ROWS.map((w, i) => <SkeletonBar key={i} width={w} />)}
             </div>
           ))
@@ -76,9 +76,9 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
               const total = items.reduce((sum, item) => sum + item.count, 0) || 1;
               return (
                 <div key={key}>
-                  <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", marginBottom: 8, fontWeight: 700 }}>
+                  <h3 style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", marginBottom: 8, fontWeight: 700, margin: "0 0 8px" }}>
                     {(labels[key] ?? key).toUpperCase()}
-                  </div>
+                  </h3>
                   {items.map((d) => (
                     <div key={d.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                       <div style={{ width: 90, fontSize: 10, color: "#4b5563", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={d.value}>
@@ -138,7 +138,7 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
         >
           <span style={{ fontSize: 10, letterSpacing: "0.2em", display: "flex", alignItems: "center", gap: 8 }}>
             <BarChart3 size={11} color="#0ea5e9" />
-            <span style={{ color: "#0f172a" }}>RESULT BREAKDOWN</span>
+            <h2 style={{ color: "#0f172a", fontSize: "inherit", fontWeight: "inherit", margin: 0 }}>RESULT BREAKDOWN</h2>
             {loading && (
               <span style={{ fontSize: 9, color: "#0ea5e9", letterSpacing: "0.15em", opacity: 0.8 }}>
                 · LOADING...
