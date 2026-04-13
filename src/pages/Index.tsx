@@ -313,7 +313,7 @@ export default function Index() {
             </div>
           )}
           {total !== null && (
-            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
+            <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
               {loading && <span style={{ fontSize: 10, color: "#0ea5e9", letterSpacing: "0.15em", opacity: 0.8 }}>▋ QUERYING...</span>}
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
@@ -446,7 +446,7 @@ export default function Index() {
           </div>
 
           <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
+            <table className="results-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
               <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 10 }}>
                 <tr>
                   {resultColumns.map((col) => (
