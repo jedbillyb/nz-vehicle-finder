@@ -610,7 +610,7 @@ export default function Index() {
               </button>
             </div>
             <div style={{ flex: 1, overflowY: "auto" }}>
-              <ResultStats data={breakdown} loading={breakdownLoading} />
+              <ResultStats data={breakdown} loading={breakdownLoading} hideHeader />
             </div>
           </div>
         </>
