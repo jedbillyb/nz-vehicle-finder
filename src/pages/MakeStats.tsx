@@ -7,6 +7,7 @@ import {
   searchVehicles,
   type BreakdownData,
 } from "@/lib/vehicleApi";
+import { applySeo } from "@/lib/seo";
 import { Vehicle } from "@/lib/mockData";
 
 function useIsMobile() {
@@ -95,6 +96,16 @@ export default function MakeStats() {
     doSearch(1);
     return () => breakdownAbortRef.current?.abort();
   }, [doSearch]);
+
+  useEffect(() => {
+    const title = `NZ Vehicle Finder - ${makeDisplay} vehicle statistics`;
+    const description = `Browse ${makeDisplay} vehicles registered in New Zealand. View counts, breakdowns, and full listings from the Motor Vehicle Register.`;
+    applySeo({
+      title,
+      description,
+      canonical: `https://vehiclefinder.co.nz/stats/${encodeURIComponent(make || "")}`,
+    });
+  }, [make, makeDisplay]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);

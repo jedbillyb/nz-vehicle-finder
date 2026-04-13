@@ -1,0 +1,26 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"/>
+      <stop offset="0.55" stop-color="#0B3A53"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="150" y1="140" x2="1050" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#22C55E" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="990" cy="120" r="170" fill="url(#accent)"/>
+  <circle cx="220" cy="530" r="220" fill="#FFFFFF" fill-opacity="0.05"/>
+  <rect x="80" y="84" width="154" height="154" rx="32" fill="#FFFFFF" fill-opacity="0.08" stroke="#FFFFFF" stroke-opacity="0.12"/>
+  <path d="M120 161C120 149.954 128.954 141 140 141H174C185.046 141 194 149.954 194 161V195C194 206.046 185.046 215 174 215H140C128.954 215 120 206.046 120 195V161Z" fill="#38BDF8"/>
+  <path d="M151 117H163V239H151V117Z" fill="#E2E8F0" fill-opacity="0.8"/>
+  <path d="M109 175H205V187H109V175Z" fill="#E2E8F0" fill-opacity="0.8"/>
+  <text x="270" y="160" fill="#E2E8F0" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="700">NZ Vehicle Finder</text>
+  <text x="270" y="220" fill="#BAE6FD" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="400">Search the New Zealand Motor Vehicle Register</text>
+  <text x="270" y="280" fill="#F8FAFC" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="400">Make, model, colour, body type, region and more</text>
+  <rect x="270" y="356" width="660" height="12" rx="6" fill="#FFFFFF" fill-opacity="0.18"/>
+  <rect x="270" y="388" width="520" height="12" rx="6" fill="#FFFFFF" fill-opacity="0.14"/>
+  <rect x="270" y="420" width="420" height="12" rx="6" fill="#FFFFFF" fill-opacity="0.10"/>
+</svg>
