@@ -3,16 +3,21 @@
    Import in main.tsx or App.tsx: import "./styles/responsive.css";
 */
 
-/* ── Header top bar ─────────────────────────────────────────── */
+/* ── Header top bar — hidden on mobile ──────────────────────── */
 .header-topbar {
-  padding: 4px 16px !important;
-}
-.header-topbar-subtitle {
-  display: none;
+  display: none !important;
 }
 @media (min-width: 640px) {
-  .header-topbar-subtitle {
-    display: inline;
+  .header-topbar {
+    display: flex !important;
+    padding: 4px 24px;
+  }
+}
+
+/* ── Fix iOS Safari input zoom (triggers when font-size < 16px) */
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important;
   }
 }
 
