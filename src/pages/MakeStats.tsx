@@ -165,29 +165,6 @@ export default function MakeStats() {
           <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 20px", letterSpacing: "0.05em" }}>
             Breakdown and full listing of all {makeDisplay} vehicles on the New Zealand Motor Vehicle Register.
           </p>
-          <Link
-            to={`/?MAKE=${makeUpper}`}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 18px",
-              background: "#0ea5e9",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: 999,
-              cursor: "pointer",
-              fontSize: 11,
-              fontFamily: "inherit",
-              letterSpacing: "0.15em",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              textDecoration: "none",
-            }}
-          >
-            SEARCH WITH FILTERS
-            <ArrowRight size={12} />
-          </Link>
         </div>
 
         {/* Breakdown */}
