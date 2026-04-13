@@ -128,7 +128,6 @@ export default function Index() {
       setLoading(true);
     setErrorMessage(null);
 
-      // Cancel any in-flight breakdown request
       if (p === 1) {
         breakdownAbortRef.current?.abort();
         breakdownAbortRef.current = null;
@@ -137,7 +136,6 @@ export default function Index() {
       }
 
       try {
-        // Results load first - breakdown fires after
         const data = await searchVehicles(f, p);
         setResults(data.vehicles);
         setTotal(data.total);
@@ -148,7 +146,6 @@ export default function Index() {
           toast("No records found", { description: "Try broadening your search filters." });
         }
 
-        // Now kick off breakdown in the background
         if (p === 1) {
           const controller = new AbortController();
           breakdownAbortRef.current = controller;
@@ -283,15 +280,17 @@ export default function Index() {
       )}
 
       <header style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff", position: "sticky", top: 0, zIndex: 40 }}>
-        <div style={{ background: "#0ea5e9", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: "10px", color: "#f9fafb", fontWeight: 600, letterSpacing: "0.16em" }}>
+        {/* Blue top bar */}
+        <div className="header-topbar" style={{ background: "#0ea5e9", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span className="header-topbar-subtitle" style={{ fontSize: "10px", color: "#f9fafb", fontWeight: 600, letterSpacing: "0.16em" }}>
             WAKA KOTAHI · MOTOR VEHICLE REGISTER · PUBLIC ACCESS TERMINAL
           </span>
           <span style={{ fontSize: "10px", color: "#e0f2fe", letterSpacing: "0.1em" }}>
             {new Date().toISOString().split("T")[0]}
           </span>
         </div>
-        <div style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
+        {/* Main header row */}
+        <div className="header-main" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
           <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", border: '1px solid #d1d5db', borderColor: '#d1d5db' }} onClick={handleClear} title="Clear filters" onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")} onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}>
             <img src="/favicon.svg" alt="Logo" style={{ width: "100%", height: "100%" }} />
           </div>
@@ -303,7 +302,7 @@ export default function Index() {
           </div>
           {total === null && (
             <div style={{ marginLeft: "auto" }}>
-              <a href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
+              <a className="header-sponsor" href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
                 style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", textDecoration: "none",
                   padding: "5px 12px", border: "1px solid #ef4444", borderRadius: 6,
                   letterSpacing: "0.1em", display: "flex", flexDirection: "column",
@@ -320,7 +319,7 @@ export default function Index() {
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
                 <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.15em" }}>MATCHES FOUND</div>
               </div>
-              <a href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
+              <a className="header-sponsor" href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
                 style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", textDecoration: "none", padding: "6px 12px", border: "1px solid #ef4444", borderRadius: 6, letterSpacing: "0.1em", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2 }}>
                 <span>SPONSOR</span>
                 <span style={{ fontSize: 8, marginTop: 2 }}>THIS PROJECT</span>
@@ -331,7 +330,8 @@ export default function Index() {
       </header>
 
       <div style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff" }}>
-        <div style={{ padding: "20px 24px", background: "#ffffff" }}>
+        {/* Filter panel */}
+        <div className="filters-panel" style={{ padding: "20px 24px", background: "#ffffff" }}>
           {/* Top Section: Main Filters */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px", paddingBottom: 20, borderBottom: "1px solid #f3f4f6" }}>
             {filterFields.map((f) => (
@@ -356,9 +356,9 @@ export default function Index() {
           </div>
 
           {/* Bottom Section: Two Columns */}
-          <div style={{ display: "flex", gap: 48, marginTop: 20, alignItems: "stretch" }}>
+          <div className="filters-bottom" style={{ display: "flex", gap: 48, marginTop: 20, alignItems: "stretch" }}>
             {/* Left Column: Physical Params + Actions */}
-            <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", justifyContent: "space-between", minWidth: 0 }}>
+            <div className="filters-left-col" style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", justifyContent: "space-between", minWidth: 0 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 24px" }}>
                 <RangeField label="GROSS MASS" fieldMin="GROSS_VEHICLE_MASS_MIN" fieldMax="GROSS_VEHICLE_MASS_MAX" valueMin={filters.GROSS_VEHICLE_MASS_MIN || ""} valueMax={filters.GROSS_VEHICLE_MASS_MAX || ""} onChangeMin={(v) => updateFilter("GROSS_VEHICLE_MASS_MIN", v)} onChangeMax={(v) => updateFilter("GROSS_VEHICLE_MASS_MAX", v)} min={0} max={50000} />
                 <RangeField label="WIDTH (MM)" fieldMin="WIDTH_MIN" fieldMax="WIDTH_MAX" valueMin={filters.WIDTH_MIN || ""} valueMax={filters.WIDTH_MAX || ""} onChangeMin={(v) => updateFilter("WIDTH_MIN", v)} onChangeMax={(v) => updateFilter("WIDTH_MAX", v)} min={0} max={3500} />
@@ -366,7 +366,7 @@ export default function Index() {
                 <RangeField label="AXLES (MIN)" fieldMin="NUMBER_OF_AXLES_MIN" fieldMax="NUMBER_OF_AXLES_MIN" valueMin={filters.NUMBER_OF_AXLES_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_AXLES_MIN", v)} onChangeMax={() => {}} min={1} max={9} />
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 24 }}>
+              <div className="action-buttons" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 24 }}>
                 <button onClick={handleClear}
                   style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.12em" }}
                   onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
@@ -412,7 +412,7 @@ export default function Index() {
             </div>
 
             {/* Right Column: Result Breakdown */}
-            <div style={{ flex: "1", borderLeft: "1px solid #f3f4f6", paddingLeft: 32, display: "flex", flexDirection: "column", minHeight: 0 }}>
+            <div className="filters-right-col" style={{ flex: "1", borderLeft: "1px solid #f3f4f6", paddingLeft: 32, display: "flex", flexDirection: "column", minHeight: 0 }}>
               <div style={{ flex: 1, overflowY: "auto" }}>
                 <ResultStats data={breakdown} loading={breakdownLoading} hideHeader isInline />
               </div>
@@ -431,7 +431,7 @@ export default function Index() {
 
       {total !== null && (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#f3f4f6" }}>
-          <div style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div className="results-bar" style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h2 style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", margin: 0, fontWeight: 400 }}>
               SHOWING <span style={{ color: "#111827" }}>{sortedResults.length.toLocaleString()}</span> OF{" "}
               <span style={{ color: "#0f766e" }}>{total.toLocaleString()}</span> RECORDS
@@ -492,7 +492,7 @@ export default function Index() {
       )}
 
       {total === null && (
-        <div style={{ textAlign: "center", padding: "80px 24px" }}>
+        <div className="empty-state" style={{ textAlign: "center", padding: "80px 24px" }}>
           <div style={{ fontSize: 48, color: "#1a1a1a", marginBottom: 24 }}>⊞</div>
           <h2 style={{ fontSize: 11, color: "#333", letterSpacing: "0.2em", margin: "0 0 8px", fontWeight: 400 }}>ENTER SEARCH PARAMETERS ABOVE</h2>
           <p style={{ fontSize: 10, color: "#222", letterSpacing: "0.15em", margin: 0 }}>SET FILTERS ABOVE, THEN CLICK RUN SEARCH</p>
@@ -506,8 +506,8 @@ export default function Index() {
       )}
       </div>
 
-      <footer style={{ padding: "12px 24px", background: "#ffffff", borderTop: "1px solid #e5e7eb", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#6b7280", letterSpacing: "0.1em" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <footer className="footer-root" style={{ padding: "12px 24px", background: "#ffffff", borderTop: "1px solid #e5e7eb", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#6b7280", letterSpacing: "0.1em" }}>
+        <div className="footer-links" style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span>DEVELOPED BY <a href="https://jedbillyb.com" target="_blank" rel="noopener noreferrer" style={{ color: "#0ea5e9", textDecoration: "none", fontWeight: 700 }}>JED BLENKHORN</a></span>
           <span style={{ color: "#d1d5db" }}>·</span>
           <a href="https://github.com/jedbillyb/nz-vehicle-finder" target="_blank" rel="noopener noreferrer" style={{ color: "#111827", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
