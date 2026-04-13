@@ -166,7 +166,7 @@ export default function MakeStats() {
               <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
-                  <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.15em" }}>VEHICLES REGISTERED</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>VEHICLES REGISTERED</div>
                 </div>
               </div>
             )}
