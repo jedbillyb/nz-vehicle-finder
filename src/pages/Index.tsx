@@ -107,7 +107,7 @@ export default function Index() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [apiReachable, setApiReachable] = useState<boolean | null>(null);
   const [breakdown, setBreakdown] = useState<BreakdownData>({});
-  const [breakdownLoading, setBreakdownLoading] = useState(false);
+  const [breakdownSheetOpen, setBreakdownSheetOpen] = useState(false);
 
   useEffect(() => { preloadSuggestions(); }, []);
 
@@ -518,6 +518,84 @@ export default function Index() {
           <VehicleDetail vehicle={selectedVehicle} onClose={() => setSelectedVehicle(null)} />
         </Suspense>
       )}
+
+      {/* ── Mobile breakdown bottom sheet ── */}
+      {total !== null && (
+        <>
+          {/* Floating trigger */}
+          <button
+            className="breakdown-trigger"
+            onClick={() => setBreakdownSheetOpen(true)}
+            style={{
+              position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "10px 20px",
+              background: "#0f172a", color: "#ffffff",
+              border: "none", borderRadius: 999,
+              fontSize: 11, fontWeight: 700, letterSpacing: "0.15em",
+              cursor: "pointer", zIndex: 30,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+              fontFamily: "inherit",
+            }}
+          >
+            ⊟ BREAKDOWN
+          </button>
+
+          {/* Overlay */}
+          <div
+            onClick={() => setBreakdownSheetOpen(false)}
+            style={{
+              position: "fixed", inset: 0,
+              background: "rgba(0,0,0,0.45)",
+              zIndex: 50,
+              opacity: breakdownSheetOpen ? 1 : 0,
+              pointerEvents: breakdownSheetOpen ? "auto" : "none",
+              transition: "opacity 0.25s ease",
+            }}
+          />
+
+          {/* Sheet */}
+          <div
+            style={{
+              position: "fixed", bottom: 0, left: 0, right: 0,
+              height: "70vh",
+              background: "#ffffff",
+              borderRadius: "16px 16px 0 0",
+              zIndex: 51,
+              transform: breakdownSheetOpen ? "translateY(0)" : "translateY(100%)",
+              transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+              display: "flex", flexDirection: "column",
+              overflow: "hidden",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: "#d1d5db" }} />
+            </div>
+            <div style={{
+              padding: "8px 16px 12px",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              borderBottom: "1px solid #e5e7eb",
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", color: "#0f172a" }}>
+                RESULT BREAKDOWN
+              </span>
+              <button
+                onClick={() => setBreakdownSheetOpen(false)}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  fontSize: 16, color: "#6b7280", lineHeight: 1, padding: 4,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto" }}>
+              <ResultStats data={breakdown} loading={breakdownLoading} />
+            </div>
+          </div>
+        </>
+      )}
+
       </div>
 
       <footer className="footer-root" style={{ padding: "12px 24px", background: "#ffffff", borderTop: "1px solid #e5e7eb", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#6b7280", letterSpacing: "0.1em" }}>

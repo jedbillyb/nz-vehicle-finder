@@ -93,6 +93,16 @@
   row-gap: 4px !important;
 }
 
+/* ── Breakdown sheet trigger — mobile only ──────────────────── */
+.breakdown-trigger {
+  display: flex !important;
+}
+@media (min-width: 768px) {
+  .breakdown-trigger {
+    display: none !important;
+  }
+}
+
 /* ── Empty state padding ────────────────────────────────────── */
 .empty-state {
   padding: 48px 16px !important;
