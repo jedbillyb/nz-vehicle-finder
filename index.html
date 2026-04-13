@@ -1,27 +1,55 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>NZ Vehicle Finder - Vehicle Register Lookup</title>
-    <meta name="description" content="Search the New Zealand Motor Vehicle Register. Find vehicles by make, model, colour, region and more." />
-    <meta name="author" content="jedbillyb" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <meta property="og:title" content="NZ Vehicle Finder" />
-    <meta property="og:description" content="Search the New Zealand Motor Vehicle Register." />
-    <meta property="og:type" content="website" />
+  <!-- SEO: Title (53 chars) -->
+  <title>NZ Vehicle Finder - Search the Motor Vehicle Register</title>
 
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="NZ Vehicle Finder" />
-    <meta name="twitter:description" content="Search the New Zealand Motor Vehicle Register." />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-  </head>
+  <!-- SEO: Meta description (131 chars) -->
+  <meta name="description" content="Search New Zealand's Motor Vehicle Register with 5.9 million records. Filter by make, model, colour, region and more. Free to use." />
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <!-- Canonical -->
+  <link rel="canonical" href="https://vehiclefinder.co.nz/" />
+
+  <meta name="author" content="jedbillyb" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="NZ Vehicle Finder - Search the Motor Vehicle Register" />
+  <meta property="og:description" content="Search New Zealand's Motor Vehicle Register with 5.9 million records. Filter by make, model, colour, region and more." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://vehiclefinder.co.nz/" />
+  <meta property="og:image" content="https://vehiclefinder.co.nz/og-image.png" />
+
+  <!-- Twitter/X Cards -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="NZ Vehicle Finder - Search the Motor Vehicle Register" />
+  <meta name="twitter:description" content="Search New Zealand's Motor Vehicle Register with 5.9 million records. Filter by make, model, colour, region and more." />
+  <meta name="twitter:image" content="https://vehiclefinder.co.nz/og-image.png" />
+
+  <!-- Schema.org structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "NZ Vehicle Finder",
+    "url": "https://vehiclefinder.co.nz",
+    "description": "Search New Zealand's Motor Vehicle Register with 5.9 million records. Filter by make, model, colour, region and more.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "All",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "NZD" },
+    "author": { "@type": "Person", "name": "Jed" }
+  }
+  </script>
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
 </html>
