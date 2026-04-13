@@ -528,18 +528,37 @@ export default function Index() {
             className="breakdown-trigger"
             onClick={() => setBreakdownSheetOpen(true)}
             style={{
-              position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "10px 20px",
-              background: "#0f172a", color: "#ffffff",
-              border: "none", borderRadius: 999,
-              fontSize: 11, fontWeight: 700, letterSpacing: "0.15em",
-              cursor: "pointer", zIndex: 30,
-              boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+              position: "fixed",
+              left: 16,
+              right: 16,
+              bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              padding: "12px 16px",
+              background: "rgba(15, 23, 42, 0.96)",
+              color: "#ffffff",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 14,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "0.15em",
+              cursor: "pointer",
+              zIndex: 30,
+              boxShadow: "0 10px 30px rgba(15, 23, 42, 0.28)",
+              backdropFilter: "blur(10px)",
               fontFamily: "inherit",
             }}
           >
-            ⊟ BREAKDOWN
+            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 14, lineHeight: 1 }}>⊟</span>
+              <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, letterSpacing: "normal" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em" }}>RESULT BREAKDOWN</span>
+                <span style={{ fontSize: 10, color: "#cbd5e1" }}>View make, fuel, body and colour totals</span>
+              </span>
+            </span>
+            <span style={{ fontSize: 10, color: "#7dd3fc", letterSpacing: "0.16em" }}>OPEN</span>
           </button>
 
           {/* Overlay */}
