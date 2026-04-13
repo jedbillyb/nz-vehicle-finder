@@ -139,11 +139,11 @@ export default function MakeStats() {
               </div>
             </Link>
             <div>
-              <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: "0.02em", margin: 0 }}>
-                {makeDisplay} in New Zealand
-              </h1>
-              <p style={{ fontSize: 11, color: "#6b7280", letterSpacing: "0.12em", margin: 0, textTransform: "uppercase" }}>
-                Motor Vehicle Register · {makeUpper} Statistics
+              <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+                {total !== null ? total.toLocaleString() : "..."} {makeDisplay} vehicles registered in NZ
+              </h2>
+              <p style={{ fontSize: 15, color: "#6b7280", margin: 0, letterSpacing: "0.01em" }}>
+                Breakdown and full listing of all {makeDisplay} vehicles on the New Zealand Motor Vehicle Register.
               </p>
             </div>
             {total !== null && (
@@ -162,7 +162,7 @@ export default function MakeStats() {
           <h2 style={{ fontSize: 28, fontWeight: 700, color: "#0f172a", margin: "0 0 8px", letterSpacing: "-0.01em" }}>
             {total !== null ? total.toLocaleString() : "..."} {makeDisplay} vehicles registered in NZ
           </h2>
-          <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 20px", letterSpacing: "0.05em" }}>
+          <p style={{ fontSize: 12, color: "#6b7280", letterSpacing: "0.05em" }}>
             Breakdown and full listing of all {makeDisplay} vehicles on the New Zealand Motor Vehicle Register.
           </p>
         </div>
