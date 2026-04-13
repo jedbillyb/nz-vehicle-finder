@@ -149,7 +149,7 @@ export default function MakeStats() {
               </p>
             </div>
             {total !== null && (
-              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
+              <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
                   <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.15em" }}>VEHICLES REGISTERED</div>
@@ -190,7 +190,7 @@ export default function MakeStats() {
             </div>
 
             <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
+              <table className="results-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
                 <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 10 }}>
                   <tr>
                     {resultColumns.map((col) => (

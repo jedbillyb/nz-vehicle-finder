@@ -97,3 +97,30 @@
 .empty-state {
   padding: 48px 16px !important;
 }
+
+/* ── Matches count — left-align on mobile ───────────────────── */
+@media (max-width: 767px) {
+  .header-count {
+    margin-left: 0 !important;
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+  .header-count > div[style] {
+    text-align: left !important;
+  }
+}
+
+/* ── Hide breakdown panel on mobile — too dense ─────────────── */
+@media (max-width: 767px) {
+  .filters-right-col {
+    display: none !important;
+  }
+}
+
+/* ── Results table — min-width so it scrolls not squishes ───── */
+@media (max-width: 767px) {
+  .results-table {
+    min-width: 560px !important;
+    table-layout: auto !important;
+  }
+}
