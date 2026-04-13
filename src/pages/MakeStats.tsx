@@ -162,8 +162,8 @@ export default function MakeStats() {
           <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {total !== null ? total.toLocaleString() : "..."} {makeDisplay} vehicles registered in NZ
           </h2>
-          <p style={{ fontSize: 15, color: "#6b7280", margin: 0, letterSpacing: "0.01em" }}>
-            Breakdown and full listing of all {makeDisplay} vehicles on the New Zealand Motor Vehicle Register.
+          <p style={{ fontSize: 16, color: "#374151", margin: 0, letterSpacing: "0.01em" }}>
+            Breakdown and full listing of all Toyota vehicles on the New Zealand Motor Vehicle Register.
           </p>
         </div>
 
