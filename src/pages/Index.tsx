@@ -421,7 +421,7 @@ export default function Index() {
 
           {errorMessage && (
             <div style={{ marginTop: 16, padding: "10px 12px", borderRadius: 4, border: "1px solid #3b1f1f", background: "#140909", color: "#fda4a4", fontSize: 11, fontFamily: "'JetBrains Mono', 'Courier New', monospace" }}>
-              <div style={{ fontWeight: 700, letterSpacing: "0.12em", marginBottom: 4 }}>SEARCH ERROR</div>
+              <h3 style={{ fontWeight: 700, letterSpacing: "0.12em", marginBottom: 4, margin: "0 0 4px", fontSize: "inherit" }}>SEARCH ERROR</h3>
               <div style={{ color: "#fca5a5" }}>{errorMessage}</div>
             </div>
           )}
@@ -432,11 +432,11 @@ export default function Index() {
       {total !== null && (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#f3f4f6" }}>
           <div style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em" }}>
+            <h2 style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", margin: 0, fontWeight: 400 }}>
               SHOWING <span style={{ color: "#111827" }}>{sortedResults.length.toLocaleString()}</span> OF{" "}
               <span style={{ color: "#0f766e" }}>{total.toLocaleString()}</span> RECORDS
               {pages > 1 && <> · PAGE <span style={{ color: "#111827" }}>{page}</span>/<span style={{ color: "#4b5563" }}>{pages}</span></>}
-            </span>
+            </h2>
             {sort && (
               <span style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em" }}>
                 SORT: <span style={{ color: "#0ea5e9" }}>{sort.key}</span>{" "}
@@ -494,7 +494,7 @@ export default function Index() {
       {total === null && (
         <div style={{ textAlign: "center", padding: "80px 24px" }}>
           <div style={{ fontSize: 48, color: "#1a1a1a", marginBottom: 24 }}>⊞</div>
-          <p style={{ fontSize: 11, color: "#333", letterSpacing: "0.2em", margin: "0 0 8px" }}>ENTER SEARCH PARAMETERS ABOVE</p>
+          <h2 style={{ fontSize: 11, color: "#333", letterSpacing: "0.2em", margin: "0 0 8px", fontWeight: 400 }}>ENTER SEARCH PARAMETERS ABOVE</h2>
           <p style={{ fontSize: 10, color: "#222", letterSpacing: "0.15em", margin: 0 }}>SET FILTERS ABOVE, THEN CLICK RUN SEARCH</p>
         </div>
       )}
