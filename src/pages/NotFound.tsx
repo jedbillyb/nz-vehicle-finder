@@ -1,11 +1,21 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { applySeo } from "@/lib/seo";
 
 const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    applySeo({
+      title: "NZ Vehicle Finder - Page not found",
+      description: "The requested NZ Vehicle Finder page could not be found.",
+      canonical: `https://vehiclefinder.co.nz${location.pathname}`,
+      noindex: true,
+    });
   }, [location.pathname]);
 
   return (

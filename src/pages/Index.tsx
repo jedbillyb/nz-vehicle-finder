@@ -15,6 +15,7 @@ import {
   searchVehicles,
 } from "@/lib/vehicleApi";
 import { exportToCsv } from "@/lib/csvExport";
+import { applySeo } from "@/lib/seo";
 import { Vehicle } from "@/lib/mockData";
 import { toast } from "sonner";
 import { Search, RotateCcw, Download, Link2 } from "lucide-react";
@@ -111,6 +112,15 @@ export default function Index() {
   const [breakdownSheetOpen, setBreakdownSheetOpen] = useState(false);
 
   useEffect(() => { preloadSuggestions(); }, []);
+
+  useEffect(() => {
+    applySeo({
+      title: "NZ Vehicle Finder - Search the Motor Vehicle Register",
+      description:
+        "Search New Zealand's Motor Vehicle Register with 5.9 million records. Filter by make, model, colour, region and more.",
+      canonical: "https://vehiclefinder.co.nz/",
+    });
+  }, []);
 
   const updateFilter = (key: keyof SearchFilters, value: string) => {
     setFilters((prev) => {
