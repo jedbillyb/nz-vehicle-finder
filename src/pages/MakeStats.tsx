@@ -1,4 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
 import { useParams, Link } from "react-router-dom";
 import { Pagination } from "@/components/Pagination";
 import { ResultStats } from "@/components/ResultStats";
@@ -98,6 +108,8 @@ export default function MakeStats() {
     });
   };
 
+  const isMobile = useIsMobile();
+
   const sortedResults = useMemo(
     () =>
       sort
@@ -110,6 +122,8 @@ export default function MakeStats() {
         : results,
     [results, sort]
   );
+
+  const displayResults = isMobile ? sortedResults.slice(0, Math.ceil(sortedResults.length / 2)) : sortedResults;
 
   return (
     <div
@@ -150,7 +164,7 @@ export default function MakeStats() {
             </div>
             {total !== null && (
               <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ textAlign: "right" }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
                   <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.15em" }}>VEHICLES REGISTERED</div>
                 </div>
@@ -177,7 +191,7 @@ export default function MakeStats() {
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#f3f4f6" }}>
             <div className="results-bar" style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h2 style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", margin: 0, fontWeight: 400 }}>
-                SHOWING <span style={{ color: "#111827" }}>{sortedResults.length.toLocaleString()}</span> OF{" "}
+                SHOWING <span style={{ color: "#111827" }}>{displayResults.length.toLocaleString()}</span> OF{" "}
                 <span style={{ color: "#0f766e" }}>{total.toLocaleString()}</span> RECORDS
                 {pages > 1 && <> · PAGE <span style={{ color: "#111827" }}>{page}</span>/<span style={{ color: "#4b5563" }}>{pages}</span></>}
               </h2>
@@ -217,7 +231,7 @@ export default function MakeStats() {
                       </td>
                     </tr>
                   ) : (
-                    sortedResults.map((v, i) => (
+                    displayResults.map((v, i) => (
                       <tr key={i} onClick={() => setSelectedVehicle(v)}
                         style={{ cursor: "pointer", borderBottom: "1px solid #e5e7eb", background: i % 2 === 0 ? "#ffffff" : "#f9fafb" }}
                         onMouseEnter={(e) => (e.currentTarget.style.background = "#eff6ff")}
