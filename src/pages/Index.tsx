@@ -331,7 +331,7 @@ export default function Index() {
               {loading && <span style={{ fontSize: 10, color: "#0ea5e9", letterSpacing: "0.15em", opacity: 0.8 }}>▋ QUERYING...</span>}
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
-                <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.15em" }}>MATCHES FOUND</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>MATCHES FOUND</div>
               </div>
               <a className="header-sponsor" href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
                 style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", textDecoration: "none", padding: "6px 12px", border: "1px solid #ef4444", borderRadius: 6, letterSpacing: "0.1em", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2 }}>
