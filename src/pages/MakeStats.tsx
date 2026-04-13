@@ -124,15 +124,17 @@ export default function MakeStats() {
     >
       <div style={{ flex: 1 }}>
         <header style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff" }}>
-          <div style={{ background: "#0ea5e9", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: "10px", color: "#f9fafb", fontWeight: 600, letterSpacing: "0.16em" }}>
+          {/* Blue top bar */}
+          <div className="header-topbar" style={{ background: "#0ea5e9", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span className="header-topbar-subtitle" style={{ fontSize: "10px", color: "#f9fafb", fontWeight: 600, letterSpacing: "0.16em" }}>
               WAKA KOTAHI · MOTOR VEHICLE REGISTER · PUBLIC ACCESS TERMINAL
             </span>
             <span style={{ fontSize: "10px", color: "#e0f2fe", letterSpacing: "0.1em" }}>
               {new Date().toISOString().split("T")[0]}
             </span>
           </div>
-          <div style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
+          {/* Main header row */}
+          <div className="header-main" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
             <Link to="/" style={{ textDecoration: "none" }}>
               <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid #d1d5db" }}>
                 <img src="/favicon.svg" alt="Logo" style={{ width: "100%", height: "100%" }} />
@@ -173,7 +175,7 @@ export default function MakeStats() {
         {/* Results table */}
         {total !== null && (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#f3f4f6" }}>
-            <div style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="results-bar" style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h2 style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", margin: 0, fontWeight: 400 }}>
                 SHOWING <span style={{ color: "#111827" }}>{sortedResults.length.toLocaleString()}</span> OF{" "}
                 <span style={{ color: "#0f766e" }}>{total.toLocaleString()}</span> RECORDS
@@ -246,8 +248,8 @@ export default function MakeStats() {
         )}
       </div>
 
-      <footer style={{ padding: "12px 24px", background: "#ffffff", borderTop: "1px solid #e5e7eb", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#6b7280", letterSpacing: "0.1em" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <footer className="footer-root" style={{ padding: "12px 24px", background: "#ffffff", borderTop: "1px solid #e5e7eb", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#6b7280", letterSpacing: "0.1em" }}>
+        <div className="footer-links" style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span>DEVELOPED BY <a href="https://jedbillyb.com" target="_blank" rel="noopener noreferrer" style={{ color: "#0ea5e9", textDecoration: "none", fontWeight: 700 }}>JED BLENKHORN</a></span>
           <span style={{ color: "#d1d5db" }}>·</span>
           <a href="https://github.com/jedbillyb/nz-vehicle-finder" target="_blank" rel="noopener noreferrer" style={{ color: "#111827", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
