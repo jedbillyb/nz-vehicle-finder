@@ -107,6 +107,7 @@ export default function Index() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [apiReachable, setApiReachable] = useState<boolean | null>(null);
   const [breakdown, setBreakdown] = useState<BreakdownData>({});
+  const [breakdownLoading, setBreakdownLoading] = useState(false);
   const [breakdownSheetOpen, setBreakdownSheetOpen] = useState(false);
 
   useEffect(() => { preloadSuggestions(); }, []);
