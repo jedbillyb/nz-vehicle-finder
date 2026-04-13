@@ -44,9 +44,11 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
         padding: isInline ? "0" : "16px 24px",
         background: isInline ? "transparent" : "#ffffff",
         display: "grid",
-        gridTemplateColumns: isInline ? "repeat(5, minmax(0, 1fr))" : "repeat(auto-fill, minmax(200px, 1fr))",
+        gridTemplateColumns: isInline ? "repeat(5, minmax(0, 1fr))" : "repeat(auto-fit, minmax(200px, 1fr))",
         gap: isInline ? 20 : 20,
         borderTop: !isInline && expanded && !hideHeader ? "1px solid #e5e7eb" : "none",
+        width: "100%",
+        boxSizing: "border-box",
       }}
     >
       {loading && !hasData
