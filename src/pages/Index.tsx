@@ -1,14 +1,4 @@
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
-  return isMobile;
-}
 import { useSearchParams } from "react-router-dom";
 import { SearchField } from "@/components/SearchField";
 import { RangeField } from "@/components/RangeField";
@@ -28,6 +18,16 @@ import { exportToCsv } from "@/lib/csvExport";
 import { Vehicle } from "@/lib/mockData";
 import { toast } from "sonner";
 import { Search, RotateCcw, Download, Link2 } from "lucide-react";
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
 
 const filterFields: { key: keyof SearchFilters; label: string }[] = [
   { key: "MAKE", label: "Make" },
