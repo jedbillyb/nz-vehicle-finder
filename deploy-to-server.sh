@@ -6,7 +6,7 @@ REMOTE_PROJECT_DIR="nz-vehicle-finder" # The directory where the project code li
 REMOTE_WEB_ROOT="/var/www/html/nz-vehicle-finder" # The directory where the built site is served from
 KEY="~/downloads/Other/ssh-key-2026-03-14.key"
 
-echo "🚀 Syncing with server..."
+echo "Syncing with server..."
 # Sync project files (excluding build artifacts and node_modules)
 # Use sudo for creating the remote directory if it doesn't exist
 ssh -i $KEY $SERVER "sudo mkdir -p $REMOTE_PROJECT_DIR && sudo chown ubuntu:ubuntu $REMOTE_PROJECT_DIR"
