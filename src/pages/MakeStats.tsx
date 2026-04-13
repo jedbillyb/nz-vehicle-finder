@@ -1,4 +1,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
+import { useParams, Link } from "react-router-dom";
+import { Pagination } from "@/components/Pagination";
+import { ResultStats } from "@/components/ResultStats";
+import {
+  fetchBreakdown,
+  searchVehicles,
+  type BreakdownData,
+} from "@/lib/vehicleApi";
+import { Vehicle } from "@/lib/mockData";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -9,15 +18,6 @@ function useIsMobile() {
   }, []);
   return isMobile;
 }
-import { useParams, Link } from "react-router-dom";
-import { Pagination } from "@/components/Pagination";
-import { ResultStats } from "@/components/ResultStats";
-import {
-  fetchBreakdown,
-  searchVehicles,
-  type BreakdownData,
-} from "@/lib/vehicleApi";
-import { Vehicle } from "@/lib/mockData";
 import { ArrowRight } from "lucide-react";
 
 const VehicleDetail = lazy(() =>
