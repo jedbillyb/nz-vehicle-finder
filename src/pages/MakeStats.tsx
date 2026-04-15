@@ -129,8 +129,17 @@ export default function MakeStats() {
 
   const handleSort = (key: keyof Vehicle) => {
     setSort((prev) => {
-      if (prev?.key === key) return prev.dir === "asc" ? { key, dir: "desc" } : null;
-      return { key, dir: "asc" };
+      const next = prev?.key === key ? (prev.dir === "asc" ? { key, dir: "desc" } : null) : { key, dir: "asc" };
+
+      captureEvent("results_sorted", {
+        column: key,
+        direction: next?.dir || "none",
+        ...summarizeFilters(filters as Record<string, string | undefined>),
+        result_count: total ?? 0,
+        source: "stats_page"
+      });
+
+      return next;
     });
   };
 
