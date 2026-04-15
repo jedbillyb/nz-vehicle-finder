@@ -58,7 +58,10 @@ export function RangeField({
             fontFamily: "inherit",
             outline: "none",
           }}
-          onFocus={e => e.currentTarget.style.borderColor = "#0ea5e9"}
+          onFocus={e => {
+            e.currentTarget.style.borderColor = "#0ea5e9";
+            captureEvent("filter_focused", { field: label, type: "min" });
+          }}
           onBlur={e => e.currentTarget.style.borderColor = "#d1d5db"}
         />
         <span style={{ color: "#9ca3af", fontSize: 10, flexShrink: 0 }}>–</span>
@@ -82,14 +85,9 @@ export function RangeField({
             fontFamily: "inherit",
             outline: "none",
           }}
-          onFocus={e => e.currentTarget.style.borderColor = "#0ea5e9"}
-          onBlur={e => e.currentTarget.style.borderColor = "#d1d5db"}
-        />
-      </div>
-    </div>
-  );
-}
- { field: label, type: "max" });
+          onFocus={e => {
+            e.currentTarget.style.borderColor = "#0ea5e9";
+            captureEvent("filter_focused", { field: label, type: "max" });
           }}
           onBlur={e => e.currentTarget.style.borderColor = "#d1d5db"}
         />
