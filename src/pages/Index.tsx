@@ -147,6 +147,7 @@ export default function Index() {
 
   const doSearch = useCallback(
     async (f: SearchFilters, p: number, trigger: "button" | "page" | "auto" = "button") => {
+      const startTime = performance.now();
       setLoading(true);
     setErrorMessage(null);
 
