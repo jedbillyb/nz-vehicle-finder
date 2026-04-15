@@ -73,8 +73,8 @@
 
 /* ── Action buttons → wrap on small screens ─────────────────── */
 .action-buttons {
-  flex-wrap: wrap !important;
   gap: 8px !important;
+  flex-wrap: wrap !important;
 }
 
 /* ── Results bar ────────────────────────────────────────────── */

@@ -391,48 +391,48 @@ export default function Index() {
                 <RangeField label="AXLES (MIN)" fieldMin="NUMBER_OF_AXLES_MIN" fieldMax="NUMBER_OF_AXLES_MIN" valueMin={filters.NUMBER_OF_AXLES_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_AXLES_MIN", v)} onChangeMax={() => {}} min={1} max={9} />
               </div>
 
-              <div className="action-buttons" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 24 }}>
-                <button onClick={handleClear}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.12em" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
-                >
-                  <RotateCcw size={11} />
-                  CLEAR
-                </button>
-                <button
-                  onClick={() => {
-                    const hasFilters = Object.values(filters).some((v) => v && v.trim());
-                    if (!hasFilters) { toast("No filters set", { description: "Enter at least one parameter before running a search." }); return; }
-                    setPage(1);
-                    doSearch(filters, 1);
-                  }}
-                  disabled={loading}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 18px", background: loading ? "#bae6fd" : "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, cursor: loading ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", fontWeight: 700, textTransform: "uppercase" }}
-                >
-                  <Search size={11} />
-                  {loading ? "SEARCHING..." : "RUN SEARCH"}
-                </button>
-                {results.length > 0 && (
-                  <button onClick={() => exportToCsv(results)}
-                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em" }}
+              <div className="action-buttons" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 24, width: "100%", minWidth: 0, flexWrap: "nowrap" }}>
+                  <button onClick={handleClear}
+                    style={{ flex: "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.12em", whiteSpace: "nowrap" }}
                     onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
                     onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
                   >
-                    <Download size={11} />
-                    EXPORT CSV
+                    <RotateCcw size={11} />
+                    CLEAR
                   </button>
-                )}
-                {total !== null && (
-                  <button onClick={handleCopyLink}
-                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: copiedLink ? "#dcfce7" : "transparent", color: copiedLink ? "#15803d" : "#4b5563", border: copiedLink ? "1px solid #22c55e" : "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
-                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = copiedLink ? "#22c55e" : "#d1d5db")}
+                  <button
+                    onClick={() => {
+                      const hasFilters = Object.values(filters).some((v) => v && v.trim());
+                      if (!hasFilters) { toast("No filters set", { description: "Enter at least one parameter before running a search." }); return; }
+                      setPage(1);
+                      doSearch(filters, 1);
+                  }}
+                  disabled={loading}
+                    style={{ flex: "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 18px", background: loading ? "#bae6fd" : "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, cursor: loading ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap" }}
                   >
-                    <Link2 size={11} />
-                    {copiedLink ? "LINK COPIED" : "COPY LINK"}
+                    <Search size={11} />
+                    {loading ? "SEARCHING..." : "RUN SEARCH"}
                   </button>
-                )}
+                  {results.length > 0 && (
+                    <button onClick={() => exportToCsv(results)}
+                      style={{ flex: "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", whiteSpace: "nowrap" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
+                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
+                    >
+                      <Download size={11} />
+                      EXPORT CSV
+                    </button>
+                  )}
+                  {total !== null && (
+                    <button onClick={handleCopyLink}
+                      style={{ flex: "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: copiedLink ? "#dcfce7" : "transparent", color: copiedLink ? "#15803d" : "#4b5563", border: copiedLink ? "1px solid #22c55e" : "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", whiteSpace: "nowrap" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
+                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = copiedLink ? "#22c55e" : "#d1d5db")}
+                    >
+                      <Link2 size={11} />
+                      {copiedLink ? "LINK COPIED" : "COPY LINK"}
+                    </button>
+                  )}
               </div>
             </div>
 
