@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { captureEvent } from "@/lib/posthog";
 
 interface RangeFieldProps {
   label: string;
@@ -82,6 +83,14 @@ export function RangeField({
             outline: "none",
           }}
           onFocus={e => e.currentTarget.style.borderColor = "#0ea5e9"}
+          onBlur={e => e.currentTarget.style.borderColor = "#d1d5db"}
+        />
+      </div>
+    </div>
+  );
+}
+ { field: label, type: "max" });
+          }}
           onBlur={e => e.currentTarget.style.borderColor = "#d1d5db"}
         />
       </div>
