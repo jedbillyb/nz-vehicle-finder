@@ -45,7 +45,7 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
         background: isInline ? "transparent" : "#ffffff",
         display: "grid",
         gridTemplateColumns: isInline
-          ? `repeat(${Object.keys(data).length || 1}, minmax(0, 1fr))`
+          ? "repeat(auto-fit, minmax(220px, 1fr))"
           : "repeat(auto-fit, minmax(200px, 1fr))",
         gap: isInline ? 20 : 20,
         borderTop: !isInline && expanded && !hideHeader ? "1px solid #e5e7eb" : "none",
@@ -55,7 +55,7 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
     >
       {loading && !hasData
         ? SKELETON_FIELDS.map((label) => (
-            <div key={label}>
+            <div key={label} style={{ minWidth: 0 }}>
               <h3 style={{ fontSize: 9, color: "#d1d5db", letterSpacing: "0.18em", marginBottom: 8, fontWeight: 700, margin: "0 0 8px" }}>
                 {label.toUpperCase()}
               </h3>
@@ -79,7 +79,7 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
               const max = items[0]?.count || 1;
               const total = items.reduce((sum, item) => sum + item.count, 0) || 1;
               return (
-                <div key={key}>
+                <div key={key} style={{ minWidth: 0 }}>
                   <h3 style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", marginBottom: 8, fontWeight: 700, margin: "0 0 8px" }}>
                     {(labels[key] ?? key).toUpperCase()}
                   </h3>

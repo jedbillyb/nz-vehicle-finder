@@ -24,7 +24,7 @@ export function RangeField({
   step = 1,
 }: RangeFieldProps) {
   return (
-    <div>
+    <div style={{ minWidth: 0, width: "100%" }}>
       <label style={{
         display: "block",
         fontSize: 9,
@@ -36,7 +36,7 @@ export function RangeField({
       }}>
         {label}
       </label>
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
         <input
           type="number"
           value={valueMin}
@@ -47,6 +47,7 @@ export function RangeField({
           step={step}
           style={{
             width: "100%",
+            minWidth: 0,
             background: "#ffffff",
             border: "1px solid #d1d5db",
             borderRadius: 6,
@@ -70,6 +71,7 @@ export function RangeField({
           step={step}
           style={{
             width: "100%",
+            minWidth: 0,
             background: "#ffffff",
             border: "1px solid #d1d5db",
             borderRadius: 6,
