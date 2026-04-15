@@ -50,6 +50,23 @@ npm install
    npm run dev
    ```
 
+### Analytics
+If you want PostHog tracking enabled, add these environment variables:
+```bash
+VITE_POSTHOG_API_KEY=phc_...
+VITE_POSTHOG_HOST=https://us.i.posthog.com
+```
+
+The app tracks:
+* Page views
+* Search starts and completions
+* Zero-result searches
+* Search failures
+* CSV exports
+* Copy-link clicks
+
+Search events include the active filters so you can see what people are actually searching for in PostHog.
+
 ## Deployment & Automation
 
 This project features automated deployment workflows for efficient updates.
