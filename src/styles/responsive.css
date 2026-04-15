@@ -112,6 +112,10 @@
   .action-buttons-secondary {
     gap: 8px !important;
   }
+  .action-buttons-primary > button,
+  .action-buttons-secondary > button {
+    min-width: 0 !important;
+  }
   .filters-left-col {
     justify-content: flex-start !important;
   }

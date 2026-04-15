@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import MakeStats from "./pages/MakeStats";
 import NotFound from "./pages/NotFound";
+import { AnalyticsTracker } from "./components/AnalyticsTracker";
 
 const queryClient = new QueryClient();
 
@@ -15,6 +16,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AnalyticsTracker />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/stats/:make" element={<MakeStats />} />

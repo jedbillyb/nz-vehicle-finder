@@ -16,6 +16,7 @@ import {
 } from "@/lib/vehicleApi";
 import { exportToCsv } from "@/lib/csvExport";
 import { applySeo } from "@/lib/seo";
+import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
 import { toast } from "sonner";
 import { Search, RotateCcw, Download, Link2, LoaderCircle } from "lucide-react";
@@ -145,9 +146,17 @@ export default function Index() {
   }, []);
 
   const doSearch = useCallback(
-    async (f: SearchFilters, p: number) => {
+    async (f: SearchFilters, p: number, trigger: "button" | "page" | "auto" = "button") => {
       setLoading(true);
     setErrorMessage(null);
+
+      const searchMeta = {
+        trigger,
+        page: p,
+        device: window.innerWidth < 768 ? "mobile" : "desktop",
+        ...summarizeFilters(f as Record<string, string | undefined>),
+      };
+      captureEvent("search_started", searchMeta);
 
       if (p === 1) {
         breakdownAbortRef.current?.abort();
@@ -165,7 +174,17 @@ export default function Index() {
 
         if (data.total === 0) {
           toast("No records found", { description: "Try broadening your search filters." });
+          captureEvent("search_zero_results", {
+            ...searchMeta,
+            result_count: 0,
+          });
         }
+
+        captureEvent("search_completed", {
+          ...searchMeta,
+          result_count: data.total,
+          page_count: data.pages,
+        });
 
         if (p === 1) {
           const controller = new AbortController();
@@ -192,6 +211,10 @@ export default function Index() {
       } catch (err) {
         console.error(err);
         const message = err instanceof Error ? err.message : "An unexpected error occurred while searching.";
+        captureEvent("search_failed", {
+          ...searchMeta,
+          error_message: message,
+        });
         setErrorMessage(message);
         toast.error("Search failed", {
           description: "We couldn't reach the vehicle database. Please check your connection and try again.",
@@ -207,7 +230,7 @@ export default function Index() {
     if (!initialLoad.current) return;
     initialLoad.current = false;
     const hasFilters = Object.values(filters).some((v) => v && v?.trim());
-    if (hasFilters) doSearch(filters, 1);
+    if (hasFilters) doSearch(filters, 1, "auto");
   }, [filters, doSearch]);
 
   useEffect(() => {
@@ -217,7 +240,7 @@ export default function Index() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-    doSearch(filters, newPage);
+    doSearch(filters, newPage, "page");
   };
 
   const handleClear = () => {
@@ -237,6 +260,10 @@ export default function Index() {
     try {
       await navigator.clipboard.writeText(window.location.href);
       setCopiedLink(true);
+      captureEvent("copy_link_clicked", {
+        ...summarizeFilters(filters as Record<string, string | undefined>),
+        result_count: total ?? 0,
+      });
       toast("Search link copied", { description: "You can paste this URL to share the current filters." });
       setTimeout(() => setCopiedLink(false), 1500);
     } catch (err) {
@@ -405,7 +432,7 @@ export default function Index() {
                       const hasFilters = Object.values(filters).some((v) => v && v.trim());
                       if (!hasFilters) { toast("No filters set", { description: "Enter at least one parameter before running a search." }); return; }
                       setPage(1);
-                      doSearch(filters, 1);
+                      doSearch(filters, 1, "button");
                     }}
                     disabled={loading}
                     style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 18px", background: loading ? "#bae6fd" : "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, cursor: loading ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap" }}
@@ -416,7 +443,13 @@ export default function Index() {
                 </div>
                 <div className="action-buttons-secondary" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
                   {results.length > 0 && (
-                    <button onClick={() => exportToCsv(results)}
+                    <button onClick={() => {
+                      captureEvent("export_csv_clicked", {
+                        ...summarizeFilters(filters as Record<string, string | undefined>),
+                        result_count: results.length,
+                      });
+                      exportToCsv(results);
+                    }}
                       style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", whiteSpace: "nowrap" }}
                       onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
                       onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
