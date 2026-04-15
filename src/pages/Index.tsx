@@ -686,7 +686,7 @@ export default function Index() {
             rel="noopener noreferrer"
             onClick={() => captureEvent("jedbillyb_link_clicked", { location: "footer" })}
             style={{ color: "#0ea5e9", textDecoration: "none", fontWeight: 700 }}
-          >JED BLENKHORN</a></span>
+          > JED BLENKHORN</a></span>
           <span style={{ color: "#d1d5db" }}>·</span>
           
             <a href="https://github.com/jedbillyb/nz-vehicle-finder"
