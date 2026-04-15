@@ -678,13 +678,18 @@ export default function Index() {
       )}
 
       </div>
-
       <footer className="footer-root" style={{ padding: "12px 24px", background: "#ffffff", borderTop: "1px solid #e5e7eb", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#6b7280", letterSpacing: "0.1em" }}>
         <div className="footer-links" style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span>DEVELOPED BY <a href="https://jedbillyb.com" target="_blank" rel="noopener noreferrer" style={{ color: "#0ea5e9", textDecoration: "none", fontWeight: 700 }}>JED BLENKHORN</a></span>
+          <span>DEVELOPED BY 
+            <a href="https://jedbillyb.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => captureEvent("jedbillyb_link_clicked", { location: "footer" })}
+            style={{ color: "#0ea5e9", textDecoration: "none", fontWeight: 700 }}
+          >JED BLENKHORN</a></span>
           <span style={{ color: "#d1d5db" }}>·</span>
-          <a
-            href="https://github.com/jedbillyb/nz-vehicle-finder"
+          
+            <a href="https://github.com/jedbillyb/nz-vehicle-finder"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => captureEvent("github_link_clicked", { location: "footer", source: "index" })}
