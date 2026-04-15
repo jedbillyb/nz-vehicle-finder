@@ -244,6 +244,7 @@ export default function Index() {
   };
 
   const handleClear = () => {
+    captureEvent("search_cleared");
     breakdownAbortRef.current?.abort();
     breakdownAbortRef.current = null;
     setBreakdown({});
@@ -255,6 +256,7 @@ export default function Index() {
     setSort(null);
     setErrorMessage(null);
   };
+
 
   const handleCopyLink = async () => {
     try {
