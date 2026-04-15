@@ -175,7 +175,7 @@ export default function MakeStats() {
           </div>
           {/* Main header row */}
           <div className="header-main" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
-            <Link to="/" style={{ textDecoration: "none" }}>
+            <Link to="/" style={{ textDecoration: "none" }} onClick={() => captureEvent("logo_home_clicked", { source: "stats_page", make: makeUpper })}>
               <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid #d1d5db" }}>
                 <img src="/favicon.svg" alt="Logo" style={{ width: "100%", height: "100%" }} />
               </div>
