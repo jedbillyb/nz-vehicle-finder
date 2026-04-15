@@ -76,6 +76,11 @@
   gap: 8px !important;
   flex-wrap: wrap !important;
 }
+@media (max-width: 767px) {
+  .action-buttons {
+    margin-top: 12px !important;
+  }
+}
 
 /* ── Results bar ────────────────────────────────────────────── */
 .results-bar {

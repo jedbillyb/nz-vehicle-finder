@@ -18,7 +18,7 @@ import { exportToCsv } from "@/lib/csvExport";
 import { applySeo } from "@/lib/seo";
 import { Vehicle } from "@/lib/mockData";
 import { toast } from "sonner";
-import { Search, RotateCcw, Download, Link2 } from "lucide-react";
+import { Search, RotateCcw, Download, Link2, LoaderCircle } from "lucide-react";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -392,6 +392,12 @@ export default function Index() {
               </div>
 
               <div className="action-buttons" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 24, width: "100%", minWidth: 0, flexWrap: "nowrap" }}>
+                {loading && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 8, color: "#0ea5e9", fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                    <LoaderCircle size={12} className="animate-spin" />
+                    SEARCHING RECORDS
+                  </div>
+                )}
                   <button onClick={handleClear}
                     style={{ flex: "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.12em", whiteSpace: "nowrap" }}
                     onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
@@ -406,11 +412,11 @@ export default function Index() {
                       if (!hasFilters) { toast("No filters set", { description: "Enter at least one parameter before running a search." }); return; }
                       setPage(1);
                       doSearch(filters, 1);
-                  }}
-                  disabled={loading}
+                    }}
+                    disabled={loading}
                     style={{ flex: "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 18px", background: loading ? "#bae6fd" : "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, cursor: loading ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap" }}
                   >
-                    <Search size={11} />
+                    {loading ? <LoaderCircle size={11} className="animate-spin" /> : <Search size={11} />}
                     {loading ? "SEARCHING..." : "RUN SEARCH"}
                   </button>
                   {results.length > 0 && (
