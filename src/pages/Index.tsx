@@ -339,7 +339,6 @@ export default function Index() {
           )}
           {total !== null && (
             <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
-              {loading && <span style={{ fontSize: 10, color: "#0ea5e9", letterSpacing: "0.15em", opacity: 0.8 }}>▋ QUERYING...</span>}
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>MATCHES FOUND</div>
@@ -358,7 +357,7 @@ export default function Index() {
         {/* Filter panel */}
         <div className="filters-panel" style={{ padding: "20px 24px", background: "#ffffff" }}>
           {/* Top Section: Main Filters */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px", paddingBottom: 20, borderBottom: "1px solid #f3f4f6" }}>
+          <div className="main-filters-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px", paddingBottom: 20, borderBottom: "1px solid #f3f4f6" }}>
             {filterFields.map((f) => (
               <SearchField
                 key={f.key}
@@ -383,7 +382,7 @@ export default function Index() {
           {/* Bottom Section: Two Columns */}
           <div className="filters-bottom" style={{ display: "flex", gap: 48, marginTop: 20, alignItems: "stretch", minWidth: 0 }}>
             {/* Left Column: Physical Params + Actions */}
-            <div className="filters-left-col" style={{ flex: "0 1 560px", maxWidth: 560, width: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", minWidth: 0 }}>
+            <div className="filters-left-col" style={{ flex: "0 1 560px", maxWidth: 560, width: "100%", display: "flex", flexDirection: "column", justifyContent: isMobile ? "flex-start" : "space-between", minWidth: 0 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "12px 24px", width: "100%", minWidth: 0 }}>
                 <RangeField label="GROSS MASS" fieldMin="GROSS_VEHICLE_MASS_MIN" fieldMax="GROSS_VEHICLE_MASS_MAX" valueMin={filters.GROSS_VEHICLE_MASS_MIN || ""} valueMax={filters.GROSS_VEHICLE_MASS_MAX || ""} onChangeMin={(v) => updateFilter("GROSS_VEHICLE_MASS_MIN", v)} onChangeMax={(v) => updateFilter("GROSS_VEHICLE_MASS_MAX", v)} min={0} max={50000} />
                 <RangeField label="WIDTH (MM)" fieldMin="WIDTH_MIN" fieldMax="WIDTH_MAX" valueMin={filters.WIDTH_MIN || ""} valueMax={filters.WIDTH_MAX || ""} onChangeMin={(v) => updateFilter("WIDTH_MIN", v)} onChangeMax={(v) => updateFilter("WIDTH_MAX", v)} min={0} max={3500} />
@@ -391,15 +390,10 @@ export default function Index() {
                 <RangeField label="AXLES (MIN)" fieldMin="NUMBER_OF_AXLES_MIN" fieldMax="NUMBER_OF_AXLES_MIN" valueMin={filters.NUMBER_OF_AXLES_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_AXLES_MIN", v)} onChangeMax={() => {}} min={1} max={9} />
               </div>
 
-              <div className="action-buttons" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 24, width: "100%", minWidth: 0, flexWrap: "nowrap" }}>
-                {loading && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 8, color: "#0ea5e9", fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-                    <LoaderCircle size={12} className="animate-spin" />
-                    SEARCHING RECORDS
-                  </div>
-                )}
+              <div className="action-buttons" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: isMobile ? 10 : 24, width: "100%", minWidth: 0, flexWrap: "nowrap" }}>
+                <div className="action-buttons-primary" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
                   <button onClick={handleClear}
-                    style={{ flex: "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.12em", whiteSpace: "nowrap" }}
+                    style={{ flex: isMobile ? "0 0 34%" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.12em", whiteSpace: "nowrap" }}
                     onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
                     onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
                   >
@@ -414,14 +408,16 @@ export default function Index() {
                       doSearch(filters, 1);
                     }}
                     disabled={loading}
-                    style={{ flex: "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 18px", background: loading ? "#bae6fd" : "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, cursor: loading ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap" }}
+                    style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 18px", background: loading ? "#bae6fd" : "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, cursor: loading ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap" }}
                   >
                     {loading ? <LoaderCircle size={11} className="animate-spin" /> : <Search size={11} />}
                     {loading ? "SEARCHING..." : "RUN SEARCH"}
                   </button>
+                </div>
+                <div className="action-buttons-secondary" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
                   {results.length > 0 && (
                     <button onClick={() => exportToCsv(results)}
-                      style={{ flex: "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", whiteSpace: "nowrap" }}
+                      style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", whiteSpace: "nowrap" }}
                       onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
                       onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
                     >
@@ -431,7 +427,7 @@ export default function Index() {
                   )}
                   {total !== null && (
                     <button onClick={handleCopyLink}
-                      style={{ flex: "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: copiedLink ? "#dcfce7" : "transparent", color: copiedLink ? "#15803d" : "#4b5563", border: copiedLink ? "1px solid #22c55e" : "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", whiteSpace: "nowrap" }}
+                      style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: copiedLink ? "#dcfce7" : "transparent", color: copiedLink ? "#15803d" : "#4b5563", border: copiedLink ? "1px solid #22c55e" : "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", whiteSpace: "nowrap" }}
                       onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
                       onMouseLeave={(e) => (e.currentTarget.style.borderColor = copiedLink ? "#22c55e" : "#d1d5db")}
                     >
@@ -439,6 +435,7 @@ export default function Index() {
                       {copiedLink ? "LINK COPIED" : "COPY LINK"}
                     </button>
                   )}
+                </div>
               </div>
             </div>
 
