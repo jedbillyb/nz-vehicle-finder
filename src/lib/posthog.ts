@@ -6,12 +6,7 @@ const POSTHOG_HOST =
 const STORAGE_KEY = "nzvf_posthog_distinct_id";
 
 function isEnabled() {
-  if (typeof window === "undefined" || typeof document === "undefined") return false;
-  if (!POSTHOG_API_KEY) return false;
-
-  const host = window.location.hostname;
-  // Only track on the real site or localhost (for your own testing)
-  return host === "vehiclefinder.co.nz" || host === "localhost" || host === "127.0.0.1";
+  return Boolean(POSTHOG_API_KEY) && typeof window !== "undefined" && typeof document !== "undefined";
 }
 
 function getDistinctId() {
