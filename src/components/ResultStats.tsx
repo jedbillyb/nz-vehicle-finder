@@ -126,7 +126,11 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
       `}</style>
       <div style={{ borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => {
+            const next = !expanded;
+            setExpanded(next);
+            captureEvent("breakdown_toggled", { expanded: next });
+          }}
           style={{
             width: "100%",
             display: "flex",

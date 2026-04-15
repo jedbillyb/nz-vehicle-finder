@@ -4,6 +4,7 @@ import { getSuggestionsLocal, getSuggestions, getModelsForMake } from "@/lib/veh
 import { Vehicle } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import { captureEvent } from "@/lib/posthog";
 
 interface SearchFieldProps {
   label: string;
@@ -82,7 +83,10 @@ export function SearchField({ label, field, value, onChange, filterBy }: SearchF
       <Input
         value={value}
         onChange={e => { onChange(e.target.value); setHighlightedIndex(-1); }}
-        onFocus={() => setShowSuggestions(true)}
+        onFocus={() => {
+          setShowSuggestions(true);
+          captureEvent("filter_focused", { field: label });
+        }}
         onKeyDown={handleKeyDown}
         className="bg-secondary/50 border-border/60 text-foreground placeholder:text-muted-foreground/50 h-9 text-sm font-mono"
         placeholder={`Any ${label.toLowerCase()}...`}
@@ -96,7 +100,11 @@ export function SearchField({ label, field, value, onChange, filterBy }: SearchF
                 "w-full text-left px-3 py-1.5 text-sm font-mono hover:bg-accent hover:text-accent-foreground transition-colors",
                 i === highlightedIndex && "bg-accent text-accent-foreground"
               )}
-              onMouseDown={() => { onChange(s); setShowSuggestions(false); }}
+              onMouseDown={() => {
+                onChange(s);
+                setShowSuggestions(false);
+                captureEvent("suggestion_selected", { field: label, value: s });
+              }}
             >
               {s}
             </button>
