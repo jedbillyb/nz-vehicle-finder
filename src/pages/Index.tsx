@@ -381,10 +381,10 @@ export default function Index() {
           </div>
 
           {/* Bottom Section: Two Columns */}
-          <div className="filters-bottom" style={{ display: "flex", gap: 48, marginTop: 20, alignItems: "stretch" }}>
+          <div className="filters-bottom" style={{ display: "flex", gap: 48, marginTop: 20, alignItems: "stretch", minWidth: 0 }}>
             {/* Left Column: Physical Params + Actions */}
-            <div className="filters-left-col" style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", justifyContent: "space-between", minWidth: 0 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 24px" }}>
+            <div className="filters-left-col" style={{ flex: "0 1 560px", maxWidth: 560, width: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", minWidth: 0 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "12px 24px", width: "100%", minWidth: 0 }}>
                 <RangeField label="GROSS MASS" fieldMin="GROSS_VEHICLE_MASS_MIN" fieldMax="GROSS_VEHICLE_MASS_MAX" valueMin={filters.GROSS_VEHICLE_MASS_MIN || ""} valueMax={filters.GROSS_VEHICLE_MASS_MAX || ""} onChangeMin={(v) => updateFilter("GROSS_VEHICLE_MASS_MIN", v)} onChangeMax={(v) => updateFilter("GROSS_VEHICLE_MASS_MAX", v)} min={0} max={50000} />
                 <RangeField label="WIDTH (MM)" fieldMin="WIDTH_MIN" fieldMax="WIDTH_MAX" valueMin={filters.WIDTH_MIN || ""} valueMax={filters.WIDTH_MAX || ""} onChangeMin={(v) => updateFilter("WIDTH_MIN", v)} onChangeMax={(v) => updateFilter("WIDTH_MAX", v)} min={0} max={3500} />
                 <RangeField label="SEATS (MIN)" fieldMin="NUMBER_OF_SEATS_MIN" fieldMax="NUMBER_OF_SEATS_MIN" valueMin={filters.NUMBER_OF_SEATS_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_SEATS_MIN", v)} onChangeMax={() => {}} min={1} max={20} />
@@ -437,8 +437,8 @@ export default function Index() {
             </div>
 
             {/* Right Column: Result Breakdown */}
-            <div className="filters-right-col" style={{ flex: "1", borderLeft: "1px solid #f3f4f6", paddingLeft: 32, display: "flex", flexDirection: "column", minHeight: 0 }}>
-              <div style={{ flex: 1, overflowY: "auto" }}>
+            <div className="filters-right-col" style={{ flex: "1 1 0", minWidth: 0, borderLeft: "1px solid #f3f4f6", paddingLeft: 32, display: "flex", flexDirection: "column", minHeight: 0 }}>
+              <div style={{ flex: 1, overflow: "auto", minWidth: 0 }}>
                 <ResultStats data={breakdown} loading={breakdownLoading} hideHeader isInline />
               </div>
             </div>
