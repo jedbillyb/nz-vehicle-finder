@@ -356,7 +356,7 @@ export default function Index() {
           </div>
           {total === null && (
             <div style={{ marginLeft: "auto" }}>
-              <a className="header-sponsor" href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
+              <a className="header-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "header" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
                 style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", textDecoration: "none",
                   padding: "5px 12px", border: "1px solid #ef4444", borderRadius: 6,
                   letterSpacing: "0.1em", display: "flex", flexDirection: "column",
@@ -372,7 +372,7 @@ export default function Index() {
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>MATCHES FOUND</div>
               </div>
-              <a className="header-sponsor" href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
+              <a className="header-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "header" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
                 style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", textDecoration: "none", padding: "6px 12px", border: "1px solid #ef4444", borderRadius: 6, letterSpacing: "0.1em", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2 }}>
                 <span>SPONSOR</span>
                 <span style={{ fontSize: 8, marginTop: 2 }}>THIS PROJECT</span>
