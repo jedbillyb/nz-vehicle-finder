@@ -59,12 +59,27 @@ export default function MakeStats() {
 
   const doSearch = useCallback(async (p: number) => {
     setLoading(true);
+
+    const searchMeta = {
+      trigger: "stats_page",
+      page: p,
+      device: window.innerWidth < 768 ? "mobile" : "desktop",
+      ...summarizeFilters(filters as Record<string, string | undefined>),
+    };
+    captureEvent("search_started", searchMeta);
+
     try {
       const data = await searchVehicles(filters, p);
       setResults(data.vehicles);
       setTotal(data.total);
       setPages(data.pages);
       setSort(null);
+
+      captureEvent("search_completed", {
+        ...searchMeta,
+        result_count: data.total,
+        page_count: data.pages,
+      });
 
       if (p === 1) {
         breakdownAbortRef.current?.abort();
@@ -243,7 +258,16 @@ export default function MakeStats() {
                     </tr>
                   ) : (
                     displayResults.map((v, i) => (
-                      <tr key={i} onClick={() => setSelectedVehicle(v)}
+                      <tr key={i} onClick={() => {
+                        setSelectedVehicle(v);
+                        captureEvent("vehicle_detail_viewed", {
+                          make: v.MAKE,
+                          model: v.MODEL,
+                          year: v.VEHICLE_YEAR,
+                          vin11: v.VIN11,
+                          source: "stats_page"
+                        });
+                      }}
                         style={{ cursor: "pointer", borderBottom: "1px solid #e5e7eb", background: i % 2 === 0 ? "#ffffff" : "#f9fafb" }}
                         onMouseEnter={(e) => (e.currentTarget.style.background = "#eff6ff")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? "#ffffff" : "#f9fafb")}

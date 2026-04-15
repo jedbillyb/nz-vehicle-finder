@@ -529,7 +529,15 @@ export default function Index() {
                   </tr>
                 ) : (
                   displayResults.map((v, i) => (
-                    <tr key={i} onClick={() => setSelectedVehicle(v)}
+                    <tr key={i} onClick={() => {
+                      setSelectedVehicle(v);
+                      captureEvent("vehicle_detail_viewed", {
+                        make: v.MAKE,
+                        model: v.MODEL,
+                        year: v.VEHICLE_YEAR,
+                        vin11: v.VIN11,
+                      });
+                    }}
                       style={{ cursor: "pointer", borderBottom: "1px solid #e5e7eb", background: i % 2 === 0 ? "#ffffff" : "#f9fafb" }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = "#eff6ff")}
                       onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? "#ffffff" : "#f9fafb")}
@@ -667,7 +675,7 @@ export default function Index() {
             SOURCE
           </a>
           <span style={{ color: "#d1d5db" }}>·</span>
-          <a href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer" style={{ color: "#ef4444", textDecoration: "none", fontWeight: 700 }}>SPONSOR THIS PROJECT</a>
+          <a href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer" onClick={() => captureEvent("sponsor_link_clicked", { location: "footer" })} style={{ color: "#ef4444", textDecoration: "none", fontWeight: 700 }}>SPONSOR THIS PROJECT</a>
           <span style={{ color: "#d1d5db" }}>·</span>
           <span>© {new Date().getFullYear()}</span>
         </div>
