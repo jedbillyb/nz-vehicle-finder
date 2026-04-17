@@ -10,7 +10,7 @@ echo "Syncing with server..."
 # Sync project files (excluding build artifacts and node_modules)
 # Use sudo for creating the remote directory if it doesn't exist
 ssh -i $KEY $SERVER "sudo mkdir -p $REMOTE_PROJECT_DIR && sudo chown ubuntu:ubuntu $REMOTE_PROJECT_DIR"
-rsync -avz -e "ssh -i $KEY" --exclude 'node_modules' --exclude 'dist' --exclude '.git' ./ $SERVER:$REMOTE_PROJECT_DIR/
+rsync -avz -e "ssh -i $KEY" --exclude 'node_modules' --exclude 'dist' --exclude '.git' --exclude 'database/*.db*' ./ $SERVER:$REMOTE_PROJECT_DIR/
 
 echo "Building on server..."
 ssh -i $KEY $SERVER "cd $REMOTE_PROJECT_DIR && npm install && npm run build"

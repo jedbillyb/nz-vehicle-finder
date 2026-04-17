@@ -198,42 +198,53 @@ export default function MakeStats() {
                 Motor Vehicle Register · {makeUpper} Statistics
               </p>
             </div>
-            {total === null && (
-              <div style={{ marginLeft: "auto" }}>
-                <a className="header-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "header" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", textDecoration: "none",
-                    padding: "5px 12px", border: "1px solid #ef4444", borderRadius: 6,
-                    letterSpacing: "0.1em", display: "flex", flexDirection: "column",
-                    alignItems: "center", lineHeight: 1.4, marginLeft: "auto" }}>
-                  <span>SPONSOR</span>
-                  <span>THIS PROJECT</span>
-                </a>
-              </div>
-            )}
             {total !== null && (
               <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
                   <div style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>VEHICLES REGISTERED</div>
                 </div>
-                <a className="header-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "header_with_results" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", textDecoration: "none", padding: "6px 12px", border: "1px solid #ef4444", borderRadius: 6, letterSpacing: "0.1em", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2 }}>
-                  <span>SPONSOR</span>
-                  <span style={{ fontSize: 8, marginTop: 2 }}>THIS PROJECT</span>
-                </a>
               </div>
             )}
           </div>
         </header>
 
         {/* Hero heading */}
-        <div style={{ padding: "32px 24px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb" }}>
-          <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-            {total !== null ? total.toLocaleString() : "..."} {makeDisplay} vehicles registered in NZ
-          </h2>
-          <p style={{ fontSize: 16, color: "#374151", margin: 0, letterSpacing: "0.01em" }}>
-            Breakdown and full listing of all {makeDisplay} vehicles on the New Zealand Motor Vehicle Register.
-          </p>
+        <div style={{ padding: "40px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32 }}>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+              {total !== null ? total.toLocaleString() : "..."} {makeDisplay} vehicles registered in NZ
+            </h2>
+            <p style={{ fontSize: 16, color: "#374151", margin: 0, letterSpacing: "0.01em", maxWidth: 800 }}>
+              Breakdown and full listing of all {makeDisplay} vehicles on the New Zealand Motor Vehicle Register.
+            </p>
+          </div>
+          <a
+            className="hero-sponsor"
+            onClick={() => captureEvent("sponsor_link_clicked", { location: "hero_stats" })}
+            href="https://buymeacoffee.com/jedbillyb"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              marginTop: 8,
+              padding: "12px 24px",
+              background: "#ef4444",
+              color: "#ffffff",
+              textDecoration: "none",
+              borderRadius: 12,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 2,
+              boxShadow: "0 4px 12px rgba(239, 68, 68, 0.2)",
+              transition: "transform 0.2s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+          >
+            <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.1em" }}>SPONSOR THIS PROJECT</span>
+            <span style={{ fontSize: 10, opacity: 0.9 }}>SUPPORT FREE OPEN DATA</span>
+          </a>
         </div>
 
         {/* Breakdown */}
