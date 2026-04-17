@@ -210,19 +210,50 @@ export default function MakeStats() {
         </header>
 
         {/* Hero heading */}
-        <div style={{ padding: "40px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32 }}>
-          <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-              {total !== null ? total.toLocaleString() : "..."} {makeDisplay} vehicles registered in NZ
-            </h2>
-            <p style={{ fontSize: 16, color: "#374151", margin: 0, letterSpacing: "0.01em", maxWidth: 800 }}>
-              Breakdown and full listing of all {makeDisplay} vehicles on the New Zealand Motor Vehicle Register.
-            </p>
+        <div style={{ padding: "40px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 32, marginBottom: 32 }}>
+            <div style={{ flex: "1 1 600px" }}>
+              <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+                {total !== null ? total.toLocaleString() : "..."} {makeDisplay} vehicles registered in NZ
+              </h2>
+              <p style={{ fontSize: 16, color: "#374151", margin: 0, letterSpacing: "0.01em", maxWidth: 800 }}>
+                Breakdown and full listing of all {makeDisplay} vehicles on the New Zealand Motor Vehicle Register.
+              </p>
+            </div>
           </div>
-          <a className="hero-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "hero_stats" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 13, fontWeight: 700, color: "#ef4444", textDecoration: "none", padding: "10px 20px", border: "2px solid #ef4444", borderRadius: 8, letterSpacing: "0.1em", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2, marginTop: 8, minWidth: 140 }}>
-            <span>SPONSOR</span>
-            <span style={{ fontSize: 9, marginTop: 3 }}>THIS PROJECT</span>
+          
+          <a className="hero-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "hero_stats_full" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
+            style={{ 
+              width: "100%",
+              padding: "20px 32px", 
+              border: "2px solid #ef4444", 
+              borderRadius: 16, 
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 16,
+              transition: "all 0.2s ease",
+              background: "rgba(239, 68, 68, 0.02)"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.05)";
+              e.currentTarget.style.borderColor = "#dc2626";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.02)";
+              e.currentTarget.style.borderColor = "#ef4444";
+            }}
+          >
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#ef4444", letterSpacing: "0.15em", textTransform: "uppercase" }}>
+                Sponsor This Project
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#ef4444", opacity: 0.8, marginTop: 2, letterSpacing: "0.05em" }}>
+                HELP KEEP THE NEW ZEALAND MOTOR VEHICLE REGISTER OPEN AND FREE FOR EVERYONE
+              </div>
+            </div>
+            <ArrowRight size={24} color="#ef4444" />
           </a>
         </div>
 
