@@ -215,7 +215,7 @@ export default function MakeStats() {
             {total !== null ? total.toLocaleString() : "..."} {makeDisplay} vehicles registered in NZ
           </h2>
           <p style={{ fontSize: 16, color: "#374151", margin: 0, letterSpacing: "0.01em" }}>
-            Breakdown and full listing of all Toyota vehicles on the New Zealand Motor Vehicle Register.
+            Breakdown and full listing of all {makeDisplay} vehicles on the New Zealand Motor Vehicle Register.
           </p>
         </div>
 
