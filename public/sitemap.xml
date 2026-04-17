@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://vehiclefinder.co.nz/</loc>
-    <lastmod>2026-04-13T00:00:00+00:00</lastmod>
+    <lastmod>2026-04-17T00:00:00+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -47,7 +47,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://vehiclefinder.co.nz/stats/adams--currie</loc>
+    <loc>https://vehiclefinder.co.nz/stats/adams-currie</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -3537,7 +3537,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://vehiclefinder.co.nz/stats/p--h</loc>
+    <loc>https://vehiclefinder.co.nz/stats/p-h</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -4222,7 +4222,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://vehiclefinder.co.nz/stats/steel-tanks--str</loc>
+    <loc>https://vehiclefinder.co.nz/stats/steel-tanks-str</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -4622,7 +4622,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://vehiclefinder.co.nz/stats/transport--general</loc>
+    <loc>https://vehiclefinder.co.nz/stats/transport-general</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
