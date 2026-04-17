@@ -220,9 +220,9 @@ export default function MakeStats() {
             </p>
           </div>
           <a className="hero-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "hero_stats" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", textDecoration: "none", padding: "6px 12px", border: "1px solid #ef4444", borderRadius: 6, letterSpacing: "0.1em", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2, marginTop: 8 }}>
+            style={{ fontSize: 13, fontWeight: 700, color: "#ef4444", textDecoration: "none", padding: "10px 20px", border: "2px solid #ef4444", borderRadius: 8, letterSpacing: "0.1em", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2, marginTop: 8, minWidth: 140 }}>
             <span>SPONSOR</span>
-            <span style={{ fontSize: 8, marginTop: 2 }}>THIS PROJECT</span>
+            <span style={{ fontSize: 9, marginTop: 3 }}>THIS PROJECT</span>
           </a>
         </div>
 
