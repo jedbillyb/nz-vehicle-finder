@@ -1,93 +1,79 @@
+<div align="center">
+
+<img src="public/favicon.svg" width="64" height="64" alt="NZ Vehicle Finder" />
+
 # NZ Vehicle Finder
 
-A powerful, high-performance search application for the New Zealand Motor Vehicle Register. Designed with a clean, terminal-inspired interface, it allows users to filter millions of vehicle records by make, model, geography, and technical specifications.
+**Search 5.9 million records from the New Zealand Motor Vehicle Register.**
+
+[![Live](https://img.shields.io/badge/live-vehiclefinder.co.nz-brightgreen?style=flat-square)](https://vehiclefinder.co.nz)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
+[![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
+
+</div>
 
 ---
 
-## Key Features
+A fast, terminal-inspired search tool for the NZ Motor Vehicle Register. Filter by make, model, region, fuel type, VIN, year range, engine specs, and more — across 17+ dimensions.
 
-*   **Advanced Filtering**: Search across 17+ dimensions including Make, Model, Colour, Region, Fuel Type, and VIN.
-*   **Precision Tools**: Filter using numeric ranges for Year, CC Rating, Power (kW), and Dimensions.
-*   **High-Performance**: Utilizes SQLite for local data storage and a fast Express API.
-*   **Productivity First**: 
-    *   **Autocomplete**: Context-aware suggestions for search fields.
-    *   **Sharable Search**: One-click "Copy Link" generates deep-linked URLs for any filtered query.
-    *   **Data Export**: Download your filtered datasets as CSV files.
-    *   **Query History**: Automatically remembers recent searches for quick recall.
-*   **Smart UI**: Interactive result tables, sortable data, and dynamic visual breakdowns (fuel types, makes, body types).
+## Features
 
-## Live Deployment
-You can access the live version of this project at: 
-[https://vehiclefinder.co.nz](https://vehiclefinder.co.nz)
+- **Deep filtering** — Make, model, colour, region, fuel type, body style, VIN, year, CC, kW, and dimensions
+- **Autocomplete** — Context-aware suggestions on every search field
+- **Shareable searches** — One-click link generation for any filtered query
+- **CSV export** — Download your result set directly
+- **Query history** — Recent searches recalled automatically
+- **Visual breakdowns** — Dynamic charts for fuel type, make, and body type distributions
 
-## Tech Stack
+## Stack
 
-*   **Frontend**: Vite, React 18, TypeScript, Tailwind CSS, shadcn/ui, Lucide React, @tanstack/react-query
-*   **Backend**: Node.js, Express, better-sqlite3
+| Layer | Tech |
+|---|---|
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui |
+| Data fetching | TanStack Query |
+| Backend | Node.js, Express, better-sqlite3 |
+| Icons | Lucide React |
 
-## Development Setup
+## Getting Started
 
-### Prerequisites
-*   Node.js 18+
-*   npm (or bun)
-
-### Installation
 ```bash
 git clone https://github.com/jedbillyb/nz-vehicle-finder.git
 cd nz-vehicle-finder
 npm install
 ```
 
-### Running Locally
-1. **Start the API Server**:
-   ```bash
-   npm run server
-   ```
-   (Runs on `http://localhost:3001` by default)
+Start the API server (defaults to `http://localhost:3001`):
 
-2. **Start the Frontend**:
-   ```bash
-   npm run dev
-   ```
-
-### Analytics
-If you want PostHog tracking enabled, add these environment variables:
 ```bash
+npm run server
+```
+
+Start the frontend dev server:
+
+```bash
+npm run dev
+```
+
+### Analytics (optional)
+
+Set these env vars to enable PostHog tracking:
+
+```env
 VITE_POSTHOG_API_KEY=phc_...
 VITE_POSTHOG_HOST=https://us.i.posthog.com
 ```
 
-The app tracks:
-* Page views
-* Search starts and completions
-* Zero-result searches
-* Search failures
-* CSV exports
-* Copy-link clicks
+Tracked events: page views, searches (with active filters), zero-result queries, CSV exports, and copy-link clicks.
 
-Search events include the active filters so you can see what people are actually searching for in PostHog.
+## Deployment
 
-## Deployment & Automation
-
-This project features automated deployment workflows for efficient updates.
-
-### Automated Sync (Post-Commit)
-A configured Git `post-commit` hook ensures your production environment stays in sync without manual effort. Every time you run `git commit`, the project:
-1. **Syncs**: Uses `rsync` to mirror your workspace to the VPS.
-2. **Installs**: Refreshes dependencies (`npm install`).
-3. **Builds**: Generates the production build (`npm run build`).
-
-### Deployment Script
-The `deploy-to-server.sh` script manages the process. 
-*   **Prerequisites**: SSH key-based access to the production server.
-*   **Configuration**: Adjust `SERVER`, `REMOTE_DIR`, and `KEY` in the script if your path changes.
-
-## Branding
-- **Logo/Favicon**: The project uses a custom-designed "magnifier" SVG favicon, representing the precision of the vehicle search tools.
-
-## License
-This project is licensed under the [MIT License](LICENSE).
+A `post-commit` Git hook automatically syncs, installs, and builds to the VPS on every commit via `rsync`. See `deploy-to-server.sh` — configure `SERVER`, `REMOTE_DIR`, and `KEY` for your environment.
 
 ---
 
-Made with ❤️ by [jedbillyb](https://github.com/jedbillyb)
+<div align="center">
+<sub>MIT © <a href="https://vehiclefinder.co.nz">jedbillyb</a> · Made with ❤️</sub>
+</div>
+
+**Suggested commit:** `docs: rewrite README for clarity and conciseness`
