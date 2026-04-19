@@ -75,5 +75,3 @@ A `post-commit` Git hook automatically syncs, installs, and builds to the VPS on
 <div align="center">
 <sub>MIT © <a href="https://vehiclefinder.co.nz">jedbillyb</a> · Made with ❤️</sub>
 </div>
-
-**Suggested commit:** `docs: rewrite README for clarity and conciseness`
