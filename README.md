@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/favicon.svg" width="64" height="64" alt="NZ Vehicle Finder" />
+<img src="public/favicon.svg" width="128" height="128" alt="NZ Vehicle Finder" />
 
 # NZ Vehicle Finder
 
