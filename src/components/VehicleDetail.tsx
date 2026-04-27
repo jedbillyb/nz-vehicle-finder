@@ -35,7 +35,7 @@ const fieldLabels: Record<string, string> = {
   INDUSTRY_MODEL_CODE: "Industry Model Code",
   MVMA_MODEL_CODE: "MVMA Model Code",
   ROAD_TRANSPORT_CODE: "Road Transport Code",
-  TLA: "Region (TLA)",
+  TLA: "Registered Region (TLA)",
   POSTCODE: "Postcode",
   ORIGINAL_COUNTRY: "Country of Manufacture",
   PREVIOUS_COUNTRY: "Previous Country",
