@@ -40,7 +40,7 @@ const filterFields: { key: keyof SearchFilters; label: string }[] = [
   { key: "MOTIVE_POWER", label: "Fuel Type" },
   { key: "BODY_TYPE", label: "Body Type" },
   { key: "TRANSMISSION_TYPE", label: "Transmission" },
-  { key: "TLA", label: "Registered Region", helpText: "The Territorial Local Authority (TLA) where the vehicle is currently registered." },
+  { key: "TLA", label: "Registered Region", helpText: "The Territorial Local Authority (TLA) associated with the vehicle owner's current registered address. This is not necessarily where the vehicle was first registered or manufactured." },
   { key: "POSTCODE", label: "Postcode" },
   { key: "IMPORT_STATUS", label: "Import Status" },
   { key: "ORIGINAL_COUNTRY", label: "Country of Manufacture" },
