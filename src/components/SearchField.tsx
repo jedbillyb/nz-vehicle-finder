@@ -11,10 +11,11 @@ interface SearchFieldProps {
   field: keyof Vehicle;
   value: string;
   onChange: (value: string) => void;
+  onValidationChange?: (isValid: boolean) => void;
   filterBy?: Partial<Record<keyof Vehicle, string>>;
 }
 
-export function SearchField({ label, field, value, onChange, filterBy }: SearchFieldProps) {
+export function SearchField({ label, field, value, onChange, onValidationChange, filterBy }: SearchFieldProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -28,7 +29,7 @@ export function SearchField({ label, field, value, onChange, filterBy }: SearchF
   const { data: remoteSuggestions = [] } = useQuery({
     queryKey: ["suggestions", field, debouncedValue, filterBy],
     queryFn: ({ signal }) => getSuggestions(field, debouncedValue, filterBy, signal),
-    enabled: showSuggestions && (debouncedValue.length > 0 || !!filterBy),
+    enabled: (showSuggestions || !!value.trim()) && (debouncedValue.length > 0 || !!filterBy),
     staleTime: 60 * 1000,
   });
 
@@ -49,6 +50,15 @@ export function SearchField({ label, field, value, onChange, filterBy }: SearchF
     return getSuggestionsLocal(field as string, value, filterBy);
   }, [field, value, filterBy, remoteSuggestions]);
 
+  const isValid = useMemo(() => {
+    if (!value.trim()) return true;
+    return suggestions.some(s => s.toLowerCase() === value.trim().toLowerCase());
+  }, [value, suggestions]);
+
+  useEffect(() => {
+    onValidationChange?.(isValid);
+  }, [isValid, onValidationChange]);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node))
@@ -57,6 +67,14 @@ export function SearchField({ label, field, value, onChange, filterBy }: SearchF
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const handleBlur = () => {
+    if (!value.trim()) return;
+    const match = suggestions.find(s => s.toLowerCase() === value.trim().toLowerCase());
+    if (match && match !== value) {
+      onChange(match);
+    }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!showSuggestions || suggestions.length === 0) return;
@@ -87,8 +105,12 @@ export function SearchField({ label, field, value, onChange, filterBy }: SearchF
           setShowSuggestions(true);
           captureEvent("filter_focused", { field: label });
         }}
+        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className="bg-secondary/50 border-border/60 text-foreground placeholder:text-muted-foreground/50 h-9 text-sm font-mono"
+        className={cn(
+          "bg-secondary/50 border-border/60 text-foreground placeholder:text-muted-foreground/50 h-9 text-sm font-mono",
+          !isValid && "border-destructive ring-destructive/20 focus-visible:ring-destructive/20"
+        )}
         placeholder={`Any ${label.toLowerCase()}...`}
       />
       {showSuggestions && suggestions.length > 0 && (

@@ -112,6 +112,7 @@ export default function Index() {
   const [breakdown, setBreakdown] = useState<BreakdownData>({});
   const [breakdownLoading, setBreakdownLoading] = useState(false);
   const [breakdownSheetOpen, setBreakdownSheetOpen] = useState(false);
+  const [validity, setValidity] = useState<Record<string, boolean>>({});
 
   useEffect(() => { preloadSuggestions(); }, []);
 
@@ -134,6 +135,10 @@ export default function Index() {
       if (key === "MAKE" || key === "MODEL") next.SUBMODEL = "";
       return next;
     });
+  };
+
+  const updateValidity = (key: string, isValid: boolean) => {
+    setValidity(prev => ({ ...prev, [key]: isValid }));
   };
 
   useEffect(() => {
@@ -405,6 +410,7 @@ export default function Index() {
                 field={f.key as keyof Vehicle}
                 value={(filters[f.key] as string) || ""}
                 onChange={(v) => updateFilter(f.key, v)}
+                onValidationChange={(isValid) => updateValidity(f.key, isValid)}
                 filterBy={
                   f.key === "MODEL" && filters.MAKE
                     ? { MAKE: filters.MAKE }
@@ -444,6 +450,13 @@ export default function Index() {
                     onClick={() => {
                       const hasFilters = Object.values(filters).some((v) => v && v.trim());
                       if (!hasFilters) { toast("No filters set", { description: "Enter at least one parameter before running a search." }); return; }
+                      
+                      const allValid = Object.values(validity).every(v => v !== false);
+                      if (!allValid) {
+                        toast("Invalid search parameters", { description: "Please correct the highlighted fields before searching." });
+                        return;
+                      }
+
                       setPage(1);
                       doSearch(filters, 1, "button");
                     }}
