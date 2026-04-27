@@ -7,11 +7,10 @@ import { useQuery } from "@tanstack/react-query";
 import { captureEvent } from "@/lib/posthog";
 import { Info } from "lucide-react";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface SearchFieldProps {
   label: string;
@@ -116,16 +115,16 @@ export function SearchField({
           {label}
         </label>
         {helpText && (
-          <TooltipProvider>
-            <Tooltip delayDuration={300}>
-              <TooltipTrigger asChild>
-                <Info size={11} className="text-muted-foreground/60 cursor-help hover:text-muted-foreground transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs text-[10px] font-mono p-2">
-                {helpText}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" className="flex items-center justify-center p-0.5 rounded-full hover:bg-accent transition-colors">
+                <Info size={12} className="text-muted-foreground/60 cursor-pointer hover:text-muted-foreground transition-colors" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 text-[11px] font-mono p-3 leading-relaxed">
+              {helpText}
+            </PopoverContent>
+          </Popover>
         )}
       </div>
       <Input
