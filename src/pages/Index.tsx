@@ -43,7 +43,7 @@ const filterFields: { key: keyof SearchFilters; label: string }[] = [
   { key: "TLA", label: "Region" },
   { key: "POSTCODE", label: "Postcode" },
   { key: "IMPORT_STATUS", label: "Import Status" },
-  { key: "ORIGINAL_COUNTRY", label: "Origin Country" },
+  { key: "ORIGINAL_COUNTRY", label: "Country of Manufacture" },
   { key: "CLASS", label: "Class" },
   { key: "INDUSTRY_CLASS", label: "Industry Class" },
   { key: "ROAD_TRANSPORT_CODE", label: "Road Code" },
