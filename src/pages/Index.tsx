@@ -18,6 +18,7 @@ import { exportToCsv } from "@/lib/csvExport";
 import { applySeo } from "@/lib/seo";
 import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
+import { APP_VERSION } from "@/lib/version";
 import { toast } from "sonner";
 import { Search, RotateCcw, Download, Link2, LoaderCircle } from "lucide-react";
 
@@ -715,6 +716,8 @@ export default function Index() {
           <a href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer" onClick={() => captureEvent("sponsor_link_clicked", { location: "footer" })} style={{ color: "#ef4444", textDecoration: "none", fontWeight: 700 }}>SPONSOR THIS PROJECT</a>
           <span style={{ color: "#d1d5db" }}>·</span>
           <span>© {new Date().getFullYear()}</span>
+          <span style={{ color: "#d1d5db" }}>·</span>
+          <span style={{ fontWeight: 600 }}>V{APP_VERSION}</span>
         </div>
         <div style={{ color: "#9ca3af", fontSize: 9, letterSpacing: "0.08em", textAlign: "center" }}>
           vehiclefinder.co.nz is not affiliated with, endorsed by, or operated by Waka Kotahi NZ Transport Agency. Data sourced from the publicly available Motor Vehicle Register.
