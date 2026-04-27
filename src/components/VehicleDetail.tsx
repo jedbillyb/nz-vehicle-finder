@@ -37,7 +37,7 @@ const fieldLabels: Record<string, string> = {
   ROAD_TRANSPORT_CODE: "Road Transport Code",
   TLA: "Region (TLA)",
   POSTCODE: "Postcode",
-  ORIGINAL_COUNTRY: "Country of Origin",
+  ORIGINAL_COUNTRY: "Country of Manufacture",
   PREVIOUS_COUNTRY: "Previous Country",
   IMPORT_STATUS: "Import Status",
   NZ_ASSEMBLED: "NZ Assembled",
