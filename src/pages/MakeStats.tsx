@@ -34,7 +34,7 @@ const resultColumns: { key: keyof Vehicle; label: string }[] = [
   { key: "BODY_TYPE", label: "Body" },
   { key: "MOTIVE_POWER", label: "Fuel" },
   { key: "TRANSMISSION_TYPE", label: "Trans" },
-  { key: "TLA", label: "Region" },
+  { key: "TLA", label: "Registered Region" },
   { key: "VIN11", label: "VIN11" },
 ];
 

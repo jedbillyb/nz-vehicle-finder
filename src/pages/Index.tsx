@@ -40,7 +40,7 @@ const filterFields: { key: keyof SearchFilters; label: string }[] = [
   { key: "MOTIVE_POWER", label: "Fuel Type" },
   { key: "BODY_TYPE", label: "Body Type" },
   { key: "TRANSMISSION_TYPE", label: "Transmission" },
-  { key: "TLA", label: "Region" },
+  { key: "TLA", label: "Registered Region", helpText: "The Territorial Local Authority (TLA) where the vehicle is currently registered." },
   { key: "POSTCODE", label: "Postcode" },
   { key: "IMPORT_STATUS", label: "Import Status" },
   { key: "ORIGINAL_COUNTRY", label: "Country of Manufacture" },
@@ -60,7 +60,7 @@ const resultColumns: { key: keyof Vehicle; label: string }[] = [
   { key: "BODY_TYPE", label: "Body" },
   { key: "MOTIVE_POWER", label: "Fuel" },
   { key: "TRANSMISSION_TYPE", label: "Trans" },
-  { key: "TLA", label: "Region" },
+  { key: "TLA", label: "Registered Region" },
   { key: "VIN11", label: "VIN11" },
 ];
 
@@ -408,6 +408,7 @@ export default function Index() {
               <SearchField
                 key={f.key}
                 label={f.label}
+                helpText={f.helpText}
                 field={f.key as keyof Vehicle}
                 value={(filters[f.key] as string) || ""}
                 onChange={(v) => updateFilter(f.key, v)}

@@ -5,6 +5,13 @@ import { Vehicle } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { captureEvent } from "@/lib/posthog";
+import { Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SearchFieldProps {
   label: string;
@@ -13,9 +20,18 @@ interface SearchFieldProps {
   onChange: (value: string) => void;
   onValidationChange?: (isValid: boolean) => void;
   filterBy?: Partial<Record<keyof Vehicle, string>>;
+  helpText?: string;
 }
 
-export function SearchField({ label, field, value, onChange, onValidationChange, filterBy }: SearchFieldProps) {
+export function SearchField({ 
+  label, 
+  field, 
+  value, 
+  onChange, 
+  onValidationChange, 
+  filterBy,
+  helpText 
+}: SearchFieldProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -95,9 +111,23 @@ export function SearchField({ label, field, value, onChange, onValidationChange,
 
   return (
     <div ref={wrapperRef} className="relative">
-      <label className="block text-xs font-medium text-muted-foreground mb-1 font-mono uppercase tracking-wider">
-        {label}
-      </label>
+      <div className="flex items-center gap-1.5 mb-1">
+        <label className="block text-xs font-medium text-muted-foreground font-mono uppercase tracking-wider">
+          {label}
+        </label>
+        {helpText && (
+          <TooltipProvider>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <Info size={11} className="text-muted-foreground/60 cursor-help hover:text-muted-foreground transition-colors" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-[10px] font-mono p-2">
+                {helpText}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
       <Input
         value={value}
         onChange={e => { onChange(e.target.value); setHighlightedIndex(-1); }}
