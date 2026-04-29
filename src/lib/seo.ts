@@ -5,7 +5,25 @@ type SeoOptions = {
   image?: string;
   type?: string;
   noindex?: boolean;
+  jsonLd?: object[];
 };
+
+const JSON_LD_ID = "lov-jsonld";
+
+function applyJsonLd(blocks: object[]) {
+  // Remove previously injected JSON-LD blocks.
+  document.head
+    .querySelectorAll(`script[data-id="${JSON_LD_ID}"]`)
+    .forEach((el) => el.remove());
+
+  for (const block of blocks) {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.setAttribute("data-id", JSON_LD_ID);
+    script.textContent = JSON.stringify(block);
+    document.head.appendChild(script);
+  }
+}
 
 function upsertMeta(selector: string, attrs: Record<string, string>) {
   const existing = document.head.querySelector<HTMLMetaElement>(selector);
@@ -33,8 +51,10 @@ export function applySeo({
   image = "https://vehiclefinder.co.nz/og-image.svg",
   type = "website",
   noindex = false,
+  jsonLd,
 }: SeoOptions) {
   document.title = title;
+  applyJsonLd(jsonLd ?? []);
 
   upsertLink("canonical", canonical);
 

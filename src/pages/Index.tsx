@@ -32,7 +32,7 @@ function useIsMobile() {
   return isMobile;
 }
 
-const filterFields: { key: keyof SearchFilters; label: string }[] = [
+const filterFields: { key: keyof SearchFilters; label: string; helpText?: string }[] = [
   { key: "MAKE", label: "Make" },
   { key: "MODEL", label: "Model" },
   { key: "SUBMODEL", label: "Submodel" },
@@ -121,7 +121,7 @@ export default function Index() {
     applySeo({
       title: "NZ Vehicle Finder - Search the Motor Vehicle Register",
       description:
-        "Search New Zealand's Motor Vehicle Register with 5.9 million records. Filter by make, model, colour, region and more.",
+        "Search New Zealand's Motor Vehicle Register with 5.9 million records. Filter by make, model, colour, fuel type, year, region and more. Free public access, no sign-up required.",
       canonical: "https://vehiclefinder.co.nz/",
     });
   }, []);
@@ -285,7 +285,12 @@ export default function Index() {
 
   const handleSort = (key: keyof Vehicle) => {
     setSort((prev) => {
-      const next = prev?.key === key ? (prev.dir === "asc" ? { key, dir: "desc" } : null) : { key, dir: "asc" };
+      const next: SortConfig =
+        prev?.key === key
+          ? prev.dir === "asc"
+            ? { key, dir: "desc" }
+            : null
+          : { key, dir: "asc" };
 
       captureEvent("results_sorted", {
         column: key,
@@ -362,7 +367,7 @@ export default function Index() {
         </div>
         {/* Main header row */}
         <div className="header-main" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", border: '1px solid #d1d5db', borderColor: '#d1d5db' }} onClick={() => handleClear("logo")} title="Clear filters" onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")} onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", border: '1px solid #d1d5db', borderColor: '#d1d5db' }} onClick={() => handleClear()} title="Clear filters" onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")} onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}>
             <img src="/favicon.svg" alt="Logo" style={{ width: "100%", height: "100%" }} />
           </div>
           <div>

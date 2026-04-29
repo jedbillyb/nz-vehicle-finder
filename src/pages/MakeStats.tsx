@@ -10,6 +10,7 @@ import {
 import { applySeo } from "@/lib/seo";
 import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
+import { getMakeBlurb } from "@/lib/makeContent";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -20,7 +21,6 @@ function useIsMobile() {
   }, []);
   return isMobile;
 }
-import { ArrowRight } from "lucide-react";
 
 const VehicleDetail = lazy(() =>
   import("@/components/VehicleDetail").then((m) => ({ default: m.VehicleDetail }))
@@ -113,15 +113,88 @@ export default function MakeStats() {
     return () => breakdownAbortRef.current?.abort();
   }, [doSearch]);
 
+  // Derive top values from the breakdown for content + FAQ.
+  const top = useMemo(() => {
+    const pick = (key: string) => breakdown[key]?.[0];
+    return {
+      model: pick("MODEL"),
+      year: pick("VEHICLE_YEAR"),
+      bodyType: pick("BODY_TYPE"),
+      fuel: pick("MOTIVE_POWER"),
+      colour: pick("BASIC_COLOUR"),
+      region: pick("TLA"),
+    };
+  }, [breakdown]);
+
+  const blurb = useMemo(() => getMakeBlurb(makeUpper), [makeUpper]);
+  const canonical = `https://vehiclefinder.co.nz/stats/${encodeURIComponent(make || "")}`;
+
   useEffect(() => {
-    const title = `NZ Vehicle Finder - ${makeDisplay} vehicle statistics`;
-    const description = `Browse ${makeDisplay} vehicles registered in New Zealand. View counts, breakdowns, and full listings from the Motor Vehicle Register.`;
-    applySeo({
-      title,
-      description,
-      canonical: `https://vehiclefinder.co.nz/stats/${encodeURIComponent(make || "")}`,
-    });
-  }, [make, makeDisplay]);
+    const totalText = total !== null ? total.toLocaleString() : "";
+    const title =
+      total !== null
+        ? `${makeDisplay} in NZ: ${totalText} vehicles registered | NZ Vehicle Finder`
+        : `${makeDisplay} vehicle statistics in New Zealand | NZ Vehicle Finder`;
+    const description =
+      total !== null
+        ? `${totalText} ${makeDisplay} vehicles are registered in New Zealand.${top.model ? ` The most popular model is ${top.model.value}.` : ""} View counts, breakdowns and full listings from the Motor Vehicle Register.`
+        : `Browse ${makeDisplay} vehicles registered in New Zealand. View counts, breakdowns and full listings from the Motor Vehicle Register.`;
+
+    const jsonLd: object[] = [
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://vehiclefinder.co.nz/" },
+          { "@type": "ListItem", position: 2, name: "Stats", item: "https://vehiclefinder.co.nz/" },
+          { "@type": "ListItem", position: 3, name: makeDisplay, item: canonical },
+        ],
+      },
+    ];
+
+    if (total !== null) {
+      jsonLd.push({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: `How many ${makeDisplay} vehicles are registered in New Zealand?`,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: `There are ${totalText} ${makeDisplay} vehicles currently registered with the New Zealand Motor Vehicle Register.`,
+            },
+          },
+          ...(top.model
+            ? [
+                {
+                  "@type": "Question",
+                  name: `What is the most popular ${makeDisplay} model in New Zealand?`,
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: `The most popular ${makeDisplay} model in New Zealand is the ${top.model.value} with ${top.model.count.toLocaleString()} registrations.`,
+                  },
+                },
+              ]
+            : []),
+          ...(top.region
+            ? [
+                {
+                  "@type": "Question",
+                  name: `Which region in New Zealand has the most ${makeDisplay} vehicles?`,
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: `${top.region.value} has the highest number of registered ${makeDisplay} vehicles in New Zealand, with ${top.region.count.toLocaleString()} on the register.`,
+                  },
+                },
+              ]
+            : []),
+        ],
+      });
+    }
+
+    applySeo({ title, description, canonical, jsonLd });
+  }, [make, makeDisplay, canonical, total, top.model, top.region]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -130,14 +203,19 @@ export default function MakeStats() {
 
   const handleSort = (key: keyof Vehicle) => {
     setSort((prev) => {
-      const next = prev?.key === key ? (prev.dir === "asc" ? { key, dir: "desc" } : null) : { key, dir: "asc" };
+      const next: SortConfig =
+        prev?.key === key
+          ? prev.dir === "asc"
+            ? { key, dir: "desc" }
+            : null
+          : { key, dir: "asc" };
 
       captureEvent("results_sorted", {
         column: key,
         direction: next?.dir || "none",
         ...summarizeFilters(filters as Record<string, string | undefined>),
         result_count: total ?? 0,
-        source: "stats_page"
+        source: "stats_page",
       });
 
       return next;
@@ -208,9 +286,9 @@ export default function MakeStats() {
             )}
           </div>
         </header>
-
+        
         {/* Hero heading */}
-        <div style={{ padding: "40px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32 }}>
+        <div style={{ padding: "20px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32 }}>
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
               {total !== null ? total.toLocaleString() : "..."} {makeDisplay} vehicles registered in NZ
@@ -218,6 +296,13 @@ export default function MakeStats() {
             <p style={{ fontSize: 16, color: "#374151", margin: 0, letterSpacing: "0.01em", maxWidth: 800 }}>
               Breakdown and full listing of all {makeDisplay} vehicles on the New Zealand Motor Vehicle Register.
             </p>
+              {blurb.blurb && (
+                <p style={{ fontSize: 12, color: "#6b7280", margin: "8px 0 0", lineHeight: 1.7, maxWidth: 800 }}>
+                  {total !== null && <>{total.toLocaleString()} {makeDisplay} vehicles are registered on the NZ Motor Vehicle Register{top.bodyType && top.fuel ? ` - most are ${top.bodyType.value.toLowerCase()} body types running on ${top.fuel.value.toLowerCase()}` : ""}. </>}
+                  {top.colour && <>Most common colour is {top.colour.value.toLowerCase()}. </>}
+                  {blurb.blurb}
+                </p>
+              )}
           </div>
           <a className="hero-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "hero_stats" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
             style={{ fontSize: 13, fontWeight: 700, color: "#ef4444", textDecoration: "none", padding: "10px 24px", border: "2px solid #ef4444", borderRadius: 8, letterSpacing: "0.1em", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2, marginTop: 8, minWidth: 160 }}>

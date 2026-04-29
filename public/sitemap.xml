@@ -243,8 +243,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/audi</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/austin</loc>
@@ -438,8 +439,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/bmw</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/bolwell</loc>
@@ -1648,8 +1650,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/ford</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/fordson</loc>
@@ -2118,8 +2121,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/holden</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/holgate</loc>
@@ -2148,8 +2152,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/honda</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/honey</loc>
@@ -2243,8 +2248,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/hyundai</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/ifa-multicar</loc>
@@ -2313,8 +2319,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/isuzu</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/italjet</loc>
@@ -2533,8 +2540,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/kia</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/kinetic</loc>
@@ -2713,8 +2721,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/land-rover</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/lander</loc>
@@ -2798,8 +2807,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/lexus</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/leyland</loc>
@@ -3088,8 +3098,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/mazda</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/mc-trailers</loc>
@@ -3153,8 +3164,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/mercedes-benz</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/mercer-stainless</loc>
@@ -3208,8 +3220,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/mini</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/mini-camper</loc>
@@ -3233,8 +3246,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/mitsubishi</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/mitsubishi-fuso</loc>
@@ -3418,8 +3432,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/nissan</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/niu</loc>
@@ -4263,8 +4278,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/subaru</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/sunbeam</loc>
@@ -4318,8 +4334,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/suzuki</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/swallow</loc>
@@ -4483,8 +4500,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/tesla</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/tgb</loc>
@@ -4578,8 +4596,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/toyota</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/toyota-lexus</loc>
@@ -4848,8 +4867,9 @@
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/volkswagen</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-04-29T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://vehiclefinder.co.nz/stats/volvo</loc>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 import { type BreakdownData } from "@/lib/vehicleApi";
+import { captureEvent } from "@/lib/posthog";
 
 interface ResultStatsProps {
   data: BreakdownData;
