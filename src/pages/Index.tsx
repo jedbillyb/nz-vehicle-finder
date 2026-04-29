@@ -598,13 +598,38 @@ export default function Index() {
           <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 40, color: "#374151", fontSize: 13, lineHeight: 1.8 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Search the NZ Motor Vehicle Register</h2>
             <p style={{ marginBottom: 12 }}>NZ Vehicle Finder gives you free public access to New Zealand's Motor Vehicle Register - the same database maintained by Waka Kotahi. Search across 5.9 million registered vehicles by make, model, colour, fuel type, region, and more.</p>
-            <p style={{ marginBottom: 24 }}>Common uses include checking how many vehicles of a specific make and model are registered in New Zealand, researching a used car before buying, or finding registration statistics by region.</p>
+            <p style={{ marginBottom: 12 }}>Common uses include checking how many vehicles of a specific make and model are registered in New Zealand, researching a used car before buying, or finding registration statistics by region.</p>
+            <p style={{ marginBottom: 24 }}>The data is sourced directly from Waka Kotahi NZ Transport Agency's publicly available Motor Vehicle Register dataset, which covers all vehicles currently registered in New Zealand. Records include passenger vehicles, motorcycles, trucks, trailers, and more.</p>
+
+            <h3 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Popular Searches</h3>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+              {[
+                ["Toyota vehicles", "?MAKE=TOYOTA"],
+                ["Ford vehicles", "?MAKE=FORD"],
+                ["BMW vehicles", "?MAKE=BMW"],
+                ["Electric vehicles", "?MOTIVE_POWER=ELECTRIC"],
+                ["Vehicles in Auckland", "?TLA=AUCKLAND+CITY"],
+                ["Vehicles in Wellington", "?TLA=WELLINGTON+CITY"],
+                ["Utes in NZ", "?BODY_TYPE=UTILITY"],
+                ["Japanese imports", "?ORIGINAL_COUNTRY=JAPAN"],
+              ].map(([label, params]) => (
+                <a key={label} href={params}
+                  style={{ fontSize: 11, color: "#0ea5e9", textDecoration: "none", padding: "4px 10px", border: "1px solid #bae6fd", borderRadius: 999, letterSpacing: "0.08em" }}
+                >
+                  {label}
+                </a>
+              ))}
+            </div>
+
             <h3 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Frequently Asked Questions</h3>
             {[
               ["Is this free?", "Yes, completely free. The data is publicly available from Waka Kotahi and this tool is open source."],
-              ["How current is the data?", "The register is updated periodically from Waka Kotahi's public data releases."],
+              ["How current is the data?", "The dataset is updated periodically from Waka Kotahi's public data releases."],
               ["Can I search by VIN?", "Yes - use the VIN field to search by the first 11 characters of a vehicle's VIN."],
               ["Can I search by region?", "Yes - use the Registered Region field to filter by Territorial Local Authority (TLA)."],
+              ["Can I export results?", "Yes - after running a search, use the Export CSV button to download your results."],
+              ["Can I share a search?", "Yes - use the Copy Link button to get a shareable URL with your current filters applied."],
+              ["How many vehicles are in the register?", "The register currently contains 5.9 million vehicle records covering all registered vehicles in New Zealand."],
             ].map(([q, a]) => (
               <div key={q} style={{ marginBottom: 12 }}>
                 <strong style={{ color: "#111827" }}>{q}</strong> {a}
