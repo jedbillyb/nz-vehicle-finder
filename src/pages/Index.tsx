@@ -589,10 +589,28 @@ export default function Index() {
       )}
 
       {total === null && (
-        <div className="empty-state" style={{ textAlign: "center", padding: "80px 24px" }}>
-          <div style={{ fontSize: 48, color: "#1a1a1a", marginBottom: 24 }}>⊞</div>
-          <h2 style={{ fontSize: 11, color: "#333", letterSpacing: "0.2em", margin: "0 0 8px", fontWeight: 400 }}>ENTER SEARCH PARAMETERS ABOVE</h2>
-          <p style={{ fontSize: 10, color: "#222", letterSpacing: "0.15em", margin: 0 }}>SET FILTERS ABOVE, THEN CLICK RUN SEARCH</p>
+        <div className="empty-state" style={{ padding: "60px 24px", maxWidth: 800, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <div style={{ fontSize: 48, color: "#1a1a1a", marginBottom: 24 }}>⊞</div>
+            <h2 style={{ fontSize: 11, color: "#333", letterSpacing: "0.2em", margin: "0 0 8px", fontWeight: 400 }}>ENTER SEARCH PARAMETERS ABOVE</h2>
+            <p style={{ fontSize: 10, color: "#222", letterSpacing: "0.15em", margin: 0 }}>SET FILTERS ABOVE, THEN CLICK RUN SEARCH</p>
+          </div>
+          <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 40, color: "#374151", fontSize: 13, lineHeight: 1.8 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Search the NZ Motor Vehicle Register</h2>
+            <p style={{ marginBottom: 12 }}>NZ Vehicle Finder gives you free public access to New Zealand's Motor Vehicle Register - the same database maintained by Waka Kotahi. Search across 5.9 million registered vehicles by make, model, colour, fuel type, region, and more.</p>
+            <p style={{ marginBottom: 24 }}>Common uses include checking how many vehicles of a specific make and model are registered in New Zealand, researching a used car before buying, or finding registration statistics by region.</p>
+            <h3 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Frequently Asked Questions</h3>
+            {[
+              ["Is this free?", "Yes, completely free. The data is publicly available from Waka Kotahi and this tool is open source."],
+              ["How current is the data?", "The register is updated periodically from Waka Kotahi's public data releases."],
+              ["Can I search by VIN?", "Yes - use the VIN field to search by the first 11 characters of a vehicle's VIN."],
+              ["Can I search by region?", "Yes - use the Registered Region field to filter by Territorial Local Authority (TLA)."],
+            ].map(([q, a]) => (
+              <div key={q} style={{ marginBottom: 12 }}>
+                <strong style={{ color: "#111827" }}>{q}</strong> {a}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
