@@ -137,7 +137,7 @@ export default function MakeStats() {
   const canonical = `https://vehiclefinder.co.nz/stats/${encodeURIComponent(make || "")}`;
 
   useEffect(() => {
-    const totalText = total !== null ? total.toLocaleString() : "";
+    const totalText = total !== null ? total.toLocaleString('en-NZ') : "";
     const title =
       total !== null
         ? `${makeDisplay} in NZ: ${totalText} vehicles registered | NZ Vehicle Finder`
@@ -179,7 +179,7 @@ export default function MakeStats() {
                   name: `What is the most popular ${makeDisplay} model in New Zealand?`,
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: `The most popular ${makeDisplay} model in New Zealand is the ${top.model.value} with ${top.model.count.toLocaleString()} registrations.`,
+                    text: `The most popular ${makeDisplay} model in New Zealand is the ${top.model.value} with ${top.model.count.toLocaleString('en-NZ')} registrations.`,
                   },
                 },
               ]
@@ -191,7 +191,7 @@ export default function MakeStats() {
                   name: `Which region in New Zealand has the most ${makeDisplay} vehicles?`,
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: `${top.region.value} has the highest number of registered ${makeDisplay} vehicles in New Zealand, with ${top.region.count.toLocaleString()} on the register.`,
+                    text: `${top.region.value} has the highest number of registered ${makeDisplay} vehicles in New Zealand, with ${top.region.count.toLocaleString('en-NZ')} on the register.`,
                   },
                 },
               ]
@@ -286,7 +286,7 @@ export default function MakeStats() {
             {total !== null && (
               <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString('en-NZ')}</div>
                   <div style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>VEHICLES REGISTERED</div>
                 </div>
               </div>
@@ -298,14 +298,14 @@ export default function MakeStats() {
         <div style={{ padding: "20px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32 }}>
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-              {total !== null ? total.toLocaleString() : "..."} {makeDisplay} vehicles registered in NZ
+              {total !== null ? total.toLocaleString('en-NZ') : "..."} {makeDisplay} vehicles registered in NZ
             </h2>
             <p style={{ fontSize: 16, color: "#374151", margin: 0, letterSpacing: "0.01em", maxWidth: 800 }}>
               Breakdown and full listing of all {makeDisplay} vehicles on the New Zealand Motor Vehicle Register.
             </p>
               {blurb.blurb && (
                 <p style={{ fontSize: 12, color: "#6b7280", margin: "8px 0 0", lineHeight: 1.7, maxWidth: 800 }}>
-                  {total !== null && <>{total.toLocaleString()} {makeDisplay} vehicles are registered on the NZ Motor Vehicle Register{top.bodyType && top.fuel ? ` - most are ${top.bodyType.value.toLowerCase()} body types running on ${top.fuel.value.toLowerCase()}` : ""}. </>}
+                  {total !== null && <>{total.toLocaleString('en-NZ')} {makeDisplay} vehicles are registered on the NZ Motor Vehicle Register{top.bodyType && top.fuel ? ` - most are ${top.bodyType.value.toLowerCase()} body types running on ${top.fuel.value.toLowerCase()}` : ""}. </>}
                   {top.colour && <>Most common colour is {top.colour.value.toLowerCase()}. </>}
                   {blurb.blurb}
                 </p>
@@ -326,8 +326,8 @@ export default function MakeStats() {
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#f3f4f6" }}>
             <div className="results-bar" style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h2 style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", margin: 0, fontWeight: 400 }}>
-                SHOWING <span style={{ color: "#111827" }}>{displayResults.length.toLocaleString()}</span> OF{" "}
-                <span style={{ color: "#0f766e" }}>{total.toLocaleString()}</span> RECORDS
+                SHOWING <span style={{ color: "#111827" }}>{displayResults.length.toLocaleString('en-NZ')}</span> OF{" "}
+                <span style={{ color: "#0f766e" }}>{total.toLocaleString('en-NZ')}</span> RECORDS
                 {pages > 1 && <> · PAGE <span style={{ color: "#111827" }}>{page}</span>/<span style={{ color: "#4b5563" }}>{pages}</span></>}
               </h2>
               {sort && (

@@ -395,7 +395,7 @@ export default function Index() {
           {total !== null && (
             <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString()}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString('en-NZ')}</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>MATCHES FOUND</div>
               </div>
               <a className="header-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "header_with_results" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
@@ -531,8 +531,8 @@ export default function Index() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#f3f4f6" }}>
           <div className="results-bar" style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h2 style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", margin: 0, fontWeight: 400 }}>
-              SHOWING <span style={{ color: "#111827" }}>{displayResults.length.toLocaleString()}</span> OF{" "}
-              <span style={{ color: "#0f766e" }}>{total.toLocaleString()}</span> RECORDS
+              SHOWING <span style={{ color: "#111827" }}>{displayResults.length.toLocaleString('en-NZ')}</span> OF{" "}
+              <span style={{ color: "#0f766e" }}>{total.toLocaleString('en-NZ')}</span> RECORDS
               {pages > 1 && <> · PAGE <span style={{ color: "#111827" }}>{page}</span>/<span style={{ color: "#4b5563" }}>{pages}</span></>}
             </h2>
             {sort && (

@@ -93,7 +93,7 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
                         <div style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
                       </div>
                       <div style={{ fontSize: 9, color: "#6b7280", minWidth: 45, textAlign: "right" }}>
-                        {d.count.toLocaleString()} ({((d.count / total) * 100).toFixed(1)}%)
+                        {d.count.toLocaleString('en-NZ')} ({((d.count / total) * 100).toFixed(1)}%)
                       </div>
                     </div>
                   ))}
