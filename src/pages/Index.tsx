@@ -120,9 +120,10 @@ export default function Index() {
 
   useEffect(() => {
     applySeo({
-      title: "NZ Vehicle Finder - Search the Motor Vehicle Register",
+      title: "NZ Vehicle Finder - Search the NZ Motor Vehicle Register",
       description:
-        "Search New Zealand's Motor Vehicle Register with 5.9 million records. Filter by make, model, colour, fuel type, year, region and more. Free public access, no sign-up required.",
+        "Free fleet search for the NZ Motor Vehicle Register with 5.9 million records. Filter by make, model, colour, fuel type, year, region and more. Free public access.",
+      keywords: "fleet search, NZ vehicle register, motor vehicle register, NZ vehicle finder, car registration search NZ",
       canonical: "https://vehiclefinder.co.nz/",
     });
   }, []);
@@ -363,7 +364,7 @@ export default function Index() {
         {/* Blue top bar */}
         <div className="header-topbar" style={{ background: "#0ea5e9", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span className="header-topbar-subtitle" style={{ fontSize: "10px", color: "#f9fafb", fontWeight: 600, letterSpacing: "0.16em" }}>
-            WAKA KOTAHI · MOTOR VEHICLE REGISTER · PUBLIC ACCESS TERMINAL
+            WAKA KOTAHI · NZ MOTOR VEHICLE REGISTER · PUBLIC ACCESS TERMINAL
           </span>
           <span style={{ fontSize: "10px", color: "#e0f2fe", letterSpacing: "0.1em" }}>
             {new Date().toISOString().split("T")[0]}
@@ -377,7 +378,7 @@ export default function Index() {
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: "0.02em", margin: 0 }}>NZ Vehicle Finder</h1>
             <p style={{ fontSize: 11, color: "#6b7280", letterSpacing: "0.12em", margin: 0, textTransform: "uppercase" }}>
-              Motor Vehicle Register · 5,879,915 records
+              NZ Motor Vehicle Register · 5,879,915 records
             </p>
           </div>
           {total === null && (
@@ -606,9 +607,9 @@ export default function Index() {
           </div>
           <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 40, color: "#374151", fontSize: 13, lineHeight: 1.8 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Search the NZ Motor Vehicle Register</h2>
-            <p style={{ marginBottom: 12 }}>NZ Vehicle Finder gives you free public access to New Zealand's Motor Vehicle Register - the same database maintained by Waka Kotahi. Search across 5.9 million registered vehicles by make, model, colour, fuel type, region, and more.</p>
-            <p style={{ marginBottom: 12 }}>Common uses include checking how many vehicles of a specific make and model are registered in New Zealand, researching a used car before buying, or finding registration statistics by region.</p>
-            <p style={{ marginBottom: 24 }}>The data is sourced directly from Waka Kotahi NZ Transport Agency's publicly available Motor Vehicle Register dataset, which covers all vehicles currently registered in New Zealand. Records include passenger vehicles, motorcycles, trucks, trailers, and more.</p>
+            <p style={{ marginBottom: 12 }}>NZ Vehicle Finder gives you free public access to New Zealand's Motor Vehicle Register - the same database maintained by Waka Kotahi. Our fleet search tool allows you to search across 5.9 million registered vehicles by make, model, colour, fuel type, region, and more.</p>
+            <p style={{ marginBottom: 12 }}>Common uses include checking how many vehicles of a specific make and model are registered in New Zealand (fleet search), researching a used car before buying, or finding registration statistics from the motor vehicle register by region.</p>
+            <p style={{ marginBottom: 24 }}>The data is sourced directly from Waka Kotahi NZ Transport Agency's publicly available Motor Vehicle Register dataset, which covers all vehicles currently registered in New Zealand. This comprehensive NZ vehicle register index includes passenger vehicles, motorcycles, trucks, trailers, and more.</p>
 
             <h3 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Popular Searches</h3>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>

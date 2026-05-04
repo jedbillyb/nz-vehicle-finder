@@ -200,7 +200,9 @@ export default function MakeStats() {
       });
     }
 
-    applySeo({ title, description, canonical, jsonLd });
+    const keywords = `fleet search, NZ vehicle register, motor vehicle register, ${makeDisplay} NZ, ${makeDisplay} registrations NZ`;
+
+    applySeo({ title, description, keywords, canonical, jsonLd });
   }, [make, makeDisplay, canonical, total, top.model, top.region]);
 
   const handlePageChange = (newPage: number) => {
@@ -262,7 +264,7 @@ export default function MakeStats() {
           {/* Blue top bar */}
           <div className="header-topbar" style={{ background: "#0ea5e9", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span className="header-topbar-subtitle" style={{ fontSize: "10px", color: "#f9fafb", fontWeight: 600, letterSpacing: "0.16em" }}>
-              WAKA KOTAHI · MOTOR VEHICLE REGISTER · PUBLIC ACCESS TERMINAL
+              WAKA KOTAHI · NZ MOTOR VEHICLE REGISTER · PUBLIC ACCESS TERMINAL
             </span>
             <span style={{ fontSize: "10px", color: "#e0f2fe", letterSpacing: "0.1em" }}>
               {new Date().toISOString().split("T")[0]}
@@ -280,7 +282,7 @@ export default function MakeStats() {
                 NZ Vehicle Finder
               </h1>
               <p style={{ fontSize: 11, color: "#6b7280", letterSpacing: "0.12em", margin: 0, textTransform: "uppercase" }}>
-                Motor Vehicle Register · {makeUpper} Statistics
+                NZ Motor Vehicle Register · {makeUpper} Statistics
               </p>
             </div>
             {total !== null && (

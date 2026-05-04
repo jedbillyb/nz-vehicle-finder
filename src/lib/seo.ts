@@ -1,6 +1,7 @@
 type SeoOptions = {
   title: string;
   description: string;
+  keywords?: string;
   canonical: string;
   image?: string;
   type?: string;
@@ -47,6 +48,7 @@ function upsertLink(rel: string, href: string) {
 export function applySeo({
   title,
   description,
+  keywords,
   canonical,
   image = "https://vehiclefinder.co.nz/og-image.svg",
   type = "website",
@@ -62,6 +64,13 @@ export function applySeo({
     name: "description",
     content: description,
   });
+
+  if (keywords) {
+    upsertMeta('meta[name="keywords"]', {
+      name: "keywords",
+      content: keywords,
+    });
+  }
 
   upsertMeta('meta[name="robots"]', {
     name: "robots",
