@@ -56,10 +56,13 @@ export default function MakeStats() {
   const [breakdownLoading, setBreakdownLoading] = useState(false);
   const breakdownAbortRef = useRef<AbortController | null>(null);
   const initialLoad = useRef(true);
+  const isSearching = useRef(false);
 
   const filters = useMemo(() => ({ MAKE: makeUpper }), [makeUpper]);
 
   const doSearch = useCallback(async (f: Record<string, string | undefined>, p: number) => {
+    if (isSearching.current) return;
+    isSearching.current = true;
     setLoading(true);
 
     const searchMeta = {
@@ -106,6 +109,7 @@ export default function MakeStats() {
       console.error(err);
     } finally {
       setLoading(false);
+      isSearching.current = false;
     }
   }, []);
 

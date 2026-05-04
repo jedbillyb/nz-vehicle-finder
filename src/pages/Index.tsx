@@ -114,6 +114,7 @@ export default function Index() {
   const [breakdownLoading, setBreakdownLoading] = useState(false);
   const [breakdownSheetOpen, setBreakdownSheetOpen] = useState(false);
   const [validity, setValidity] = useState<Record<string, boolean>>({});
+  const isSearching = useRef(false);
 
   useEffect(() => { preloadSuggestions(); }, []);
 
@@ -154,6 +155,8 @@ export default function Index() {
 
   const doSearch = useCallback(
     async (f: SearchFilters, p: number, trigger: "button" | "page" | "auto" = "button") => {
+      if (isSearching.current) return;
+      isSearching.current = true;
       const startedAt = Date.now();
       setLoading(true);
       setErrorMessage(null);
@@ -230,6 +233,7 @@ export default function Index() {
         });
       } finally {
         setLoading(false);
+        isSearching.current = false;
       }
     },
     []
