@@ -55,22 +55,23 @@ export default function MakeStats() {
   const [breakdown, setBreakdown] = useState<BreakdownData>({});
   const [breakdownLoading, setBreakdownLoading] = useState(false);
   const breakdownAbortRef = useRef<AbortController | null>(null);
+  const initialLoad = useRef(true);
 
   const filters = useMemo(() => ({ MAKE: makeUpper }), [makeUpper]);
 
-  const doSearch = useCallback(async (p: number) => {
+  const doSearch = useCallback(async (f: Record<string, string | undefined>, p: number) => {
     setLoading(true);
 
     const searchMeta = {
       trigger: "stats_page",
       page: p,
       device: window.innerWidth < 768 ? "mobile" : "desktop",
-      ...summarizeFilters(filters as Record<string, string | undefined>),
+      ...summarizeFilters(f),
     };
     captureEvent("search_started", searchMeta);
 
     try {
-      const data = await searchVehicles(filters, p);
+      const data = await searchVehicles(f, p);
       setResults(data.vehicles);
       setTotal(data.total);
       setPages(data.pages);
@@ -87,7 +88,7 @@ export default function MakeStats() {
         const controller = new AbortController();
         breakdownAbortRef.current = controller;
         setBreakdownLoading(true);
-        fetchBreakdown(filters, controller.signal)
+        fetchBreakdown(f, controller.signal)
           .then((bd) => {
             if (breakdownAbortRef.current === controller) setBreakdown(bd);
           })
@@ -106,12 +107,14 @@ export default function MakeStats() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, []);
 
   useEffect(() => {
-    doSearch(1);
+    if (!initialLoad.current) return;
+    initialLoad.current = false;
+    doSearch(filters, 1);
     return () => breakdownAbortRef.current?.abort();
-  }, [doSearch]);
+  }, [filters, doSearch]);
 
   // Derive top values from the breakdown for content + FAQ.
   const top = useMemo(() => {
@@ -198,7 +201,7 @@ export default function MakeStats() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-    doSearch(newPage);
+    doSearch(filters, newPage);
   };
 
   const handleSort = (key: keyof Vehicle) => {
