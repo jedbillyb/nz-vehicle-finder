@@ -70,6 +70,15 @@ Tracked events: page views, searches (with active filters), zero-result queries,
 
 A `post-commit` Git hook automatically syncs, installs, and builds to the VPS on every commit via `rsync`. See `deploy-to-server.sh` — configure `SERVER`, `REMOTE_DIR`, and `KEY` for your environment.
 
+## Troubleshooting
+
+### `better-sqlite3` Version Mismatch
+If the backend fails to start after a Node.js update on the server (common error: `NODE_MODULE_VERSION` mismatch), run:
+```bash
+npm rebuild better-sqlite3
+```
+This recompiles the database driver for the current environment.
+
 ---
 
 <div align="center">

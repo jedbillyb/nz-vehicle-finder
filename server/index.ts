@@ -129,7 +129,7 @@ app.get("/api/suggestions/:field", (req, res) => {
     const all = (distinctCache[field] || []).map(v => String(v || "").trim()).filter(Boolean);
     const unique = Array.from(new Set(all));
     const results = q
-      ? unique.filter((v) => v.toUpperCase().startsWith(q.toUpperCase())).slice(0, 100)
+      ? unique.filter((v) => v.toUpperCase().includes(q.toUpperCase())).slice(0, 100)
       : unique.slice(0, 100);
     return res.json(results);
   }
@@ -142,11 +142,11 @@ app.get("/api/suggestions/:field", (req, res) => {
 
   const params: string[] = [];
   const clauses = activeFilters.map(([key, value]) => {
-    params.push(`%${value.toUpperCase()}%`);
-    return `UPPER("${key}") LIKE ?`;
+    params.push(value.toUpperCase());
+    return `UPPER("${key}") = ?`;
   });
   if (q) {
-    params.push(`${q.toUpperCase()}%`);
+    params.push(`%${q.toUpperCase()}%`);
     clauses.push(`UPPER("${field}") LIKE ?`);
   }
   const where = "WHERE " + clauses.join(" AND ");

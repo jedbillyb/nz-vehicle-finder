@@ -41,7 +41,7 @@ export function SearchField({
     return () => clearTimeout(t);
   }, [value]);
 
-  const { data: remoteSuggestions = [] } = useQuery({
+  const { data: remoteSuggestions = [], isFetched } = useQuery({
     queryKey: ["suggestions", field, debouncedValue, filterBy],
     queryFn: ({ signal }) => getSuggestions(field, debouncedValue, filterBy, signal),
     enabled: (showSuggestions || !!value.trim()) && (debouncedValue.length > 0 || !!filterBy),
@@ -49,21 +49,32 @@ export function SearchField({
   });
 
   const suggestions = useMemo(() => {
+    const hasActiveFilters = filterBy && Object.values(filterBy).some(v => !!v);
+
     // If we have remote suggestions, use them as they are most accurate (filtered by other fields)
     if (remoteSuggestions.length > 0) {
       return remoteSuggestions.slice(0, 10);
     }
     
-    // Fallback/Initial suggestions while remote is loading or if it returns nothing
-    // We prioritize model-specific local search if a make is selected
-    if (field === "MODEL" && filterBy?.MAKE) {
-      const models = getModelsForMake(filterBy.MAKE as string, value);
-      if (models.length > 0) return models;
+    // If we have active filters, we should be careful about falling back to global suggestions
+    if (hasActiveFilters) {
+      // Prioritize model-specific local search if a make is selected
+      if (field === "MODEL" && filterBy?.MAKE) {
+        const models = getModelsForMake(filterBy.MAKE as string, value);
+        if (models.length > 0) return models;
+      }
+
+      // If we've already tried fetching from the server and it returned nothing,
+      // and we have filters active, we should NOT show global results from other makes/categories
+      if (isFetched) {
+        return [];
+      }
     }
 
     // General local fallback (e.g. from the big autocomplete.json)
+    // Only used if no filters are active or while waiting for the first remote fetch
     return getSuggestionsLocal(field as string, value, filterBy);
-  }, [field, value, filterBy, remoteSuggestions]);
+  }, [field, value, filterBy, remoteSuggestions, isFetched]);
 
   const isValid = useMemo(() => {
     if (!value.trim()) return true;
