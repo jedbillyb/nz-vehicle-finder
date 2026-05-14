@@ -49,7 +49,7 @@ const filterFields: { key: keyof SearchFilters; label: string; helpText?: string
   { key: "ROAD_TRANSPORT_CODE", label: "Road Code" },
   { key: "VEHICLE_USAGE", label: "Usage" },
   { key: "NZ_ASSEMBLED", label: "NZ Assembled" },
-  { key: "VIN11", label: "VIN" },
+  { key: "VIN11", label: "VIN", helpText: "A VIN (Vehicle Identification Number) is the 17-character identifier unique to each vehicle. NZ's Motor Vehicle Register exposes the last 11 characters (VIN11), so enter the final 11 characters here. You can find the full VIN on the dashboard near the windshield, the driver's side door jamb, or your registration documents." },
 ];
 
 const resultColumns: { key: keyof Vehicle; label: string }[] = [
