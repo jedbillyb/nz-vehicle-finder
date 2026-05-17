@@ -129,7 +129,7 @@ export function SearchField({
   return (
     <div ref={wrapperRef} className="relative">
       <div className="flex items-center gap-1.5 mb-1">
-        <label className="block text-xs font-medium text-muted-foreground font-mono uppercase tracking-wider">
+        <label className="block text-xs font-medium text-muted-foreground font-mono tracking-wide">
           {label}
         </label>
         {helpText && (

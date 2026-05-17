@@ -32,9 +32,8 @@ export function RangeField({
         fontWeight: 500,
         color: "#6b7280",
         marginBottom: 6,
-        letterSpacing: "0.05em",
+        letterSpacing: "0.01em",
         fontFamily: "inherit",
-        textTransform: "uppercase",
       }}>
         {label}
       </label>

@@ -375,11 +375,11 @@ export default function Index() {
 
       <header style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff", position: "sticky", top: 0, zIndex: 40 }}>
         {/* Blue top bar */}
-        <div className="header-topbar" style={{ background: "#0ea5e9", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span className="header-topbar-subtitle" style={{ fontSize: "10px", color: "#f9fafb", fontWeight: 600, letterSpacing: "0.16em" }}>
+        <div className="header-topbar" style={{ background: "#1e293b", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span className="header-topbar-subtitle" style={{ fontSize: "10px", color: "#94a3b8", fontWeight: 600, letterSpacing: "0.16em" }}>
             WAKA KOTAHI · NZ MOTOR VEHICLE REGISTER · PUBLIC ACCESS TERMINAL
           </span>
-          <span style={{ fontSize: "10px", color: "#e0f2fe", letterSpacing: "0.1em" }}>
+          <span style={{ fontSize: "10px", color: "#64748b", letterSpacing: "0.1em" }}>
             {new Date().toISOString().split("T")[0]}
           </span>
         </div>
@@ -390,19 +390,20 @@ export default function Index() {
           </div>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: "0.02em", margin: 0 }}>NZ Vehicle Finder</h1>
-            <p style={{ fontSize: 11, color: "#6b7280", letterSpacing: "0.12em", margin: 0, textTransform: "uppercase" }}>
+            <p style={{ fontSize: 12, color: "#4b5563", letterSpacing: "0.01em", margin: 0 }}>
               NZ Motor Vehicle Register · 5,879,915 records
             </p>
           </div>
           {total === null && (
             <div style={{ marginLeft: "auto" }}>
               <a className="header-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "header" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
-                style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", textDecoration: "none",
-                  padding: "5px 12px", border: "1px solid #ef4444", borderRadius: 6,
-                  letterSpacing: "0.1em", display: "flex", flexDirection: "column",
-                  alignItems: "center", lineHeight: 1.4, marginLeft: "auto" }}>
-                <span>SPONSOR</span>
-                <span>THIS PROJECT</span>
+                style={{ fontSize: 10, fontWeight: 600, color: "#9ca3af", textDecoration: "none",
+                  padding: "5px 12px", border: "1px solid #e5e7eb", borderRadius: 6,
+                  letterSpacing: "0.04em", display: "inline-flex", alignItems: "center",
+                  marginLeft: "auto" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#4b5563"; (e.currentTarget as HTMLAnchorElement).style.borderColor = "#9ca3af"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#9ca3af"; (e.currentTarget as HTMLAnchorElement).style.borderColor = "#e5e7eb"; }}>
+                Support this project
               </a>
             </div>
           )}
@@ -410,12 +411,13 @@ export default function Index() {
             <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString('en-NZ')}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>MATCHES FOUND</div>
+                <div style={{ fontSize: 13, fontWeight: 400, color: "#9ca3af" }}>matches found</div>
               </div>
               <a className="header-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "header_with_results" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
-                style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", textDecoration: "none", padding: "6px 12px", border: "1px solid #ef4444", borderRadius: 6, letterSpacing: "0.1em", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2 }}>
-                <span>SPONSOR</span>
-                <span style={{ fontSize: 8, marginTop: 2 }}>THIS PROJECT</span>
+                style={{ fontSize: 10, fontWeight: 600, color: "#9ca3af", textDecoration: "none", padding: "5px 12px", border: "1px solid #e5e7eb", borderRadius: 6, letterSpacing: "0.04em", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#4b5563"; (e.currentTarget as HTMLAnchorElement).style.borderColor = "#9ca3af"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#9ca3af"; (e.currentTarget as HTMLAnchorElement).style.borderColor = "#e5e7eb"; }}>
+                Support this project
               </a>
             </div>
           )}
@@ -454,34 +456,36 @@ export default function Index() {
           <div style={{ marginTop: 16, paddingBottom: 16, borderBottom: "1px solid #f3f4f6" }}>
             <button
               onClick={() => setShowAdvanced(v => !v)}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", padding: 0, fontSize: 10, fontWeight: 700, color: advancedActiveCount > 0 ? "#0ea5e9" : "#6b7280", letterSpacing: "0.15em", fontFamily: "inherit" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", padding: 0, fontSize: 11, fontWeight: 600, color: advancedActiveCount > 0 ? "#0ea5e9" : "#6b7280", letterSpacing: "0.05em", fontFamily: "inherit" }}
             >
               <ChevronDown size={13} style={{ transform: showAdvanced ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", flexShrink: 0 }} />
-              MORE FILTERS
+              More filters
               {advancedActiveCount > 0 && (
-                <span style={{ background: "#0ea5e9", color: "#ffffff", fontSize: 9, fontWeight: 700, borderRadius: 999, padding: "1px 6px", letterSpacing: "0.1em" }}>
+                <span style={{ background: "#0ea5e9", color: "#ffffff", fontSize: 9, fontWeight: 700, borderRadius: 999, padding: "1px 6px", letterSpacing: "0.05em" }}>
                   {advancedActiveCount}
                 </span>
               )}
             </button>
 
             {showAdvanced && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px", marginTop: 14 }}>
-                {advancedFilterFields.map((f) => (
-                  <SearchField
-                    key={f.key}
-                    label={f.label}
-                    helpText={f.helpText}
-                    field={f.key as keyof Vehicle}
-                    value={(filters[f.key] as string) || ""}
-                    onChange={(v) => updateFilter(f.key, v)}
-                    onValidationChange={(isValid) => updateValidity(f.key, isValid)}
-                  />
-                ))}
-                <RangeField label="GROSS MASS" fieldMin="GROSS_VEHICLE_MASS_MIN" fieldMax="GROSS_VEHICLE_MASS_MAX" valueMin={filters.GROSS_VEHICLE_MASS_MIN || ""} valueMax={filters.GROSS_VEHICLE_MASS_MAX || ""} onChangeMin={(v) => updateFilter("GROSS_VEHICLE_MASS_MIN", v)} onChangeMax={(v) => updateFilter("GROSS_VEHICLE_MASS_MAX", v)} min={0} max={50000} />
-                <RangeField label="WIDTH (MM)" fieldMin="WIDTH_MIN" fieldMax="WIDTH_MAX" valueMin={filters.WIDTH_MIN || ""} valueMax={filters.WIDTH_MAX || ""} onChangeMin={(v) => updateFilter("WIDTH_MIN", v)} onChangeMax={(v) => updateFilter("WIDTH_MAX", v)} min={0} max={3500} />
-                <RangeField label="SEATS (MIN)" fieldMin="NUMBER_OF_SEATS_MIN" fieldMax="NUMBER_OF_SEATS_MIN" valueMin={filters.NUMBER_OF_SEATS_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_SEATS_MIN", v)} onChangeMax={() => {}} min={1} max={20} />
-                <RangeField label="AXLES (MIN)" fieldMin="NUMBER_OF_AXLES_MIN" fieldMax="NUMBER_OF_AXLES_MIN" valueMin={filters.NUMBER_OF_AXLES_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_AXLES_MIN", v)} onChangeMax={() => {}} min={1} max={9} />
+              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, marginTop: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px" }}>
+                  {advancedFilterFields.map((f) => (
+                    <SearchField
+                      key={f.key}
+                      label={f.label}
+                      helpText={f.helpText}
+                      field={f.key as keyof Vehicle}
+                      value={(filters[f.key] as string) || ""}
+                      onChange={(v) => updateFilter(f.key, v)}
+                      onValidationChange={(isValid) => updateValidity(f.key, isValid)}
+                    />
+                  ))}
+                  <RangeField label="Gross mass" fieldMin="GROSS_VEHICLE_MASS_MIN" fieldMax="GROSS_VEHICLE_MASS_MAX" valueMin={filters.GROSS_VEHICLE_MASS_MIN || ""} valueMax={filters.GROSS_VEHICLE_MASS_MAX || ""} onChangeMin={(v) => updateFilter("GROSS_VEHICLE_MASS_MIN", v)} onChangeMax={(v) => updateFilter("GROSS_VEHICLE_MASS_MAX", v)} min={0} max={50000} />
+                  <RangeField label="Width (mm)" fieldMin="WIDTH_MIN" fieldMax="WIDTH_MAX" valueMin={filters.WIDTH_MIN || ""} valueMax={filters.WIDTH_MAX || ""} onChangeMin={(v) => updateFilter("WIDTH_MIN", v)} onChangeMax={(v) => updateFilter("WIDTH_MAX", v)} min={0} max={3500} />
+                  <RangeField label="Seats (min)" fieldMin="NUMBER_OF_SEATS_MIN" fieldMax="NUMBER_OF_SEATS_MIN" valueMin={filters.NUMBER_OF_SEATS_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_SEATS_MIN", v)} onChangeMax={() => {}} min={1} max={20} />
+                  <RangeField label="Axles (min)" fieldMin="NUMBER_OF_AXLES_MIN" fieldMax="NUMBER_OF_AXLES_MIN" valueMin={filters.NUMBER_OF_AXLES_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_AXLES_MIN", v)} onChangeMax={() => {}} min={1} max={9} />
+                </div>
               </div>
             )}
           </div>
@@ -493,12 +497,12 @@ export default function Index() {
               <div className="action-buttons" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minWidth: 0, flexWrap: "nowrap" }}>
                 <div className="action-buttons-primary" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
                   <button onClick={handleClear}
-                    style={{ flex: isMobile ? "0 0 34%" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.12em", whiteSpace: "nowrap" }}
+                    style={{ flex: isMobile ? "0 0 34%" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.02em", whiteSpace: "nowrap" }}
                     onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
                     onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
                   >
                     <RotateCcw size={11} />
-                    CLEAR
+                    Clear
                   </button>
                   <button
                     onClick={() => {
@@ -515,10 +519,10 @@ export default function Index() {
                       doSearch(filters, 1, "button");
                     }}
                     disabled={loading}
-                    style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 18px", background: loading ? "#bae6fd" : "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, cursor: loading ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap" }}
+                    style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 18px", background: loading ? "#bae6fd" : "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, cursor: loading ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.02em", fontWeight: 700, whiteSpace: "nowrap" }}
                   >
                     {loading ? <LoaderCircle size={11} className="animate-spin" /> : <Search size={11} />}
-                    {loading ? "SEARCHING..." : "RUN SEARCH"}
+                    {loading ? "Searching…" : "Run search"}
                   </button>
                 </div>
                 <div className="action-buttons-secondary" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
@@ -530,22 +534,22 @@ export default function Index() {
                       });
                       exportToCsv(results);
                     }}
-                      style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", whiteSpace: "nowrap" }}
+                      style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.02em", whiteSpace: "nowrap" }}
                       onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
                       onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
                     >
                       <Download size={11} />
-                      EXPORT CSV
+                      Export CSV
                     </button>
                   )}
                   {total !== null && (
                     <button onClick={handleCopyLink}
-                      style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: copiedLink ? "#dcfce7" : "transparent", color: copiedLink ? "#15803d" : "#4b5563", border: copiedLink ? "1px solid #22c55e" : "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.15em", whiteSpace: "nowrap" }}
+                      style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: copiedLink ? "#dcfce7" : "transparent", color: copiedLink ? "#15803d" : "#4b5563", border: copiedLink ? "1px solid #22c55e" : "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.02em", whiteSpace: "nowrap" }}
                       onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
                       onMouseLeave={(e) => (e.currentTarget.style.borderColor = copiedLink ? "#22c55e" : "#d1d5db")}
                     >
                       <Link2 size={11} />
-                      {copiedLink ? "LINK COPIED" : "COPY LINK"}
+                      {copiedLink ? "Copied!" : "Copy link"}
                     </button>
                   )}
                 </div>
@@ -643,9 +647,9 @@ export default function Index() {
       {total === null && (
         <div className="empty-state" style={{ padding: "60px 24px", maxWidth: 800, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ fontSize: 48, color: "#1a1a1a", marginBottom: 24 }}>⊞</div>
-            <h2 style={{ fontSize: 11, color: "#333", letterSpacing: "0.2em", margin: "0 0 8px", fontWeight: 400 }}>ENTER SEARCH PARAMETERS ABOVE</h2>
-            <p style={{ fontSize: 10, color: "#222", letterSpacing: "0.15em", margin: 0 }}>SET FILTERS ABOVE, THEN CLICK RUN SEARCH</p>
+            <div style={{ marginBottom: 16, display: "flex", justifyContent: "center" }}><Search size={36} color="#94a3b8" /></div>
+            <h2 style={{ fontSize: 14, color: "#374151", letterSpacing: 0, margin: "0 0 8px", fontWeight: 500 }}>Use the filters above to search</h2>
+            <p style={{ fontSize: 12, color: "#6b7280", letterSpacing: 0, margin: 0 }}>Set at least one filter, then click Run Search</p>
           </div>
           <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 40, color: "#374151", fontSize: 13, lineHeight: 1.8 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Search the NZ Motor Vehicle Register</h2>
