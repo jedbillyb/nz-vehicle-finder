@@ -20,7 +20,7 @@ import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
 import { APP_VERSION } from "@/lib/version";
 import { toast } from "sonner";
-import { Search, RotateCcw, Download, Link2, LoaderCircle } from "lucide-react";
+import { Search, RotateCcw, Download, Link2, LoaderCircle, ChevronDown } from "lucide-react";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -32,7 +32,7 @@ function useIsMobile() {
   return isMobile;
 }
 
-const filterFields: { key: keyof SearchFilters; label: string; helpText?: string }[] = [
+const primaryFilterFields: { key: keyof SearchFilters; label: string; helpText?: string }[] = [
   { key: "MAKE", label: "Make" },
   { key: "MODEL", label: "Model" },
   { key: "SUBMODEL", label: "Submodel" },
@@ -41,6 +41,10 @@ const filterFields: { key: keyof SearchFilters; label: string; helpText?: string
   { key: "BODY_TYPE", label: "Body Type" },
   { key: "TRANSMISSION_TYPE", label: "Transmission" },
   { key: "TLA", label: "Registered Region", helpText: "The Territorial Local Authority (TLA) associated with the vehicle owner's current registered address. This is not necessarily where the vehicle was first registered or manufactured." },
+  { key: "VIN11", label: "VIN", helpText: "A VIN (Vehicle Identification Number) is the 17-character identifier unique to each vehicle. NZ's Motor Vehicle Register exposes the last 11 characters (VIN11), so enter the final 11 characters here. You can find the full VIN on the dashboard near the windshield, the driver's side door jamb, or your registration documents." },
+];
+
+const advancedFilterFields: { key: keyof SearchFilters; label: string; helpText?: string }[] = [
   { key: "POSTCODE", label: "Postcode" },
   { key: "IMPORT_STATUS", label: "Import Status" },
   { key: "ORIGINAL_COUNTRY", label: "Country of Manufacture" },
@@ -49,8 +53,14 @@ const filterFields: { key: keyof SearchFilters; label: string; helpText?: string
   { key: "ROAD_TRANSPORT_CODE", label: "Road Code" },
   { key: "VEHICLE_USAGE", label: "Usage" },
   { key: "NZ_ASSEMBLED", label: "NZ Assembled" },
-  { key: "VIN11", label: "VIN", helpText: "A VIN (Vehicle Identification Number) is the 17-character identifier unique to each vehicle. NZ's Motor Vehicle Register exposes the last 11 characters (VIN11), so enter the final 11 characters here. You can find the full VIN on the dashboard near the windshield, the driver's side door jamb, or your registration documents." },
 ];
+
+const advancedFilterKeySet = new Set([
+  "POSTCODE", "IMPORT_STATUS", "ORIGINAL_COUNTRY", "CLASS", "INDUSTRY_CLASS",
+  "ROAD_TRANSPORT_CODE", "VEHICLE_USAGE", "NZ_ASSEMBLED",
+  "GROSS_VEHICLE_MASS_MIN", "GROSS_VEHICLE_MASS_MAX", "WIDTH_MIN", "WIDTH_MAX",
+  "NUMBER_OF_SEATS_MIN", "NUMBER_OF_AXLES_MIN",
+]);
 
 const resultColumns: { key: keyof Vehicle; label: string }[] = [
   { key: "MAKE", label: "Make" },
@@ -75,7 +85,8 @@ const VehicleDetail = lazy(() =>
 function filtersFromParams(params: URLSearchParams): SearchFilters {
   const filters: SearchFilters = {};
   const validKeys = new Set([
-    ...filterFields.map((f) => f.key),
+    ...primaryFilterFields.map((f) => f.key),
+    ...advancedFilterFields.map((f) => f.key),
     "VEHICLE_YEAR_MIN", "VEHICLE_YEAR_MAX", "CC_RATING_MIN", "CC_RATING_MAX",
     "POWER_RATING_MIN", "POWER_RATING_MAX", "GROSS_VEHICLE_MASS_MIN", "GROSS_VEHICLE_MASS_MAX",
     "WIDTH_MIN", "WIDTH_MAX", "NUMBER_OF_SEATS_MIN", "NUMBER_OF_AXLES_MIN",
@@ -115,6 +126,8 @@ export default function Index() {
   const [breakdownSheetOpen, setBreakdownSheetOpen] = useState(false);
   const [validity, setValidity] = useState<Record<string, boolean>>({});
   const isSearching = useRef(false);
+  const [showAdvanced, setShowAdvanced] = useState(() => [...searchParams.keys()].some(k => advancedFilterKeySet.has(k)));
+  const advancedActiveCount = useMemo(() => [...advancedFilterKeySet].filter(k => (filters[k as keyof SearchFilters] as string | undefined)?.trim()).length, [filters]);
 
   useEffect(() => { preloadSuggestions(); }, []);
 
@@ -412,9 +425,9 @@ export default function Index() {
       <div style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff" }}>
         {/* Filter panel */}
         <div className="filters-panel" style={{ padding: "20px 24px", background: "#ffffff" }}>
-          {/* Top Section: Main Filters */}
-          <div className="main-filters-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px", paddingBottom: 20, borderBottom: "1px solid #f3f4f6" }}>
-            {filterFields.map((f) => (
+          {/* Primary Filters */}
+          <div className="main-filters-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px" }}>
+            {primaryFilterFields.map((f) => (
               <SearchField
                 key={f.key}
                 label={f.label}
@@ -437,18 +450,47 @@ export default function Index() {
             <RangeField label="POWER (KW)" fieldMin="POWER_RATING_MIN" fieldMax="POWER_RATING_MAX" valueMin={filters.POWER_RATING_MIN || ""} valueMax={filters.POWER_RATING_MAX || ""} onChangeMin={(v) => updateFilter("POWER_RATING_MIN", v)} onChangeMax={(v) => updateFilter("POWER_RATING_MAX", v)} min={0} max={500} />
           </div>
 
-          {/* Bottom Section: Two Columns */}
-          <div className="filters-bottom" style={{ display: "flex", gap: 48, marginTop: 20, alignItems: "stretch", minWidth: 0 }}>
-            {/* Left Column: Physical Params + Actions */}
-            <div className="filters-left-col" style={{ flex: "0 1 560px", maxWidth: 560, width: "100%", display: "flex", flexDirection: "column", justifyContent: isMobile ? "flex-start" : "space-between", minWidth: 0 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "12px 24px", width: "100%", minWidth: 0 }}>
+          {/* More filters toggle + advanced section */}
+          <div style={{ marginTop: 16, paddingBottom: 16, borderBottom: "1px solid #f3f4f6" }}>
+            <button
+              onClick={() => setShowAdvanced(v => !v)}
+              style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", padding: 0, fontSize: 10, fontWeight: 700, color: advancedActiveCount > 0 ? "#0ea5e9" : "#6b7280", letterSpacing: "0.15em", fontFamily: "inherit" }}
+            >
+              <ChevronDown size={13} style={{ transform: showAdvanced ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", flexShrink: 0 }} />
+              MORE FILTERS
+              {advancedActiveCount > 0 && (
+                <span style={{ background: "#0ea5e9", color: "#ffffff", fontSize: 9, fontWeight: 700, borderRadius: 999, padding: "1px 6px", letterSpacing: "0.1em" }}>
+                  {advancedActiveCount}
+                </span>
+              )}
+            </button>
+
+            {showAdvanced && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px", marginTop: 14 }}>
+                {advancedFilterFields.map((f) => (
+                  <SearchField
+                    key={f.key}
+                    label={f.label}
+                    helpText={f.helpText}
+                    field={f.key as keyof Vehicle}
+                    value={(filters[f.key] as string) || ""}
+                    onChange={(v) => updateFilter(f.key, v)}
+                    onValidationChange={(isValid) => updateValidity(f.key, isValid)}
+                  />
+                ))}
                 <RangeField label="GROSS MASS" fieldMin="GROSS_VEHICLE_MASS_MIN" fieldMax="GROSS_VEHICLE_MASS_MAX" valueMin={filters.GROSS_VEHICLE_MASS_MIN || ""} valueMax={filters.GROSS_VEHICLE_MASS_MAX || ""} onChangeMin={(v) => updateFilter("GROSS_VEHICLE_MASS_MIN", v)} onChangeMax={(v) => updateFilter("GROSS_VEHICLE_MASS_MAX", v)} min={0} max={50000} />
                 <RangeField label="WIDTH (MM)" fieldMin="WIDTH_MIN" fieldMax="WIDTH_MAX" valueMin={filters.WIDTH_MIN || ""} valueMax={filters.WIDTH_MAX || ""} onChangeMin={(v) => updateFilter("WIDTH_MIN", v)} onChangeMax={(v) => updateFilter("WIDTH_MAX", v)} min={0} max={3500} />
                 <RangeField label="SEATS (MIN)" fieldMin="NUMBER_OF_SEATS_MIN" fieldMax="NUMBER_OF_SEATS_MIN" valueMin={filters.NUMBER_OF_SEATS_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_SEATS_MIN", v)} onChangeMax={() => {}} min={1} max={20} />
                 <RangeField label="AXLES (MIN)" fieldMin="NUMBER_OF_AXLES_MIN" fieldMax="NUMBER_OF_AXLES_MIN" valueMin={filters.NUMBER_OF_AXLES_MIN || ""} valueMax="" onChangeMin={(v) => updateFilter("NUMBER_OF_AXLES_MIN", v)} onChangeMax={() => {}} min={1} max={9} />
               </div>
+            )}
+          </div>
 
-              <div className="action-buttons" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: isMobile ? 10 : 24, width: "100%", minWidth: 0, flexWrap: "nowrap" }}>
+          {/* Actions + Breakdown */}
+          <div className="filters-bottom" style={{ display: "flex", gap: 48, marginTop: 20, alignItems: "stretch", minWidth: 0 }}>
+            {/* Left Column: Actions */}
+            <div className="filters-left-col" style={{ flex: "0 1 auto", minWidth: 0 }}>
+              <div className="action-buttons" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minWidth: 0, flexWrap: "nowrap" }}>
                 <div className="action-buttons-primary" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
                   <button onClick={handleClear}
                     style={{ flex: isMobile ? "0 0 34%" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.12em", whiteSpace: "nowrap" }}
@@ -462,7 +504,7 @@ export default function Index() {
                     onClick={() => {
                       const hasFilters = Object.values(filters).some((v) => v && v.trim());
                       if (!hasFilters) { toast("No filters set", { description: "Enter at least one parameter before running a search." }); return; }
-                      
+
                       const allValid = Object.values(validity).every(v => v !== false);
                       if (!allValid) {
                         toast("Invalid search parameters", { description: "Please correct the highlighted fields before searching." });
