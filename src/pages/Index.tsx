@@ -375,11 +375,11 @@ export default function Index() {
 
       <header style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff", position: "sticky", top: 0, zIndex: 40 }}>
         {/* Blue top bar */}
-        <div className="header-topbar" style={{ background: "#1e293b", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span className="header-topbar-subtitle" style={{ fontSize: "10px", color: "#94a3b8", fontWeight: 600, letterSpacing: "0.16em" }}>
+        <div className="header-topbar" style={{ background: "#0ea5e9", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span className="header-topbar-subtitle" style={{ fontSize: "10px", color: "#f9fafb", fontWeight: 600, letterSpacing: "0.16em" }}>
             WAKA KOTAHI · NZ MOTOR VEHICLE REGISTER · PUBLIC ACCESS TERMINAL
           </span>
-          <span style={{ fontSize: "10px", color: "#64748b", letterSpacing: "0.1em" }}>
+          <span style={{ fontSize: "10px", color: "#e0f2fe", letterSpacing: "0.1em" }}>
             {new Date().toISOString().split("T")[0]}
           </span>
         </div>
@@ -491,9 +491,9 @@ export default function Index() {
           </div>
 
           {/* Actions + Breakdown */}
-          <div className="filters-bottom" style={{ display: "flex", gap: 48, marginTop: 20, alignItems: "stretch", minWidth: 0 }}>
+          <div className="filters-bottom" style={{ display: "flex", gap: 24, marginTop: 20, alignItems: "flex-start", minWidth: 0 }}>
             {/* Left Column: Actions */}
-            <div className="filters-left-col" style={{ flex: "0 1 auto", minWidth: 0 }}>
+            <div className="filters-left-col" style={{ flex: "0 0 auto", minWidth: 0 }}>
               <div className="action-buttons" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minWidth: 0, flexWrap: "nowrap" }}>
                 <div className="action-buttons-primary" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
                   <button onClick={handleClear}

@@ -68,18 +68,19 @@
   .filters-bottom {
     display: flex !important;
     flex-direction: row !important;
-    gap: 48px !important;
+    gap: 24px !important;
     margin-top: 20px !important;
   }
   .filters-left-col {
     display: flex !important;
-    max-width: 560px !important;
-    width: 100% !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: none !important;
   }
   .filters-right-col {
     border-left: 1px solid #f3f4f6 !important;
     border-top: none;
-    padding-left: 32px !important;
+    padding-left: 24px !important;
     padding-top: 0;
   }
 }
@@ -87,7 +88,6 @@
 /* ── Physical params grid → 2-col on mobile already, fine ───── */
 .filters-left-col {
   min-width: 0 !important;
-  width: 100%;
 }
 
 /* ── Action buttons → wrap on small screens ─────────────────── */
