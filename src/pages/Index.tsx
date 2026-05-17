@@ -454,7 +454,7 @@ export default function Index() {
           <div style={{ marginTop: 16, paddingBottom: 16, borderBottom: "1px solid #f3f4f6" }}>
             <button
               onClick={() => setShowAdvanced(v => !v)}
-              style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", padding: 0, fontSize: 10, fontWeight: 700, color: advancedActiveCount > 0 ? "#0ea5e9" : "#6b7280", letterSpacing: "0.15em", fontFamily: "inherit" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", padding: 0, fontSize: 10, fontWeight: 700, color: advancedActiveCount > 0 ? "#0ea5e9" : "#6b7280", letterSpacing: "0.15em", fontFamily: "inherit" }}
             >
               <ChevronDown size={13} style={{ transform: showAdvanced ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", flexShrink: 0 }} />
               MORE FILTERS

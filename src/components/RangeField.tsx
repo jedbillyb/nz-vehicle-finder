@@ -28,12 +28,13 @@ export function RangeField({
     <div style={{ minWidth: 0, width: "100%" }}>
       <label style={{
         display: "block",
-        fontSize: 9,
-        fontWeight: 700,
+        fontSize: 12,
+        fontWeight: 500,
         color: "#6b7280",
         marginBottom: 6,
-        letterSpacing: "0.2em",
+        letterSpacing: "0.05em",
         fontFamily: "inherit",
+        textTransform: "uppercase",
       }}>
         {label}
       </label>
@@ -49,12 +50,13 @@ export function RangeField({
           style={{
             width: "100%",
             minWidth: 0,
+            height: 36,
             background: "#ffffff",
             border: "1px solid #d1d5db",
             borderRadius: 6,
             color: valueMin ? "#111827" : "#9ca3af",
-            padding: "5px 8px",
-            fontSize: 11,
+            padding: "0 8px",
+            fontSize: 14,
             fontFamily: "inherit",
             outline: "none",
           }}
@@ -76,12 +78,13 @@ export function RangeField({
           style={{
             width: "100%",
             minWidth: 0,
+            height: 36,
             background: "#ffffff",
             border: "1px solid #d1d5db",
             borderRadius: 6,
             color: valueMax ? "#111827" : "#9ca3af",
-            padding: "5px 8px",
-            fontSize: 11,
+            padding: "0 8px",
+            fontSize: 14,
             fontFamily: "inherit",
             outline: "none",
           }}
