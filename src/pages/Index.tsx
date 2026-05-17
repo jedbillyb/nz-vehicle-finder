@@ -41,7 +41,7 @@ const primaryFilterFields: { key: keyof SearchFilters; label: string; helpText?:
   { key: "BODY_TYPE", label: "Body Type" },
   { key: "TRANSMISSION_TYPE", label: "Transmission" },
   { key: "TLA", label: "Registered Region", helpText: "The Territorial Local Authority (TLA) associated with the vehicle owner's current registered address. This is not necessarily where the vehicle was first registered or manufactured." },
-  { key: "VIN11", label: "VIN", helpText: "A VIN (Vehicle Identification Number) is the 17-character identifier unique to each vehicle. NZ's Motor Vehicle Register exposes the last 11 characters (VIN11), so enter the final 11 characters here. You can find the full VIN on the dashboard near the windshield, the driver's side door jamb, or your registration documents." },
+  { key: "VIN11", label: "VIN", helpText: "You can enter a full 17-character VIN or just the last 11 characters — the full VIN will be trimmed to its last 11 automatically. NZ's Motor Vehicle Register stores VIN11 (the last 11 characters of the full VIN). You can find the VIN on the dashboard near the windshield, the driver's side door jamb, or your registration documents." },
 ];
 
 const advancedFilterFields: { key: keyof SearchFilters; label: string; helpText?: string }[] = [
@@ -681,7 +681,7 @@ export default function Index() {
             {[
               ["Is this free?", "Yes, completely free. The data is publicly available from Waka Kotahi and this tool is open source."],
               ["How current is the data?", "The dataset is updated periodically from Waka Kotahi's public data releases."],
-              ["Can I search by VIN?", "Yes - use the VIN field to search by the first 11 characters of a vehicle's VIN."],
+              ["Can I search by VIN?", "Yes - paste a full 17-character VIN or the last 11 characters. Full VINs are trimmed to their last 11 characters automatically."],
               ["Can I search by region?", "Yes - use the Registered Region field to filter by Territorial Local Authority (TLA)."],
               ["Can I export results?", "Yes - after running a search, use the Export CSV button to download your results."],
               ["Can I share a search?", "Yes - use the Copy Link button to get a shareable URL with your current filters applied."],

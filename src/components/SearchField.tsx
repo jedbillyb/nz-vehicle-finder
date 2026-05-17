@@ -79,7 +79,8 @@ export function SearchField({
   const isValid = useMemo(() => {
     if (!value.trim()) return true;
     if (field === "VIN11") {
-      return /^[A-Z0-9]{1,11}$/i.test(value.trim());
+      const v = value.trim();
+      return /^[A-Z0-9]{1,11}$/i.test(v) || /^[A-Z0-9]{17}$/i.test(v);
     }
     return suggestions.some(s => s.toLowerCase() === value.trim().toLowerCase());
   }, [value, suggestions, field]);
@@ -100,7 +101,8 @@ export function SearchField({
   const handleBlur = () => {
     if (!value.trim()) return;
     if (field === "VIN11") {
-      onChange(value.trim().toUpperCase());
+      const v = value.trim().toUpperCase();
+      onChange(v.length === 17 ? v.slice(-11) : v);
       return;
     }
     const match = suggestions.find(s => s.toLowerCase() === value.trim().toLowerCase());
