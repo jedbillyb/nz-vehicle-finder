@@ -155,6 +155,19 @@ export function getSuggestionsLocal(
   return vals.filter(v => v.toUpperCase().startsWith(p)).slice(0, 10);
 }
 
+export async function fetchTopModels(
+  makeUpper: string
+): Promise<{ model: string; count: number }[]> {
+  const slug = makeUpper.toLowerCase().replace(/\s+/g, "_");
+  try {
+    const res = await fetchApi(`/api/top-models/${encodeURIComponent(slug)}`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
 export async function getSuggestions(
   field: keyof Vehicle,
   query: string,

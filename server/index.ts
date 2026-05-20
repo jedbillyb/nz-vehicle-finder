@@ -240,4 +240,15 @@ app.get("/api/vehicles", (req, res) => {
   res.json({ vehicles, total, page: parseInt(page), pages: Math.ceil(total / limit) });
 });
 
+app.get("/api/top-models/:make", (req, res) => {
+  if (!db) return res.status(503).json([]);
+  const make = req.params.make.replace(/_/g, " ").toUpperCase();
+  const rows = db
+    .prepare(
+      `SELECT TRIM(MODEL) as model, COUNT(*) as count FROM fleet WHERE UPPER(MAKE) = ? AND MODEL IS NOT NULL AND LENGTH(TRIM(MODEL)) > 0 GROUP BY TRIM(MODEL) ORDER BY count DESC LIMIT 24`
+    )
+    .all(make) as { model: string; count: number }[];
+  res.json(rows);
+});
+
 app.listen(3001);

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import MakeStats from "./pages/MakeStats";
+import ModelStats from "./pages/ModelStats";
 import NotFound from "./pages/NotFound";
 import { AnalyticsTracker } from "./components/AnalyticsTracker";
 
@@ -20,6 +21,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/stats/:make" element={<MakeStats />} />
+          <Route path="/stats/:make/:model" element={<ModelStats />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
