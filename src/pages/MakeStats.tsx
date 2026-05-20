@@ -12,7 +12,7 @@ import { applySeo } from "@/lib/seo";
 import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
 import { getMakeBlurb } from "@/lib/makeContent";
-import { modelToSlug, titleCaseModel } from "@/lib/slugs";
+import { modelToSlug, slugToMakeUpper, titleCaseModel } from "@/lib/slugs";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -44,8 +44,8 @@ type SortConfig = { key: keyof Vehicle; dir: "asc" | "desc" } | null;
 
 export default function MakeStats() {
   const { make } = useParams<{ make: string }>();
-  const makeUpper = (make || "").toUpperCase();
-  const makeDisplay = makeUpper.charAt(0) + makeUpper.slice(1).toLowerCase();
+  const makeUpper = slugToMakeUpper(make || "");
+  const makeDisplay = makeUpper.split(" ").map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
 
   const [results, setResults] = useState<Vehicle[]>([]);
   const [total, setTotal] = useState<number | null>(null);

@@ -11,7 +11,7 @@ import {
 import { applySeo } from "@/lib/seo";
 import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
-import { modelToSlug, slugToModel, titleCaseModel } from "@/lib/slugs";
+import { modelToSlug, slugToMakeUpper, slugToModel, titleCaseModel } from "@/lib/slugs";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -43,7 +43,7 @@ type SortConfig = { key: keyof Vehicle; dir: "asc" | "desc" } | null;
 
 export default function ModelStats() {
   const { make, model } = useParams<{ make: string; model: string }>();
-  const makeUpper = (make || "").toUpperCase();
+  const makeUpper = slugToMakeUpper(make || "");
   const modelUpper = slugToModel(model || "");
   const makeDisplay = makeUpper
     .split(" ")
