@@ -56,6 +56,36 @@ const MAKE_SLUG_LOOKUP: Record<string, string> = {
   "factory-built": "FACTORY BUILT",
 };
 
+export function makeToSlug(make: string): string {
+  return make.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]+/g, "").replace(/--+/g, "-");
+}
+
 export function slugToMakeUpper(slug: string): string {
   return MAKE_SLUG_LOOKUP[slug] ?? slug.toUpperCase();
+}
+
+// TLA slugs: underscores for spaces, hyphens stay (same as model convention).
+// "CHRISTCHURCH CITY" <-> "christchurch_city"
+// "QUEENSTOWN-LAKES DISTRICT" <-> "queenstown-lakes_district"
+export function tlaToSlug(tla: string): string {
+  return tla.trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+export function slugToTla(slug: string): string {
+  return slug.replace(/_/g, " ").toUpperCase();
+}
+
+export function titleCaseRegion(tla: string): string {
+  return tla
+    .split(" ")
+    .map((w) => {
+      if (w.includes("-")) {
+        return w
+          .split("-")
+          .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+          .join("-");
+      }
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    })
+    .join(" ");
 }

@@ -29,6 +29,18 @@ try {
   console.error("Expected database at:", dbPath);
 }
 
+// --- Fleet overview: precomputed at startup ---
+interface FleetOverviewData {
+  total: number;
+  fuelTypes: { value: string; count: number }[];
+  topMakes: { value: string; count: number }[];
+  bodyTypes: { value: string; count: number }[];
+  importStatus: { value: string; count: number }[];
+  regions: { value: string; count: number }[];
+}
+
+let fleetOverview: FleetOverviewData | null = null;
+
 // --- Global breakdown: precomputed at startup from breakdown_cache table ---
 let globalBreakdown: Record<string, { value: string; count: number }[]> = {};
 if (db) {
@@ -107,6 +119,21 @@ const RESULT_COLUMNS = [
   "VDAM_WEIGHT", "VEHICLE_TYPE", "INDUSTRY_MODEL_CODE", "MVMA_MODEL_CODE",
   "ALTERNATIVE_MOTIVE_POWER", "SYNTHETIC_GREENHOUSE_GAS", "FC_COMBINED", "FC_URBAN", "FC_EXTRA_URBAN",
 ].map(c => `"${c}"`).join(", ");
+
+if (db) {
+  try {
+    const total = (db.prepare("SELECT COUNT(*) as n FROM fleet").get() as any).n as number;
+    const fuelTypes = db.prepare("SELECT COALESCE(NULLIF(TRIM(MOTIVE_POWER),''), 'UNKNOWN') as value, COUNT(*) as count FROM fleet GROUP BY MOTIVE_POWER ORDER BY count DESC LIMIT 12").all() as any[];
+    const topMakes = db.prepare("SELECT MAKE as value, COUNT(*) as count FROM fleet WHERE MAKE IS NOT NULL AND MAKE != '' GROUP BY MAKE ORDER BY count DESC LIMIT 20").all() as any[];
+    const bodyTypes = db.prepare("SELECT COALESCE(NULLIF(TRIM(BODY_TYPE),''), 'UNKNOWN') as value, COUNT(*) as count FROM fleet GROUP BY BODY_TYPE ORDER BY count DESC LIMIT 10").all() as any[];
+    const importStatus = db.prepare("SELECT COALESCE(NULLIF(TRIM(IMPORT_STATUS),''), 'UNKNOWN') as value, COUNT(*) as count FROM fleet GROUP BY IMPORT_STATUS ORDER BY count DESC").all() as any[];
+    const regions = db.prepare("SELECT TRIM(TLA) as value, COUNT(*) as count FROM fleet WHERE TLA IS NOT NULL AND TRIM(TLA) != '' GROUP BY TRIM(TLA) ORDER BY count DESC").all() as any[];
+    fleetOverview = { total, fuelTypes, topMakes, bodyTypes, importStatus, regions };
+    console.log("Fleet overview precomputed");
+  } catch (err) {
+    console.warn("Failed to precompute fleet overview:", (err as Error).message);
+  }
+}
 
 console.log("API listening on http://localhost:3001");
 
@@ -222,13 +249,16 @@ app.get("/api/vehicles", (req, res) => {
     if (!value || !value.trim()) continue;
     if (key.endsWith("_MIN")) {
       const col = key.replace("_MIN", "");
+      if (!ALLOWED_FIELDS.has(col)) continue;
       clauses.push(`CAST("${col}" AS INTEGER) >= ?`);
       params.push(parseInt(value));
     } else if (key.endsWith("_MAX")) {
       const col = key.replace("_MAX", "");
+      if (!ALLOWED_FIELDS.has(col)) continue;
       clauses.push(`CAST("${col}" AS INTEGER) <= ?`);
       params.push(parseInt(value));
     } else {
+      if (!ALLOWED_FIELDS.has(key)) continue;
       clauses.push(`UPPER("${key}") = UPPER(?)`);
       params.push(value);
     }
@@ -238,6 +268,16 @@ app.get("/api/vehicles", (req, res) => {
   const total = (db.prepare(`SELECT COUNT(*) as count FROM fleet ${where}`).get(...params) as any).count;
   const vehicles = db.prepare(`SELECT ${RESULT_COLUMNS} FROM fleet ${where} LIMIT ? OFFSET ?`).all(...params, limit, offset);
   res.json({ vehicles, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+});
+
+app.get("/api/fleet-overview", (_req, res) => {
+  if (!fleetOverview) return res.status(503).json({});
+  res.json(fleetOverview);
+});
+
+app.get("/api/top-regions", (_req, res) => {
+  if (!fleetOverview) return res.status(503).json([]);
+  res.json(fleetOverview.regions);
 });
 
 app.get("/api/top-models/:make", (req, res) => {

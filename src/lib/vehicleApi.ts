@@ -155,6 +155,35 @@ export function getSuggestionsLocal(
   return vals.filter(v => v.toUpperCase().startsWith(p)).slice(0, 10);
 }
 
+export interface FleetOverview {
+  total: number;
+  fuelTypes: { value: string; count: number }[];
+  topMakes: { value: string; count: number }[];
+  bodyTypes: { value: string; count: number }[];
+  importStatus: { value: string; count: number }[];
+  regions: { value: string; count: number }[];
+}
+
+export async function fetchFleetOverview(): Promise<FleetOverview | null> {
+  try {
+    const res = await fetchApi("/api/fleet-overview");
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchTopRegions(): Promise<{ value: string; count: number }[]> {
+  try {
+    const res = await fetchApi("/api/top-regions");
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchTopModels(
   makeUpper: string
 ): Promise<{ model: string; count: number }[]> {
