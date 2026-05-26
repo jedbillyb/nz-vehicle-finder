@@ -157,8 +157,7 @@ export default function MakeStats() {
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: "https://vehiclefinder.co.nz/" },
-          { "@type": "ListItem", position: 2, name: "Stats", item: "https://vehiclefinder.co.nz/" },
-          { "@type": "ListItem", position: 3, name: makeDisplay, item: canonical },
+          { "@type": "ListItem", position: 2, name: makeDisplay, item: canonical },
         ],
       },
     ];

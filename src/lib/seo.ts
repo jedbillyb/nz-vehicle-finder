@@ -98,6 +98,10 @@ export function applySeo({
     content: image,
   });
 
+  upsertMeta('meta[name="twitter:card"]', {
+    name: "twitter:card",
+    content: "summary_large_image",
+  });
   upsertMeta('meta[name="twitter:title"]', {
     name: "twitter:title",
     content: title,
@@ -109,5 +113,14 @@ export function applySeo({
   upsertMeta('meta[name="twitter:image"]', {
     name: "twitter:image",
     content: image,
+  });
+
+  upsertMeta('meta[property="og:locale"]', {
+    property: "og:locale",
+    content: "en_NZ",
+  });
+  upsertMeta('meta[property="og:site_name"]', {
+    property: "og:site_name",
+    content: "NZ Vehicle Finder",
   });
 }
