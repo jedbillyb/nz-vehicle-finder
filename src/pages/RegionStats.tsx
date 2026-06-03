@@ -67,6 +67,7 @@ export default function RegionStats() {
     if (isSearching.current) return;
     isSearching.current = true;
     setLoading(true);
+    const startedAt = Date.now();
 
     const searchMeta = {
       trigger: "region_stats_page",
@@ -83,7 +84,7 @@ export default function RegionStats() {
       setPages(data.pages);
       setSort(null);
 
-      captureEvent("search_completed", { ...searchMeta, result_count: data.total, page_count: data.pages });
+      captureEvent("search_completed", { ...searchMeta, result_count: data.total, page_count: data.pages, latency_ms: Date.now() - startedAt });
 
       if (p === 1) {
         breakdownAbortRef.current?.abort();
@@ -202,6 +203,11 @@ export default function RegionStats() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+    captureEvent("page_changed", {
+      page: newPage,
+      result_count: total ?? 0,
+      source: "region_stats_page",
+    });
     doSearch(filters, newPage);
   };
 

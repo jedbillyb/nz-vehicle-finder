@@ -267,6 +267,11 @@ export default function Index() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+    captureEvent("page_changed", {
+      page: newPage,
+      result_count: total ?? 0,
+      source: "home_page",
+    });
     doSearch(filters, newPage, "page");
   };
 
@@ -455,7 +460,14 @@ export default function Index() {
           {/* More filters toggle + advanced section */}
           <div style={{ marginTop: 16, paddingBottom: 16, borderBottom: "1px solid #f3f4f6" }}>
             <button
-              onClick={() => setShowAdvanced(v => !v)}
+              onClick={() => {
+              const next = !showAdvanced;
+              setShowAdvanced(next);
+              captureEvent("advanced_filters_toggled", {
+                expanded: next,
+                active_advanced_filter_count: advancedActiveCount,
+              });
+            }}
               style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", padding: 0, fontSize: 11, fontWeight: 600, color: advancedActiveCount > 0 ? "#0ea5e9" : "#6b7280", letterSpacing: "0.05em", fontFamily: "inherit" }}
             >
               <ChevronDown size={13} style={{ transform: showAdvanced ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", flexShrink: 0 }} />
@@ -620,6 +632,7 @@ export default function Index() {
                         model: v.MODEL,
                         year: v.VEHICLE_YEAR,
                         vin11: v.VIN11,
+                        source: "home_page",
                       });
                     }}
                       style={{ cursor: "pointer", borderBottom: "1px solid #e5e7eb", background: i % 2 === 0 ? "#ffffff" : "#f9fafb" }}

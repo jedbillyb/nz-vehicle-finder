@@ -5,12 +5,16 @@ import compression from "compression";
 import path from "path";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
+import { Resend } from "resend";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
 app.use(compression());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const dbPath = path.resolve(__dirname, "../database/vehicles.db");
 const autocompletePath = path.resolve(__dirname, "../public/autocomplete.json");
@@ -27,6 +31,24 @@ try {
 } catch (err) {
   console.error("Database failed to open:", (err as Error).message);
   console.error("Expected database at:", dbPath);
+}
+
+// --- Feedback DB (writable, separate from vehicles.db) ---
+const feedbackDbPath = path.resolve(__dirname, "../database/feedback.db");
+let feedbackDb: InstanceType<typeof Database> | null = null;
+try {
+  feedbackDb = new Database(feedbackDbPath);
+  feedbackDb.exec(`CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL,
+    rating INTEGER NOT NULL,
+    comment TEXT,
+    page_path TEXT,
+    distinct_id TEXT
+  )`);
+  console.log("Feedback DB ready:", feedbackDbPath);
+} catch (err) {
+  console.error("Feedback DB failed to open:", (err as Error).message);
 }
 
 // --- Fleet overview: precomputed at startup ---
@@ -289,6 +311,44 @@ app.get("/api/top-models/:make", (req, res) => {
     )
     .all(make) as { model: string; count: number }[];
   res.json(rows);
+});
+
+app.post("/api/feedback", async (req, res) => {
+  const { rating, comment, page_path, distinct_id } = req.body ?? {};
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: "rating must be an integer 1-5" });
+  }
+  const safeComment = typeof comment === "string" ? comment.trim().slice(0, 1000) : null;
+  const safePath = typeof page_path === "string" ? page_path.slice(0, 200) : null;
+  const safeDistinctId = typeof distinct_id === "string" ? distinct_id.slice(0, 100) : null;
+
+  if (feedbackDb) {
+    feedbackDb.prepare(
+      `INSERT INTO feedback (created_at, rating, comment, page_path, distinct_id) VALUES (?, ?, ?, ?, ?)`
+    ).run(new Date().toISOString(), rating, safeComment, safePath, safeDistinctId);
+  }
+
+  if (resend && process.env.FEEDBACK_FROM_EMAIL) {
+    try {
+      const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+      await resend.emails.send({
+        from: process.env.FEEDBACK_FROM_EMAIL,
+        to: "hello@jedbillyb.com",
+        subject: `NZ Vehicle Finder feedback: ${stars}`,
+        text: [
+          `Rating: ${rating}/5 ${stars}`,
+          safeComment ? `Comment: ${safeComment}` : "No comment",
+          safePath ? `Page: ${safePath}` : "",
+          safeDistinctId ? `User: ${safeDistinctId}` : "",
+        ].filter(Boolean).join("\n"),
+      });
+    } catch (err) {
+      console.error("Resend email failed:", (err as Error).message);
+    }
+  }
+
+  res.json({ ok: true });
 });
 
 app.listen(3001);

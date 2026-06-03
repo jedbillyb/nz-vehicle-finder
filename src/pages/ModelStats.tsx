@@ -71,6 +71,7 @@ export default function ModelStats() {
     if (isSearching.current) return;
     isSearching.current = true;
     setLoading(true);
+    const startedAt = Date.now();
 
     const searchMeta = {
       trigger: "model_stats_page",
@@ -91,6 +92,7 @@ export default function ModelStats() {
         ...searchMeta,
         result_count: data.total,
         page_count: data.pages,
+        latency_ms: Date.now() - startedAt,
       });
 
       if (p === 1) {
@@ -225,6 +227,11 @@ export default function ModelStats() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+    captureEvent("page_changed", {
+      page: newPage,
+      result_count: total ?? 0,
+      source: "model_stats_page",
+    });
     doSearch(filters, newPage);
   };
 

@@ -10,6 +10,7 @@ import FleetOverview from "./pages/FleetOverview";
 import RegionStats from "./pages/RegionStats";
 import NotFound from "./pages/NotFound";
 import { AnalyticsTracker } from "./components/AnalyticsTracker";
+import { FeedbackWidget } from "./components/FeedbackWidget";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AnalyticsTracker />
+        <FeedbackWidget />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/stats/:make" element={<MakeStats />} />

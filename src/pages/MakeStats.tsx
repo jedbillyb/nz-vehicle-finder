@@ -67,6 +67,7 @@ export default function MakeStats() {
     if (isSearching.current) return;
     isSearching.current = true;
     setLoading(true);
+    const startedAt = Date.now();
 
     const searchMeta = {
       trigger: "stats_page",
@@ -87,6 +88,7 @@ export default function MakeStats() {
         ...searchMeta,
         result_count: data.total,
         page_count: data.pages,
+        latency_ms: Date.now() - startedAt,
       });
 
       if (p === 1) {
@@ -210,6 +212,11 @@ export default function MakeStats() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+    captureEvent("page_changed", {
+      page: newPage,
+      result_count: total ?? 0,
+      source: "stats_page",
+    });
     doSearch(filters, newPage);
   };
 
