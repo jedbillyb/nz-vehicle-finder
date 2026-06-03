@@ -1,10 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageSquare, X, Star } from "lucide-react";
 import { toast } from "sonner";
 import { captureEvent } from "@/lib/posthog";
+import { API_BASE } from "@/lib/vehicleApi";
 
-const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
 
 function getDistinctId(): string {
   const key = "nzvf_posthog_distinct_id";
@@ -22,6 +30,7 @@ export function FeedbackWidget() {
   const [hovered, setHovered] = useState(0);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const isMobile = useIsMobile();
 
   const pagePath = window.location.pathname;
 
@@ -71,131 +80,196 @@ export function FeedbackWidget() {
 
   const displayRating = hovered || rating;
 
+  // On mobile, sit above the breakdown button (which is ~60px from bottom)
+  const btnBottom = isMobile ? 80 : 24;
+  const btnRight = isMobile ? 12 : 24;
+
   return (
     <>
-      {/* Floating trigger button */}
       <button
         onClick={handleOpen}
+        aria-label="Give feedback"
         style={{
           position: "fixed",
-          bottom: 20,
-          right: 20,
-          zIndex: 40,
+          bottom: btnBottom,
+          right: btnRight,
+          zIndex: 35,
           display: "flex",
           alignItems: "center",
-          gap: 6,
-          padding: "8px 14px",
-          background: "rgba(15, 23, 42, 0.92)",
-          color: "#ffffff",
-          border: "1px solid rgba(255,255,255,0.1)",
+          gap: 5,
+          padding: "7px 13px",
+          background: "rgba(15, 23, 42, 0.88)",
+          color: "#e2e8f0",
+          border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: 999,
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: 600,
-          letterSpacing: "0.08em",
+          letterSpacing: "0.1em",
           cursor: "pointer",
           fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-          backdropFilter: "blur(10px)",
-          boxShadow: "0 4px 14px rgba(15,23,42,0.2)",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 2px 12px rgba(15,23,42,0.18)",
+          transition: "background 0.15s ease, color 0.15s ease",
+          textTransform: "uppercase",
         }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(15,23,42,1)"; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(15,23,42,0.92)"; }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = "rgba(15,23,42,1)";
+          (e.currentTarget as HTMLButtonElement).style.color = "#ffffff";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = "rgba(15,23,42,0.88)";
+          (e.currentTarget as HTMLButtonElement).style.color = "#e2e8f0";
+        }}
       >
-        <MessageSquare size={12} />
+        <MessageSquare size={11} />
         Feedback
       </button>
 
-      {/* Modal overlay */}
       {open && (
         <>
+          {/* Backdrop */}
           <div
             onClick={handleClose}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 50, backdropFilter: "blur(2px)" }}
+            style={{
+              position: "fixed", inset: 0,
+              background: "rgba(0,0,0,0.35)",
+              zIndex: 50,
+              backdropFilter: "blur(2px)",
+            }}
           />
+
+          {/* Modal */}
           <div
+            onClick={(e) => e.stopPropagation()}
             style={{
               position: "fixed",
-              bottom: 72,
-              right: 20,
               zIndex: 51,
-              width: 300,
+              ...(isMobile
+                ? { left: 16, right: 16, bottom: 16 }
+                : { bottom: 80, right: 24, width: 296 }),
               background: "#ffffff",
-              borderRadius: 12,
+              borderRadius: 14,
               border: "1px solid #e5e7eb",
-              boxShadow: "0 16px 40px rgba(15,23,42,0.18)",
+              boxShadow: "0 20px 50px rgba(15,23,42,0.16), 0 4px 12px rgba(15,23,42,0.08)",
               fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
               overflow: "hidden",
             }}
-            onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px", borderBottom: "1px solid #f3f4f6" }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", letterSpacing: "-0.01em" }}>How's the site?</span>
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "14px 16px 12px",
+              borderBottom: "1px solid #f1f5f9",
+            }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", letterSpacing: "-0.01em" }}>
+                  How's the site?
+                </div>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>
+                  Your feedback helps improve Vehicle Finder
+                </div>
+              </div>
               <button
                 onClick={handleClose}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 2, display: "flex", alignItems: "center" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#4b5563"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#9ca3af"; }}
+                style={{
+                  background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6,
+                  cursor: "pointer", color: "#94a3b8", padding: "4px 5px",
+                  display: "flex", alignItems: "center", flexShrink: 0, marginLeft: 8,
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#475569"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#94a3b8"; }}
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             </div>
 
             {/* Stars */}
-            <div style={{ padding: "14px 16px 10px" }}>
-              <div style={{ display: "flex", gap: 6, marginBottom: 14, justifyContent: "center" }}>
+            <div style={{ padding: "16px 16px 12px" }}>
+              <div style={{ display: "flex", gap: 4, marginBottom: 14, justifyContent: "center" }}>
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
                     key={n}
                     onMouseEnter={() => setHovered(n)}
                     onMouseLeave={() => setHovered(0)}
                     onClick={() => setRating(n)}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center" }}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      padding: "4px 3px", display: "flex", alignItems: "center",
+                      transform: n <= displayRating ? "scale(1.12)" : "scale(1)",
+                      transition: "transform 0.1s ease",
+                    }}
                   >
                     <Star
-                      size={26}
+                      size={28}
                       fill={n <= displayRating ? "#f59e0b" : "none"}
-                      stroke={n <= displayRating ? "#f59e0b" : "#d1d5db"}
-                      style={{ transition: "all 0.1s ease" }}
+                      stroke={n <= displayRating ? "#f59e0b" : "#cbd5e1"}
                     />
                   </button>
                 ))}
               </div>
 
-              {/* Comment */}
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Anything else? (optional)"
+                placeholder="Any comments? (optional)"
                 maxLength={1000}
                 rows={3}
                 style={{
                   width: "100%",
                   resize: "none",
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid #e2e8f0",
                   borderRadius: 8,
-                  padding: "8px 10px",
+                  padding: "9px 11px",
                   fontSize: 12,
                   color: "#374151",
                   fontFamily: "inherit",
                   outline: "none",
                   boxSizing: "border-box",
-                  lineHeight: 1.5,
+                  lineHeight: 1.6,
+                  background: "#f8fafc",
+                  transition: "border-color 0.15s ease, background 0.15s ease",
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "#0ea5e9"; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#0ea5e9";
+                  e.currentTarget.style.background = "#ffffff";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#e2e8f0";
+                  e.currentTarget.style.background = "#f8fafc";
+                }}
               />
             </div>
 
             {/* Submit */}
-            <div style={{ padding: "0 16px 14px" }}>
+            <div style={{ padding: "0 16px 16px", display: "flex", gap: 8 }}>
+              <button
+                onClick={handleClose}
+                style={{
+                  flex: "0 0 auto",
+                  padding: "9px 14px",
+                  background: "transparent",
+                  color: "#64748b",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 8,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  letterSpacing: "0.02em",
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#94a3b8"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#e2e8f0"; }}
+              >
+                Cancel
+              </button>
               <button
                 onClick={handleSubmit}
                 disabled={submitting || rating === 0}
                 style={{
-                  width: "100%",
+                  flex: 1,
                   padding: "9px 0",
-                  background: rating === 0 ? "#e5e7eb" : submitting ? "#bae6fd" : "#0ea5e9",
-                  color: rating === 0 ? "#9ca3af" : "#ffffff",
+                  background: rating === 0 ? "#f1f5f9" : submitting ? "#7dd3fc" : "#0ea5e9",
+                  color: rating === 0 ? "#94a3b8" : "#ffffff",
                   border: "none",
                   borderRadius: 8,
                   fontSize: 11,
