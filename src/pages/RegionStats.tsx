@@ -302,6 +302,13 @@ export default function RegionStats() {
                 {blurb.blurb}
               </p>
             )}
+            <Link
+              to={`/?TLA=${encodeURIComponent(tlaUpper)}`}
+              onClick={() => captureEvent("refine_further_clicked", { source: "region_stats_page", tla: tlaUpper })}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 16, fontSize: 13, fontWeight: 600, color: "#0ea5e9", textDecoration: "none", padding: "8px 16px", border: "1px solid #bae6fd", borderRadius: 8, background: "#f0f9ff", letterSpacing: "0.02em" }}
+            >
+              Refine further <span aria-hidden>→</span>
+            </Link>
           </div>
           <a
             onClick={() => captureEvent("sponsor_link_clicked", { location: "hero_region_stats" })}

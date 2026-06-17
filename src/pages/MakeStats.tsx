@@ -322,6 +322,13 @@ export default function MakeStats() {
                   {blurb.blurb}
                 </p>
               )}
+            <Link
+              to={`/?MAKE=${encodeURIComponent(makeUpper)}`}
+              onClick={() => captureEvent("refine_further_clicked", { source: "stats_page", make: makeUpper })}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 16, fontSize: 13, fontWeight: 600, color: "#0ea5e9", textDecoration: "none", padding: "8px 16px", border: "1px solid #bae6fd", borderRadius: 8, background: "#f0f9ff", letterSpacing: "0.02em" }}
+            >
+              Refine further <span aria-hidden>→</span>
+            </Link>
           </div>
           <a className="hero-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "hero_stats" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
             style={{ fontSize: 13, fontWeight: 700, color: "#ef4444", textDecoration: "none", padding: "10px 24px", border: "2px solid #ef4444", borderRadius: 8, letterSpacing: "0.1em", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2, marginTop: 8, minWidth: 160 }}>

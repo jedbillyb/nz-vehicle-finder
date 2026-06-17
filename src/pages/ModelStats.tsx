@@ -334,6 +334,13 @@ export default function ModelStats() {
                 <> Most are {top.fuel.value.toLowerCase()} powered, most common colour is {top.colour.value.toLowerCase()}.</>
               )}
             </p>
+            <Link
+              to={`/?MAKE=${encodeURIComponent(makeUpper)}&MODEL=${encodeURIComponent(modelUpper)}`}
+              onClick={() => captureEvent("refine_further_clicked", { source: "model_stats_page", make: makeUpper, model: modelUpper })}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 16, fontSize: 13, fontWeight: 600, color: "#0ea5e9", textDecoration: "none", padding: "8px 16px", border: "1px solid #bae6fd", borderRadius: 8, background: "#f0f9ff", letterSpacing: "0.02em" }}
+            >
+              Refine further <span aria-hidden>→</span>
+            </Link>
           </div>
           <a
             className="hero-sponsor"
