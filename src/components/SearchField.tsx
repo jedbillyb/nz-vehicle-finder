@@ -78,12 +78,8 @@ export function SearchField({
 
   const isValid = useMemo(() => {
     if (!value.trim()) return true;
-    if (field === "VIN11") {
-      const v = value.trim();
-      return /^[A-Z0-9]{1,11}$/i.test(v) || /^[A-Z0-9]{17}$/i.test(v);
-    }
     return suggestions.some(s => s.toLowerCase() === value.trim().toLowerCase());
-  }, [value, suggestions, field]);
+  }, [value, suggestions]);
 
   useEffect(() => {
     onValidationChange?.(isValid);
@@ -100,11 +96,6 @@ export function SearchField({
 
   const handleBlur = () => {
     if (!value.trim()) return;
-    if (field === "VIN11") {
-      const v = value.trim().toUpperCase();
-      onChange(v.length === 17 ? v.slice(-11) : v);
-      return;
-    }
     const match = suggestions.find(s => s.toLowerCase() === value.trim().toLowerCase());
     if (match && match !== value) {
       onChange(match);

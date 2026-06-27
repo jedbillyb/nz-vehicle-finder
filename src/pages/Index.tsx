@@ -41,12 +41,11 @@ const primaryFilterFields: { key: keyof SearchFilters; label: string; helpText?:
   { key: "BODY_TYPE", label: "Body Type" },
   { key: "TRANSMISSION_TYPE", label: "Transmission" },
   { key: "TLA", label: "Registered Region", helpText: "The Territorial Local Authority (TLA) associated with the vehicle owner's current registered address. This is not necessarily where the vehicle was first registered or manufactured." },
-  { key: "VIN11", label: "VIN", helpText: "You can enter a full 17-character VIN or just the last 11 characters — the full VIN will be trimmed to its last 11 automatically. NZ's Motor Vehicle Register stores VIN11 (the last 11 characters of the full VIN). You can find the VIN on the dashboard near the windshield, the driver's side door jamb, or your registration documents." },
+  { key: "IMPORT_STATUS", label: "Import Status", helpText: "Whether the vehicle was first registered new in New Zealand or imported used from overseas." },
 ];
 
 const advancedFilterFields: { key: keyof SearchFilters; label: string; helpText?: string }[] = [
   { key: "POSTCODE", label: "Postcode" },
-  { key: "IMPORT_STATUS", label: "Import Status" },
   { key: "ORIGINAL_COUNTRY", label: "Country of Manufacture" },
   { key: "CLASS", label: "Class" },
   { key: "INDUSTRY_CLASS", label: "Industry Class" },
@@ -56,7 +55,7 @@ const advancedFilterFields: { key: keyof SearchFilters; label: string; helpText?
 ];
 
 const advancedFilterKeySet = new Set([
-  "POSTCODE", "IMPORT_STATUS", "ORIGINAL_COUNTRY", "CLASS", "INDUSTRY_CLASS",
+  "POSTCODE", "ORIGINAL_COUNTRY", "CLASS", "INDUSTRY_CLASS",
   "ROAD_TRANSPORT_CODE", "VEHICLE_USAGE", "NZ_ASSEMBLED",
   "GROSS_VEHICLE_MASS_MIN", "GROSS_VEHICLE_MASS_MAX", "WIDTH_MIN", "WIDTH_MAX",
   "NUMBER_OF_SEATS_MIN", "NUMBER_OF_AXLES_MIN",
@@ -694,7 +693,7 @@ export default function Index() {
             {[
               ["Is this free?", "Yes, completely free. The data is publicly available from Waka Kotahi and this tool is open source."],
               ["How current is the data?", "The dataset is updated periodically from Waka Kotahi's public data releases."],
-              ["Can I search by VIN?", "Yes - paste a full 17-character VIN or the last 11 characters. Full VINs are trimmed to their last 11 characters automatically."],
+              ["Can I filter by import status?", "Yes - use the Import Status field to filter between vehicles registered new in New Zealand and used imports."],
               ["Can I search by region?", "Yes - use the Registered Region field to filter by Territorial Local Authority (TLA)."],
               ["Can I export results?", "Yes - after running a search, use the Export CSV button to download your results."],
               ["Can I share a search?", "Yes - use the Copy Link button to get a shareable URL with your current filters applied."],
