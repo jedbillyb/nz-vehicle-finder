@@ -1,4 +1,3 @@
-<p align="right"><a href="https://jedbillyb.com"><img src="https://img.shields.io/badge/jedbillyb.com-000?style=for-the-badge&logo=archlinux&logoColor=blue" /></a></p>
 <div align="center">
 
 <img src="public/favicon.svg" width="128" height="128" alt="NZ Vehicle Finder" />
