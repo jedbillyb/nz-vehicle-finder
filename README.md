@@ -15,16 +15,16 @@
 
 ---
 
-A fast, terminal-inspired search tool for the NZ Motor Vehicle Register. Filter by make, model, region, fuel type, VIN, year range, engine specs, and more — across 17+ dimensions.
+A fast, terminal-inspired search tool for the NZ Motor Vehicle Register. Filter by make, model, region, fuel type, VIN, year range, engine specs, and more - across 17+ dimensions.
 
 ## Features
 
-- **Deep filtering** — Make, model, colour, region, fuel type, body style, VIN, year, CC, kW, and dimensions
-- **Autocomplete** — Context-aware suggestions on every search field
-- **Shareable searches** — One-click link generation for any filtered query
-- **CSV export** — Download your result set directly
-- **Query history** — Recent searches recalled automatically
-- **Visual breakdowns** — Dynamic charts for fuel type, make, and body type distributions
+- **Deep filtering** - Make, model, colour, region, fuel type, body style, VIN, year, CC, kW, and dimensions
+- **Autocomplete** - Context-aware suggestions on every search field
+- **Shareable searches** - One-click link generation for any filtered query
+- **CSV export** - Download your result set directly
+- **Query history** - Recent searches recalled automatically
+- **Visual breakdowns** - Dynamic charts for fuel type, make, and body type distributions
 
 ## Stack
 
@@ -68,7 +68,7 @@ Tracked events: page views, searches (with active filters), zero-result queries,
 
 ## Deployment
 
-A `post-commit` Git hook automatically syncs, installs, and builds to the VPS on every commit via `rsync`. See `deploy-to-server.sh` — configure `SERVER`, `REMOTE_DIR`, and `KEY` for your environment.
+A `post-commit` Git hook automatically syncs, installs, and builds to the VPS on every commit via `rsync`. See `deploy-to-server.sh` - configure `SERVER`, `REMOTE_DIR`, and `KEY` for your environment.
 
 ## Troubleshooting
 
