@@ -194,8 +194,26 @@ export function SearchField({
         )}
       </div>
 
+      <Input
+        value={input}
+        onChange={e => { setInput(e.target.value); setHighlightedIndex(-1); setShowSuggestions(true); }}
+        onFocus={() => {
+          setShowSuggestions(true);
+          captureEvent("filter_focused", { field: label });
+        }}
+        onBlur={commitInput}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          "bg-secondary/50 border-border/60 text-foreground placeholder:text-muted-foreground/50 h-9 text-sm font-mono",
+          !isValid && "border-destructive ring-destructive/20 focus-visible:ring-destructive/20"
+        )}
+        placeholder={terms.length > 0 ? "Add another…" : `Any ${label.toLowerCase()}...`}
+      />
+
+      {/* Chips sit below the input so adding one never pushes this field's input
+          out of line with the other fields in the grid row. */}
       {terms.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-1">
+        <div className="flex flex-wrap gap-1 mt-1">
           {terms.map((term, i) => (
             <span
               key={`${term.contains ? "~" : "="}${term.value}`}
@@ -223,21 +241,6 @@ export function SearchField({
         </div>
       )}
 
-      <Input
-        value={input}
-        onChange={e => { setInput(e.target.value); setHighlightedIndex(-1); setShowSuggestions(true); }}
-        onFocus={() => {
-          setShowSuggestions(true);
-          captureEvent("filter_focused", { field: label });
-        }}
-        onBlur={commitInput}
-        onKeyDown={handleKeyDown}
-        className={cn(
-          "bg-secondary/50 border-border/60 text-foreground placeholder:text-muted-foreground/50 h-9 text-sm font-mono",
-          !isValid && "border-destructive ring-destructive/20 focus-visible:ring-destructive/20"
-        )}
-        placeholder={terms.length > 0 ? "Add another…" : `Any ${label.toLowerCase()}...`}
-      />
       {showSuggestions && suggestions.length > 0 && (
         <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-40 overflow-auto rounded-md border border-border bg-popover shadow-lg">
           {suggestions.map((s, i) => (

@@ -176,6 +176,24 @@ function buildFilterClauses(filters: Record<string, string>) {
   return { where: clauses.length ? "WHERE " + clauses.join(" AND ") : "", clauses, params };
 }
 
+/**
+ * Suggestions match anywhere in a value, but a value *starting* with what was
+ * typed is nearly always what the user meant. Without this, typing "P" returned
+ * the first 100 makes containing a p anywhere in alphabetical order (AAKRON
+ * XPRESS, ALPHA, ALPINE, ...) and no make beginning with P ever survived the cut.
+ */
+function rankSuggestions(values: string[], q: string, limit = 100): string[] {
+  const needle = q.toUpperCase();
+  const prefix: string[] = [];
+  const elsewhere: string[] = [];
+  for (const value of values) {
+    const upper = value.toUpperCase();
+    if (upper.startsWith(needle)) prefix.push(value);
+    else if (upper.includes(needle)) elsewhere.push(value);
+  }
+  return prefix.concat(elsewhere).slice(0, limit);
+}
+
 const stmtCache = new Map<string, any>();
 // Multi-value filters make the SQL text vary with the number of placeholders,
 // so this cache needs a ceiling or it grows without bound.
@@ -268,10 +286,7 @@ app.get("/api/suggestions/:field", (req, res) => {
   if (activeFilters.length === 0) {
     const all = (distinctCache[field] || []).map(v => String(v || "").trim()).filter(Boolean);
     const unique = Array.from(new Set(all));
-    const results = q
-      ? unique.filter((v) => v.toUpperCase().includes(q.toUpperCase())).slice(0, 100)
-      : unique.slice(0, 100);
-    return res.json(results);
+    return res.json(q ? rankSuggestions(unique, q) : unique.slice(0, 100));
   }
 
   if (!db) return res.status(503).json([]);
@@ -288,13 +303,17 @@ app.get("/api/suggestions/:field", (req, res) => {
     clauses.push(clause.sql);
     params.push(...clause.params);
   }
+  // Prefix matches first here too, for the same reason as rankSuggestions.
+  let order = `"${field}"`;
   if (q) {
     clauses.push(`UPPER("${field}") LIKE ?`);
     params.push(`%${q.toUpperCase()}%`);
+    order = `CASE WHEN UPPER("${field}") LIKE ? THEN 0 ELSE 1 END, "${field}"`;
   }
   if (clauses.length === 0) return res.json([]);
   const where = "WHERE " + clauses.join(" AND ");
-  const sql = `SELECT DISTINCT "${field}" FROM fleet ${where} ORDER BY "${field}" LIMIT 100`;
+  const sql = `SELECT DISTINCT "${field}" FROM fleet ${where} ORDER BY ${order} LIMIT 100`;
+  if (q) params.push(`${q.toUpperCase()}%`);
   const rows = (getStmt(sql) || db.prepare(sql)).all(...params) as any[];
   const result = Array.from(new Set(rows.map((r: any) => String(r[field] || "").trim()).filter(Boolean)));
   setCachedSuggestion(cacheKey, result);
