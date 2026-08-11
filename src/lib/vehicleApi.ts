@@ -169,6 +169,8 @@ export interface FleetOverview {
   bodyTypes: { value: string; count: number }[];
   importStatus: { value: string; count: number }[];
   regions: { value: string; count: number }[];
+  /** ISO date the NZTA register snapshot was taken. */
+  snapshotDate?: string;
 }
 
 export async function fetchFleetOverview(): Promise<FleetOverview | null> {

@@ -103,6 +103,15 @@ function filtersFromParams(params: URLSearchParams): SearchFilters {
 /** Shown until /api/fleet-overview answers; matches the July 2026 NZTA snapshot. */
 const FLEET_TOTAL_FALLBACK = 5_902_186;
 
+/** "2026-07-31" -> "31 JUL 2026" */
+function formatSnapshot(iso: string): string | null {
+  const date = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date
+    .toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })
+    .toUpperCase();
+}
+
 const PAGE_SIZE_STORAGE_KEY = "nzvf.pageSize";
 
 /** A shared link wins over the local preference, which wins over the default. */
@@ -135,6 +144,7 @@ export default function Index() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => readInitialPageSize(searchParams));
   const [fleetTotal, setFleetTotal] = useState(FLEET_TOTAL_FALLBACK);
+  const [dataSnapshot, setDataSnapshot] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [sort, setSort] = useState<SortConfig>(null);
@@ -156,7 +166,10 @@ export default function Index() {
   // The register grows every month, so read the size rather than hard-coding it.
   useEffect(() => {
     fetchFleetOverview()
-      .then((overview) => { if (overview?.total) setFleetTotal(overview.total); })
+      .then((overview) => {
+        if (overview?.total) setFleetTotal(overview.total);
+        if (overview?.snapshotDate) setDataSnapshot(formatSnapshot(overview.snapshotDate));
+      })
       .catch(() => { /* the fallback figure stays on screen */ });
   }, []);
 
@@ -431,9 +444,12 @@ export default function Index() {
           <span className="header-topbar-subtitle" style={{ fontSize: "10px", color: "#f9fafb", fontWeight: 600, letterSpacing: "0.16em" }}>
             WAKA KOTAHI · NZ MOTOR VEHICLE REGISTER · PUBLIC ACCESS TERMINAL
           </span>
-          <span style={{ fontSize: "10px", color: "#e0f2fe", letterSpacing: "0.1em" }}>
-            {new Date().toISOString().split("T")[0]}
-          </span>
+          {/* How current the register data is, which is the only date worth showing here. */}
+          {dataSnapshot && (
+            <span style={{ fontSize: "10px", color: "#e0f2fe", letterSpacing: "0.1em", whiteSpace: "nowrap" }}>
+              DATA AS AT {dataSnapshot}
+            </span>
+          )}
         </div>
         {/* Main header row */}
         <div className="header-main" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>

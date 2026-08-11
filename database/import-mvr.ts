@@ -268,6 +268,21 @@ async function main() {
     db.exec(`CREATE INDEX IF NOT EXISTS "idx_fleet_${col.toLowerCase()}_int" ON fleet (CAST("${col}" AS INTEGER))`);
   }
 
+  // NZTA publishes early in the month and the files hold the register as at the
+  // end of the previous month, so derive the snapshot date from the publish date.
+  const publishedAt = published !== "unknown" ? new Date(published) : new Date();
+  const snapshotDate = new Date(Date.UTC(publishedAt.getUTCFullYear(), publishedAt.getUTCMonth(), 0));
+  log(`Recording snapshot date ${snapshotDate.toISOString().slice(0, 10)}...`);
+  db.exec(`
+    DROP TABLE IF EXISTS dataset_meta;
+    CREATE TABLE dataset_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+  `);
+  const insertMeta = db.prepare("INSERT INTO dataset_meta VALUES (?, ?)");
+  insertMeta.run("snapshot_date", snapshotDate.toISOString().slice(0, 10));
+  insertMeta.run("published_at", published);
+  insertMeta.run("imported_at", new Date().toISOString());
+  insertMeta.run("vehicle_count", String(total));
+
   log("Building breakdown cache...");
   db.exec(`
     DROP TABLE IF EXISTS breakdown_cache;

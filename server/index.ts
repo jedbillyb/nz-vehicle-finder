@@ -61,6 +61,8 @@ interface FleetOverviewData {
   bodyTypes: { value: string; count: number }[];
   importStatus: { value: string; count: number }[];
   regions: { value: string; count: number }[];
+  /** ISO date the NZTA register snapshot was taken, when the import recorded one. */
+  snapshotDate?: string;
 }
 
 let fleetOverview: FleetOverviewData | null = null;
@@ -233,8 +235,14 @@ if (db) {
     const bodyTypes = db.prepare("SELECT COALESCE(NULLIF(TRIM(BODY_TYPE),''), 'UNKNOWN') as value, COUNT(*) as count FROM fleet GROUP BY BODY_TYPE ORDER BY count DESC LIMIT 10").all() as any[];
     const importStatus = db.prepare("SELECT COALESCE(NULLIF(TRIM(IMPORT_STATUS),''), 'UNKNOWN') as value, COUNT(*) as count FROM fleet GROUP BY IMPORT_STATUS ORDER BY count DESC").all() as any[];
     const regions = db.prepare("SELECT TRIM(TLA) as value, COUNT(*) as count FROM fleet WHERE TLA IS NOT NULL AND TRIM(TLA) != '' GROUP BY TRIM(TLA) ORDER BY count DESC").all() as any[];
-    fleetOverview = { total, fuelTypes, topMakes, bodyTypes, importStatus, regions };
-    console.log("Fleet overview precomputed");
+    let snapshotDate: string | undefined;
+    try {
+      snapshotDate = (db.prepare("SELECT value FROM dataset_meta WHERE key = 'snapshot_date'").get() as any)?.value;
+    } catch {
+      // Databases built before import-mvr.ts recorded this have no dataset_meta table.
+    }
+    fleetOverview = { total, fuelTypes, topMakes, bodyTypes, importStatus, regions, snapshotDate };
+    console.log(`Fleet overview precomputed${snapshotDate ? ` (snapshot ${snapshotDate})` : ""}`);
   } catch (err) {
     console.warn("Failed to precompute fleet overview:", (err as Error).message);
   }
