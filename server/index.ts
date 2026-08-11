@@ -6,6 +6,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import { Resend } from "resend";
+import { parseFilterValue, type FilterTerm } from "../shared/filterTerms.js";
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "../shared/pagination.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -98,12 +100,93 @@ const ALLOWED_FIELDS = new Set([
   "VIN11",
 ]);
 
+/**
+ * A "contains" term is resolved against the distinct-value list rather than
+ * queried with LIKE '%...%', because LIKE cannot use an index and would scan
+ * all 5.9M rows. Expanding "Manual" into the handful of real values (Manual 4,
+ * Manual 5, ...) keeps the query on the same index-backed path as an exact
+ * match. Only an implausibly broad term falls back to LIKE.
+ */
+const MAX_EXPANDED_TERMS = 2000;
+
+function buildFieldClause(field: string, terms: FilterTerm[]): { sql: string; params: string[] } | null {
+  if (!terms.length) return null;
+
+  const exact = new Set<string>();
+  const likes: string[] = [];
+
+  for (const term of terms) {
+    const needle = term.value.toUpperCase();
+    if (!term.contains) {
+      exact.add(needle);
+      continue;
+    }
+    const matches = (distinctCache[field] || [])
+      .map((v) => String(v || "").trim())
+      .filter((v) => v && v.toUpperCase().includes(needle));
+    if (matches.length > 0 && matches.length <= MAX_EXPANDED_TERMS) {
+      for (const m of matches) exact.add(m.toUpperCase());
+    } else {
+      likes.push(`%${needle}%`);
+    }
+  }
+
+  const parts: string[] = [];
+  const params: string[] = [];
+  if (exact.size > 0) {
+    parts.push(`UPPER("${field}") IN (${Array.from(exact, () => "?").join(", ")})`);
+    params.push(...exact);
+  }
+  for (const like of likes) {
+    parts.push(`UPPER("${field}") LIKE ?`);
+    params.push(like);
+  }
+  if (parts.length === 0) return null;
+  return { sql: parts.length === 1 ? parts[0] : `(${parts.join(" OR ")})`, params };
+}
+
+/** Build the WHERE fragment for every recognised filter in a query string. */
+function buildFilterClauses(filters: Record<string, string>) {
+  const clauses: string[] = [];
+  const params: any[] = [];
+
+  for (const [key, value] of Object.entries(filters)) {
+    // A repeated query param arrives as an array; terms belong in one value.
+    if (typeof value !== "string" || !value.trim()) continue;
+
+    if (key.endsWith("_MIN") || key.endsWith("_MAX")) {
+      const col = key.slice(0, -4);
+      if (!ALLOWED_FIELDS.has(col)) continue;
+      const bound = parseInt(value, 10);
+      if (Number.isNaN(bound)) continue;
+      clauses.push(`CAST("${col}" AS INTEGER) ${key.endsWith("_MIN") ? ">=" : "<="} ?`);
+      params.push(bound);
+      continue;
+    }
+
+    if (!ALLOWED_FIELDS.has(key)) continue;
+    const clause = buildFieldClause(key, parseFilterValue(value));
+    if (!clause) continue;
+    clauses.push(clause.sql);
+    params.push(...clause.params);
+  }
+
+  return { where: clauses.length ? "WHERE " + clauses.join(" AND ") : "", clauses, params };
+}
+
 const stmtCache = new Map<string, any>();
+// Multi-value filters make the SQL text vary with the number of placeholders,
+// so this cache needs a ceiling or it grows without bound.
+const STMT_CACHE_MAX = 500;
 function getStmt(sql: string) {
   if (!db) return null;
   let stmt = stmtCache.get(sql);
   if (!stmt) {
     stmt = db.prepare(sql);
+    if (stmtCache.size >= STMT_CACHE_MAX) {
+      const oldest = stmtCache.keys().next().value;
+      if (oldest) stmtCache.delete(oldest);
+    }
     stmtCache.set(sql, stmt);
   }
   return stmt;
@@ -171,7 +254,7 @@ app.get("/api/suggestions/:field", (req, res) => {
 
   const { q = "", ...filterBy } = req.query as Record<string, string>;
   const activeFilters = Object.entries(filterBy).filter(
-    ([k, v]) => v && v.trim() !== "" && ALLOWED_FIELDS.has(k)
+    ([k, v]) => typeof v === "string" && v.trim() !== "" && ALLOWED_FIELDS.has(k)
   );
 
   if (activeFilters.length === 0) {
@@ -189,15 +272,19 @@ app.get("/api/suggestions/:field", (req, res) => {
   const cached = getCachedSuggestion(cacheKey);
   if (cached) return res.json(cached);
 
-  const params: string[] = [];
-  const clauses = activeFilters.map(([key, value]) => {
-    params.push(value.toUpperCase());
-    return `UPPER("${key}") = ?`;
-  });
-  if (q) {
-    params.push(`%${q.toUpperCase()}%`);
-    clauses.push(`UPPER("${field}") LIKE ?`);
+  const params: any[] = [];
+  const clauses: string[] = [];
+  for (const [key, value] of activeFilters) {
+    const clause = buildFieldClause(key, parseFilterValue(value));
+    if (!clause) continue;
+    clauses.push(clause.sql);
+    params.push(...clause.params);
   }
+  if (q) {
+    clauses.push(`UPPER("${field}") LIKE ?`);
+    params.push(`%${q.toUpperCase()}%`);
+  }
+  if (clauses.length === 0) return res.json([]);
   const where = "WHERE " + clauses.join(" AND ");
   const sql = `SELECT DISTINCT "${field}" FROM fleet ${where} ORDER BY "${field}" LIMIT 100`;
   const rows = (getStmt(sql) || db.prepare(sql)).all(...params) as any[];
@@ -225,14 +312,9 @@ app.get("/api/breakdown", (req, res) => {
   const cached = breakdownCache.get(cacheKey);
   if (cached && Date.now() - cached.ts < BREAKDOWN_TTL) return res.json(cached.data);
 
-  const params: any[] = [];
-  const clauses: string[] = [];
-  for (const [key, value] of activeFilters) {
-    clauses.push(`UPPER("${key}") = UPPER(?)`);
-    params.push(value);
-  }
+  const { where, clauses, params } = buildFilterClauses(Object.fromEntries(activeFilters));
+  if (clauses.length === 0) return res.json(globalBreakdown);
 
-  const where = "WHERE " + clauses.join(" AND ");
   const fields = ["MOTIVE_POWER", "BASIC_COLOUR", "BODY_TYPE", "TRANSMISSION_TYPE", "MAKE"];
 
   const unions = fields
@@ -261,35 +343,19 @@ app.get("/api/vehicles", (req, res) => {
     return res.status(503).json({ error: "Database not available", vehicles: [], total: 0, page: 1, pages: 0 });
   }
 
-  const { page = "1", ...filters } = req.query as Record<string, string>;
-  const limit = 50;
-  const offset = (parseInt(page) - 1) * limit;
-  const params: any[] = [];
-  const clauses: string[] = [];
+  const { page = "1", limit: limitParam, ...filters } = req.query as Record<string, string>;
 
-  for (const [key, value] of Object.entries(filters)) {
-    if (!value || !value.trim()) continue;
-    if (key.endsWith("_MIN")) {
-      const col = key.replace("_MIN", "");
-      if (!ALLOWED_FIELDS.has(col)) continue;
-      clauses.push(`CAST("${col}" AS INTEGER) >= ?`);
-      params.push(parseInt(value));
-    } else if (key.endsWith("_MAX")) {
-      const col = key.replace("_MAX", "");
-      if (!ALLOWED_FIELDS.has(col)) continue;
-      clauses.push(`CAST("${col}" AS INTEGER) <= ?`);
-      params.push(parseInt(value));
-    } else {
-      if (!ALLOWED_FIELDS.has(key)) continue;
-      clauses.push(`UPPER("${key}") = UPPER(?)`);
-      params.push(value);
-    }
-  }
+  const requestedLimit = parseInt(limitParam ?? "", 10);
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.min(Math.max(requestedLimit, MIN_PAGE_SIZE), MAX_PAGE_SIZE)
+    : DEFAULT_PAGE_SIZE;
+  const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+  const offset = (currentPage - 1) * limit;
 
-  const where = clauses.length ? "WHERE " + clauses.join(" AND ") : "";
+  const { where, params } = buildFilterClauses(filters);
   const total = (db.prepare(`SELECT COUNT(*) as count FROM fleet ${where}`).get(...params) as any).count;
   const vehicles = db.prepare(`SELECT ${RESULT_COLUMNS} FROM fleet ${where} LIMIT ? OFFSET ?`).all(...params, limit, offset);
-  res.json({ vehicles, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+  res.json({ vehicles, total, page: currentPage, pages: Math.ceil(total / limit), limit });
 });
 
 app.get("/api/fleet-overview", (_req, res) => {

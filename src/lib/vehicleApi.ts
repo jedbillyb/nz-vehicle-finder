@@ -1,5 +1,11 @@
 import { Vehicle } from "@/lib/mockData";
+import { clampPageSize, DEFAULT_PAGE_SIZE } from "../../shared/pagination";
 
+/**
+ * Every text filter below holds an encoded term list (see shared/filterTerms.ts),
+ * not a bare value. A plain single value is still a valid encoding, so links
+ * shared before multi-select existed keep working.
+ */
 export interface SearchFilters {
   MAKE?: string;
   MODEL?: string;
@@ -63,9 +69,10 @@ export async function checkHealth(): Promise<{ ok: boolean; db: boolean }> {
 
 export async function searchVehicles(
   filters: SearchFilters,
-  page = 1
-): Promise<{ vehicles: Vehicle[]; total: number; pages: number }> {
-  const params = new URLSearchParams({ page: String(page) });
+  page = 1,
+  pageSize: number = DEFAULT_PAGE_SIZE
+): Promise<{ vehicles: Vehicle[]; total: number; pages: number; limit: number }> {
+  const params = new URLSearchParams({ page: String(page), limit: String(clampPageSize(pageSize)) });
   for (const [k, v] of Object.entries(filters)) {
     if (v && v.trim()) params.set(k, v.trim());
   }

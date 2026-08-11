@@ -8,12 +8,15 @@ import {
   API_BASE,
   checkHealth,
   fetchBreakdown,
+  fetchFleetOverview,
   preloadModelsForMake,
   preloadSuggestions,
   type BreakdownData,
   type SearchFilters,
   searchVehicles,
 } from "@/lib/vehicleApi";
+import { clampPageSize, DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "../../shared/pagination";
+import { hasTerms } from "../../shared/filterTerms";
 import { exportToCsv } from "@/lib/csvExport";
 import { applySeo } from "@/lib/seo";
 import { captureEvent, summarizeFilters } from "@/lib/posthog";
@@ -97,6 +100,24 @@ function filtersFromParams(params: URLSearchParams): SearchFilters {
   return filters;
 }
 
+/** Shown until /api/fleet-overview answers; matches the July 2026 NZTA snapshot. */
+const FLEET_TOTAL_FALLBACK = 5_902_186;
+
+const PAGE_SIZE_STORAGE_KEY = "nzvf.pageSize";
+
+/** A shared link wins over the local preference, which wins over the default. */
+function readInitialPageSize(params: URLSearchParams): number {
+  const fromUrl = params.get("limit");
+  if (fromUrl) return clampPageSize(fromUrl);
+  try {
+    const stored = localStorage.getItem(PAGE_SIZE_STORAGE_KEY);
+    if (stored) return clampPageSize(stored);
+  } catch {
+    // localStorage can be blocked; the default is fine.
+  }
+  return DEFAULT_PAGE_SIZE;
+}
+
 function filtersToParams(filters: SearchFilters): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(filters)) {
@@ -112,6 +133,8 @@ export default function Index() {
   const [total, setTotal] = useState<number | null>(null);
   const [pages, setPages] = useState(1);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => readInitialPageSize(searchParams));
+  const [fleetTotal, setFleetTotal] = useState(FLEET_TOTAL_FALLBACK);
   const [loading, setLoading] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [sort, setSort] = useState<SortConfig>(null);
@@ -129,6 +152,13 @@ export default function Index() {
   const advancedActiveCount = useMemo(() => [...advancedFilterKeySet].filter(k => (filters[k as keyof SearchFilters] as string | undefined)?.trim()).length, [filters]);
 
   useEffect(() => { preloadSuggestions(); }, []);
+
+  // The register grows every month, so read the size rather than hard-coding it.
+  useEffect(() => {
+    fetchFleetOverview()
+      .then((overview) => { if (overview?.total) setFleetTotal(overview.total); })
+      .catch(() => { /* the fallback figure stays on screen */ });
+  }, []);
 
   useEffect(() => {
     applySeo({
@@ -167,7 +197,7 @@ export default function Index() {
   }, []);
 
   const doSearch = useCallback(
-    async (f: SearchFilters, p: number, trigger: "button" | "page" | "auto" = "button") => {
+    async (f: SearchFilters, p: number, trigger: "button" | "page" | "auto" | "page_size" = "button", size: number = pageSize) => {
       if (isSearching.current) return;
       isSearching.current = true;
       const startedAt = Date.now();
@@ -177,6 +207,7 @@ export default function Index() {
       const searchMeta = {
         trigger,
         page: p,
+        page_size: size,
         device: window.innerWidth < 768 ? "mobile" : "desktop",
         ...summarizeFilters(f as Record<string, string | undefined>),
       };
@@ -190,7 +221,7 @@ export default function Index() {
       }
 
       try {
-        const data = await searchVehicles(f, p);
+        const data = await searchVehicles(f, p, size);
         setResults(data.vehicles);
         setTotal(data.total);
         setPages(data.pages);
@@ -249,7 +280,7 @@ export default function Index() {
         isSearching.current = false;
       }
     },
-    []
+    [pageSize]
   );
 
   useEffect(() => {
@@ -261,8 +292,9 @@ export default function Index() {
 
   useEffect(() => {
     const p = filtersToParams(filters);
+    if (pageSize !== DEFAULT_PAGE_SIZE) p.limit = String(pageSize);
     setSearchParams(p, { replace: true });
-  }, [filters, setSearchParams]);
+  }, [filters, pageSize, setSearchParams]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -272,6 +304,22 @@ export default function Index() {
       source: "home_page",
     });
     doSearch(filters, newPage, "page");
+  };
+
+  const handlePageSizeChange = (nextSize: number) => {
+    const size = clampPageSize(nextSize);
+    setPageSize(size);
+    try {
+      localStorage.setItem(PAGE_SIZE_STORAGE_KEY, String(size));
+    } catch {
+      // Preference just won't persist.
+    }
+    captureEvent("page_size_changed", { page_size: size, result_count: total ?? 0 });
+    // Row 1 of the old page is no longer row 1 of the new one, so start over.
+    if (total !== null) {
+      setPage(1);
+      doSearch(filters, 1, "page_size", size);
+    }
   };
 
   const handleClear = () => {
@@ -395,7 +443,7 @@ export default function Index() {
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: "0.02em", margin: 0 }}>NZ Vehicle Finder</h1>
             <p style={{ fontSize: 12, color: "#4b5563", letterSpacing: "0.01em", margin: 0 }}>
-              NZ Motor Vehicle Register · 5,879,915 records
+              NZ Motor Vehicle Register · {fleetTotal.toLocaleString("en-NZ")} records
             </p>
           </div>
           {total === null && (
@@ -593,12 +641,27 @@ export default function Index() {
               <span style={{ color: "#0f766e" }}>{total.toLocaleString('en-NZ')}</span> RECORDS
               {pages > 1 && <> · PAGE <span style={{ color: "#111827" }}>{page}</span>/<span style={{ color: "#4b5563" }}>{pages}</span></>}
             </h2>
-            {sort && (
-              <span style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em" }}>
-                SORT: <span style={{ color: "#0ea5e9" }}>{sort.key}</span>{" "}
-                <span style={{ color: "#4b5563" }}>{sort.dir === "asc" ? "↑" : "↓"}</span>
-              </span>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              {sort && (
+                <span style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em" }}>
+                  SORT: <span style={{ color: "#0ea5e9" }}>{sort.key}</span>{" "}
+                  <span style={{ color: "#4b5563" }}>{sort.dir === "asc" ? "↑" : "↓"}</span>
+                </span>
+              )}
+              <label style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", display: "flex", alignItems: "center", gap: 6 }}>
+                PER PAGE
+                <select
+                  value={pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  disabled={loading}
+                  style={{ fontSize: 10, color: "#111827", background: "#ffffff", border: "1px solid #d1d5db", borderRadius: 4, padding: "2px 4px", fontFamily: "inherit", cursor: loading ? "default" : "pointer" }}
+                >
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
 
           <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
