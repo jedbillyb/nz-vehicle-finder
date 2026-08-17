@@ -185,3 +185,37 @@
     table-layout: auto !important;
   }
 }
+
+/* ── Stats pages (/stats/:make etc.) — mobile ───────────────── */
+@media (max-width: 767px) {
+  /* Hero heading + sponsor stack instead of squeezing side by side */
+  .stats-hero {
+    flex-direction: column !important;
+    gap: 16px !important;
+    padding: 16px !important;
+  }
+  .stats-hero h2 {
+    font-size: 26px !important;
+    line-height: 1.2 !important;
+  }
+  .stats-hero p {
+    font-size: 14px !important;
+  }
+  .hero-sponsor {
+    align-self: stretch !important;
+    margin-top: 0 !important;
+  }
+  /* "1,234 VEHICLES REGISTERED" in the header overflowed at 22px */
+  .header-count > div {
+    flex-wrap: wrap !important;
+  }
+  .header-count .header-count-label {
+    font-size: 12px !important;
+  }
+  .stats-section {
+    padding: 16px !important;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

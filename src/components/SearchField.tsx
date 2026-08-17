@@ -213,28 +213,30 @@ export function SearchField({
       {/* Chips sit below the input so adding one never pushes this field's input
           out of line with the other fields in the grid row. */}
       {terms.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-1">
+        <div className="flex flex-wrap gap-1 mt-1.5">
           {terms.map((term, i) => (
             <span
               key={`${term.contains ? "~" : "="}${term.value}`}
               title={term.contains ? `Matches any value containing "${term.value}"` : term.value}
               className={cn(
-                "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono leading-none",
+                "group inline-flex max-w-full items-center gap-1 rounded-full py-1 pl-2 pr-1 text-[11px] font-mono leading-none",
                 term.contains
                   // A wildcard term reads differently from a picked value, so it looks different.
-                  ? "border border-dashed border-sky-400/70 text-sky-700 bg-sky-50"
+                  ? "border border-dashed border-primary/50 bg-primary/5 text-foreground"
                   : "border border-border bg-secondary text-foreground"
               )}
             >
-              {term.contains && <span className="opacity-60">contains</span>}
-              {term.value}
+              {term.contains && (
+                <span className="text-[9px] uppercase tracking-wide text-muted-foreground">has</span>
+              )}
+              <span className="truncate">{term.value}</span>
               <button
                 type="button"
                 onClick={() => removeTerm(i)}
-                className="opacity-50 hover:opacity-100 transition-opacity"
+                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
                 aria-label={`Remove ${term.value}`}
               >
-                <X size={9} />
+                <X size={10} />
               </button>
             </span>
           ))}

@@ -303,16 +303,17 @@ app.get("/api/suggestions/:field", (req, res) => {
     clauses.push(clause.sql);
     params.push(...clause.params);
   }
-  // Prefix matches first here too, for the same reason as rankSuggestions.
-  let order = `"${field}"`;
+  // Prefix matches first here too, for the same reason as rankSuggestions, but
+  // within each group the commonest values lead - "TOYOTA" before "TOYOPET".
+  let order = `cnt DESC, "${field}"`;
   if (q) {
     clauses.push(`UPPER("${field}") LIKE ?`);
     params.push(`%${q.toUpperCase()}%`);
-    order = `CASE WHEN UPPER("${field}") LIKE ? THEN 0 ELSE 1 END, "${field}"`;
+    order = `CASE WHEN UPPER("${field}") LIKE ? THEN 0 ELSE 1 END, cnt DESC, "${field}"`;
   }
   if (clauses.length === 0) return res.json([]);
   const where = "WHERE " + clauses.join(" AND ");
-  const sql = `SELECT DISTINCT "${field}" FROM fleet ${where} ORDER BY ${order} LIMIT 100`;
+  const sql = `SELECT "${field}", COUNT(*) as cnt FROM fleet ${where} GROUP BY "${field}" ORDER BY ${order} LIMIT 100`;
   if (q) params.push(`${q.toUpperCase()}%`);
   const rows = (getStmt(sql) || db.prepare(sql)).all(...params) as any[];
   const result = Array.from(new Set(rows.map((r: any) => String(r[field] || "").trim()).filter(Boolean)));
