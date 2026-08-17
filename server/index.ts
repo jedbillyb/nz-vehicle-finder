@@ -284,10 +284,11 @@ app.get("/api/suggestions/:field", (req, res) => {
   );
 
   if (activeFilters.length === 0) {
-    const all = (distinctCache[field] || []).map(v => String(v || "").trim()).filter(Boolean);
+    const all = popularityOrdered(field);
     const unique = Array.from(new Set(all));
     return res.json(q ? rankSuggestions(unique, q) : unique.slice(0, 100));
   }
+
 
   if (!db) return res.status(503).json([]);
 
