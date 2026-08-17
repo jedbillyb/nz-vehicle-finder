@@ -80,6 +80,17 @@ Useful flags: `--no-swap` (build only), `--keep-csv` (keep the downloads), `--on
 
 Re-run it monthly to stay current, and commit the regenerated `public/autocomplete.json`.
 
+To rewrite `autocomplete.json` from a database you already have, without a full import:
+
+```bash
+npx tsx database/rebuild-autocomplete.ts            # writes both copies in place
+npx tsx database/rebuild-autocomplete.ts --out=/tmp # one copy elsewhere
+```
+
+It opens the database read-only, so it is safe to run against the file the API is
+serving. Use `--out` on the server: `autocomplete.json` is tracked, and writing it
+inside the deployed checkout leaves a dirty tree that blocks the next pull.
+
 ### Multi-value filter encoding
 
 Filter fields hold a comma-separated term list (`shared/filterTerms.ts`). A term prefixed

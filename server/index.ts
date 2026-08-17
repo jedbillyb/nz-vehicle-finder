@@ -195,39 +195,15 @@ function rankSuggestions(values: string[], q: string, limit = 100): string[] {
 }
 
 /**
- * autocomplete.json is written alphabetically, which made an empty MAKE box
- * offer "AAKRON XPRESS" before "TOYOTA". The commonest values are what people
- * actually want, so the first unfiltered request for a field computes the top
- * values once and every later request reuses that order. Everything outside
- * the top slice keeps its alphabetical order behind them.
+ * autocomplete.json is written commonest-value-first, so an empty MAKE box
+ * offers TOYOTA rather than "AAKRON XPRESS". That ordering is baked into the
+ * file by import-mvr.ts (and database/rebuild-autocomplete.ts between imports)
+ * rather than computed here: the GROUP BY behind it takes seconds on MODEL, and
+ * better-sqlite3 is synchronous, so doing it on the first request would stall
+ * every other request on the process.
  */
-const POPULARITY_LIMIT = 300;
-const popularityCache = new Map<string, string[]>();
-
 function popularityOrdered(field: string): string[] {
-  const base = (distinctCache[field] || []).map(v => String(v || "").trim()).filter(Boolean);
-  const cached = popularityCache.get(field);
-  if (cached) return cached;
-  if (!db) return base;
-
-  let ordered = base;
-  try {
-    const rows = db
-      .prepare(
-        `SELECT TRIM("${field}") as v, COUNT(*) as cnt FROM fleet
-         WHERE TRIM(CAST("${field}" AS TEXT)) != '' GROUP BY TRIM("${field}")
-         ORDER BY cnt DESC LIMIT ${POPULARITY_LIMIT}`
-      )
-      .all() as { v: string }[];
-    const top = rows.map(r => String(r.v || "").trim()).filter(Boolean);
-    const seen = new Set(top.map(v => v.toUpperCase()));
-    ordered = top.concat(base.filter(v => !seen.has(v.toUpperCase())));
-  } catch (err) {
-    console.warn(`Popularity ordering failed for ${field}:`, (err as Error).message);
-  }
-
-  popularityCache.set(field, ordered);
-  return ordered;
+  return (distinctCache[field] || []).map(v => String(v || "").trim()).filter(Boolean);
 }
 
 const stmtCache = new Map<string, any>();
