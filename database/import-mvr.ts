@@ -302,8 +302,10 @@ async function main() {
   const autocomplete: Record<string, string[]> = {};
   for (const field of AUTOCOMPLETE_FIELDS) {
     const rows = db.prepare(
-      `SELECT DISTINCT TRIM("${field}") as v FROM fleet WHERE TRIM(CAST("${field}" AS TEXT)) != '' ORDER BY v`
-    ).all() as { v: string }[];
+      // Ordered by how many vehicles carry each value so autocomplete offers
+      // TOYOTA before TOYOPET instead of ranking alphabetically.
+      `SELECT TRIM("${field}") as v, COUNT(*) as cnt FROM fleet WHERE TRIM(CAST("${field}" AS TEXT)) != '' GROUP BY TRIM("${field}") ORDER BY cnt DESC, v`
+    ).all() as { v: string; cnt: number }[];
     autocomplete[field] = rows.map((r) => r.v).filter(Boolean);
   }
   const json = JSON.stringify(autocomplete);
