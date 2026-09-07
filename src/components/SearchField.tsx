@@ -252,7 +252,9 @@ export function SearchField({
               key={`${term.contains ? "~" : "="}${term.value}`}
               title={term.contains ? `Matches any value containing "${term.value}"` : term.value}
               className={cn(
-                "group inline-flex max-w-full items-center gap-1 rounded-full py-1 pl-2 pr-1 text-[11px] font-mono leading-none",
+                // Same rounded-md as the input above, so a chip reads as part of
+                // the same box rather than a pill stuck under it.
+                "group inline-flex max-w-full items-center gap-1 rounded-md py-1 pl-2 pr-1 text-[11px] font-mono leading-none",
                 term.contains
                   // A wildcard term reads differently from a picked value, so it looks different.
                   ? "border border-dashed border-primary/50 bg-primary/5 text-foreground"
@@ -266,7 +268,7 @@ export function SearchField({
               <button
                 type="button"
                 onClick={() => removeTerm(i)}
-                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
                 aria-label={`Remove ${term.value}`}
               >
                 <X size={10} />
