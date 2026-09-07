@@ -185,20 +185,57 @@ const SUGGESTION_LIMIT_DEFAULT = 250;
 const SUGGESTION_LIMIT_MAX = 1000;
 
 /**
- * How many matching rows a suggestion query may read before it stops.
+ * How many rows a suggestion query may look up before it starts sampling.
  *
  * better-sqlite3 is synchronous, so a suggestion query holds up every other
  * request on the process while it runs, and grouping a broad filter over the
- * whole table is not cheap: BASIC_COLOUR=WHITE took 2.3s and VEHICLE_YEAR>=2000
- * took 9.9s on the live database. The cap bounds that to roughly half a second.
+ * whole table is not cheap: BASIC_COLOUR=WHITE measured 1.8s and
+ * VEHICLE_YEAR>=2000 measured 4.4s against the live database.
  *
- * Anything narrow enough to fit under the cap - which is nearly every real
- * combination of filters - is still counted exactly. Past it the counts come
- * from the rows read so far, so the ordering is approximate; the values
- * themselves are always real rows, which is what stops the dropdown offering a
- * combination that returns nothing.
+ * A filter narrower than this budget is counted exactly, which covers nearly
+ * every real combination (every model of a make, say, or anything with two
+ * fields set). A broader one is counted over every Nth row instead - see
+ * suggestionStride.
  */
-const SUGGESTION_SCAN_CAP = 300000;
+const SUGGESTION_ROW_BUDGET = 300000;
+
+/**
+ * Sample one row in N, spread across the table rather than taken as a prefix.
+ *
+ * The rowid lives in the index entry, so `rowid % N = 0` is checked without
+ * reading the row, and only the surviving rows cost a lookup - which is where
+ * all the time goes. Measured on the live database: makes for VEHICLE_YEAR>=2000
+ * fell from 4.4s to 0.9s, and the top of the list came back in the same order
+ * with counts within half a percent of the exact ones.
+ *
+ * The trade is that a value with fewer than N rows in the filtered set can be
+ * missed. That only applies to filters matching millions of rows, where such a
+ * value is a needle - and it can still be typed in by hand.
+ */
+function suggestionStride(rowCount: number): number {
+  if (rowCount <= SUGGESTION_ROW_BUDGET) return 1;
+  return Math.ceil(rowCount / SUGGESTION_ROW_BUDGET);
+}
+
+/**
+ * How many rows the other filters match. Counting is index-only work - 72ms for
+ * a make, 206ms for a year range on the live database - which is cheap enough to
+ * pay for choosing between an exact count and a sampled one.
+ */
+const constraintCountCache = new Map<string, number>();
+
+function constrainedRowCount(key: string, where: string, params: any[]): number {
+  const cached = constraintCountCache.get(key);
+  if (cached !== undefined) return cached;
+  const sql = `SELECT COUNT(*) as n FROM fleet ${where}`;
+  const n = ((getStmt(sql) || db!.prepare(sql)).get(...params) as any).n as number;
+  if (constraintCountCache.size >= 500) {
+    const oldest = constraintCountCache.keys().next().value;
+    if (oldest !== undefined) constraintCountCache.delete(oldest);
+  }
+  constraintCountCache.set(key, n);
+  return n;
+}
 
 function clampSuggestionLimit(raw: unknown): number {
   const n = parseInt(typeof raw === "string" ? raw : "", 10);
@@ -353,7 +390,8 @@ app.get("/api/suggestions/:field", (req, res) => {
 
   if (!db) return res.status(503).json([]);
 
-  const cacheKey = `${field}|${q}|${limit}|${JSON.stringify(constraints)}`;
+  const constraintKey = JSON.stringify(constraints);
+  const cacheKey = `${field}|${q}|${limit}|${constraintKey}`;
   const cached = getCachedSuggestion(cacheKey);
   if (cached) return res.json(cached);
 
@@ -361,23 +399,19 @@ app.get("/api/suggestions/:field", (req, res) => {
   // within each group the commonest values lead - "TOYOTA" before "TOYOPET".
   // Popularity is counted over the filtered set, so the order reflects what is
   // common *given the other filters*, not what is common overall.
-  //
-  // The counting happens inside a capped subquery: SQLite will not flatten a
-  // subquery that carries its own LIMIT into an aggregate, so the scan really
-  // does stop at SUGGESTION_SCAN_CAP rows.
+  const stride = suggestionStride(constrainedRowCount(constraintKey, where, params));
+
   const sqlParams: any[] = [...params];
   const value = `TRIM(CAST("${field}" AS TEXT))`;
-  let innerWhere = `${where} AND ${value} != ''`;
+  let scanWhere = `${where} AND ${value} != ''`;
+  if (stride > 1) scanWhere += ` AND (rowid % ${stride}) = 0`;
   let order = `cnt DESC, val`;
   if (q) {
-    innerWhere += ` AND UPPER(${value}) LIKE ?`;
+    scanWhere += ` AND UPPER(${value}) LIKE ?`;
     sqlParams.push(`%${q.toUpperCase()}%`);
     order = `CASE WHEN UPPER(val) LIKE ? THEN 0 ELSE 1 END, cnt DESC, val`;
   }
-  const sql =
-    `SELECT val, COUNT(*) as cnt FROM ` +
-    `(SELECT ${value} as val FROM fleet ${innerWhere} LIMIT ${SUGGESTION_SCAN_CAP}) ` +
-    `GROUP BY val ORDER BY ${order} LIMIT ?`;
+  const sql = `SELECT ${value} as val, COUNT(*) as cnt FROM fleet ${scanWhere} GROUP BY val ORDER BY ${order} LIMIT ?`;
   if (q) sqlParams.push(`${q.toUpperCase()}%`);
   sqlParams.push(limit);
   const rows = (getStmt(sql) || db.prepare(sql)).all(...sqlParams) as any[];
