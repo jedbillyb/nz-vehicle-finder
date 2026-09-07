@@ -1,11 +1,11 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { getSuggestionsLocal, getSuggestions, getModelsForMake } from "@/lib/vehicleApi";
+import { getSuggestionsLocal, getSuggestions, getModelsForMake, SUGGESTION_LIMIT } from "@/lib/vehicleApi";
 import { Vehicle } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { captureEvent } from "@/lib/posthog";
-import { Info, X } from "lucide-react";
+import { Check, Info, X } from "lucide-react";
 import { parseFilterValue, serializeTerms, type FilterTerm } from "../../shared/filterTerms";
 import {
   Popover,
@@ -20,7 +20,11 @@ interface SearchFieldProps {
   value: string;
   onChange: (value: string) => void;
   onValidationChange?: (isValid: boolean) => void;
-  filterBy?: Partial<Record<keyof Vehicle, string>>;
+  /**
+   * Every other active filter. Suggestions are resolved against these, so the
+   * dropdown can only offer values that still return rows.
+   */
+  filterBy?: Record<string, string | undefined>;
   helpText?: string;
 }
 
@@ -46,42 +50,59 @@ export function SearchField({
     return () => clearTimeout(t);
   }, [input]);
 
-  const { data: remoteSuggestions = [], isFetched } = useQuery({
+  const hasActiveFilters = useMemo(
+    () => !!filterBy && Object.values(filterBy).some(v => !!v && v.trim()),
+    [filterBy]
+  );
+
+  const { data: remoteSuggestions = [], isFetching, isError } = useQuery({
     queryKey: ["suggestions", field, debouncedInput, filterBy],
     queryFn: ({ signal }) => getSuggestions(field, debouncedInput, filterBy, signal),
-    enabled: (showSuggestions || !!input.trim()) && (debouncedInput.length > 0 || !!filterBy),
+    enabled: (showSuggestions || !!input.trim()) && (debouncedInput.length > 0 || hasActiveFilters),
     staleTime: 60 * 1000,
   });
 
-  const suggestions = useMemo(() => {
-    const hasActiveFilters = filterBy && Object.values(filterBy).some(v => !!v);
-    // Values already picked on this field are not worth offering again.
-    const chosen = new Set(terms.filter(t => !t.contains).map(t => t.value.toUpperCase()));
-    const trim = (list: string[]) => list.filter(s => !chosen.has(s.toUpperCase())).slice(0, 10);
+  /** Values picked on this field, as typed. Contains-terms live in the chips only. */
+  const selected = useMemo(
+    () => terms.filter(t => !t.contains).map(t => t.value),
+    [terms]
+  );
+  const selectedSet = useMemo(
+    () => new Set(selected.map(v => v.toUpperCase())),
+    [selected]
+  );
 
+  /** Everything still selectable for this field, most common first. */
+  const available = useMemo(() => {
     // Remote suggestions are the most accurate - they respect the other fields.
-    if (remoteSuggestions.length > 0) {
-      return trim(remoteSuggestions);
-    }
+    if (remoteSuggestions.length > 0) return remoteSuggestions;
 
-    // With filters active, falling back to the global list would show values
-    // from other makes/categories, so be careful about it.
-    if (hasActiveFilters) {
+    // With other filters set, the global list would offer values from other
+    // makes and categories - exactly the mismatches that return nothing - so it
+    // is not used as a stand-in while the constrained list is still loading.
+    // Only the locally cached models for the chosen make are safe to show.
+    if (hasActiveFilters && !isError) {
       if (field === "MODEL" && filterBy?.MAKE) {
-        const models = getModelsForMake(filterBy.MAKE as string, input);
-        if (models.length > 0) return trim(models);
+        const models = getModelsForMake(filterBy.MAKE, input);
+        if (models.length > 0) return models;
       }
-
-      // The server has already answered with nothing - don't paper over it.
-      if (isFetched) {
-        return [];
-      }
+      return [];
     }
 
-    // General local fallback (the big autocomplete.json), used before the first
-    // remote fetch lands or when no other filters are set.
-    return trim(getSuggestionsLocal(field as string, input, filterBy));
-  }, [field, input, filterBy, remoteSuggestions, isFetched, terms]);
+    // General local fallback (the big autocomplete.json): no other filters to
+    // respect, or the API is unreachable and a rough list beats none.
+    return getSuggestionsLocal(field as string, input, filterBy);
+  }, [field, input, filterBy, hasActiveFilters, remoteSuggestions, isError]);
+
+  // What is already picked stays in the list, pinned at the top and ticked, so
+  // the dropdown always shows the current selection - and clicking one takes it
+  // off again. The rest keeps the server's popularity order.
+  const suggestions = useMemo(() => {
+    const typed = input.trim().toUpperCase();
+    const pinned = selected.filter(v => !typed || v.toUpperCase().includes(typed));
+    const rest = available.filter(v => !selectedSet.has(v.toUpperCase()));
+    return [...pinned, ...rest];
+  }, [available, selected, selectedSet, input]);
 
   // Typed text that matches nothing at all is worth flagging; committed terms
   // are always searchable, they just might return no rows.
@@ -126,6 +147,19 @@ export function SearchField({
     commit(terms.filter((_, i) => i !== index));
   };
 
+  /** Clicking a value in the list picks it, or unpicks it if it is already on. */
+  const toggleValue = (value: string) => {
+    const upper = value.toUpperCase();
+    if (selectedSet.has(upper)) {
+      commit(terms.filter(t => t.contains || t.value.toUpperCase() !== upper));
+      setInput("");
+      setHighlightedIndex(-1);
+      return;
+    }
+    addTerm(value, false);
+    captureEvent("suggestion_selected", { field: label, value });
+  };
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node))
@@ -143,8 +177,7 @@ export function SearchField({
     if (e.key === "Enter" || e.key === "Tab") {
       if (highlightedIndex >= 0 && suggestions[highlightedIndex]) {
         e.preventDefault();
-        addTerm(suggestions[highlightedIndex], false);
-        captureEvent("suggestion_selected", { field: label, value: suggestions[highlightedIndex] });
+        toggleValue(suggestions[highlightedIndex]);
         return;
       }
       if (input.trim()) {
@@ -243,24 +276,49 @@ export function SearchField({
         </div>
       )}
 
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-40 overflow-auto rounded-md border border-border bg-popover shadow-lg">
-          {suggestions.map((s, i) => (
-            <button
-              key={s}
-              className={cn(
-                "w-full text-left px-3 py-1.5 text-sm font-mono hover:bg-accent hover:text-accent-foreground transition-colors",
-                i === highlightedIndex && "bg-accent text-accent-foreground"
-              )}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                addTerm(s, false);
-                captureEvent("suggestion_selected", { field: label, value: s });
-              }}
-            >
-              {s}
-            </button>
-          ))}
+      {showSuggestions && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-72 overflow-auto rounded-md border border-border bg-popover shadow-lg">
+          {suggestions.map((s, i) => {
+            const isSelected = selectedSet.has(s.toUpperCase());
+            return (
+              <button
+                key={s}
+                className={cn(
+                  "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm font-mono transition-colors hover:bg-accent hover:text-accent-foreground",
+                  isSelected && "bg-secondary/60 font-semibold",
+                  i === highlightedIndex && "bg-accent text-accent-foreground"
+                )}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  toggleValue(s);
+                }}
+              >
+                <Check
+                  size={12}
+                  className={cn("shrink-0 text-primary", !isSelected && "invisible")}
+                />
+                <span className="truncate">{s}</span>
+              </button>
+            );
+          })}
+
+          {suggestions.length === 0 && (
+            <div className="px-3 py-2 text-[11px] font-mono leading-relaxed text-muted-foreground">
+              {isFetching
+                ? "Loading…"
+                : hasActiveFilters
+                  ? "No values left that match your other filters."
+                  : "No matching values."}
+            </div>
+          )}
+
+          {/* Every selectable value is listed, so say so when the list had to be
+              cut - otherwise a truncated list reads as "that is all there is". */}
+          {suggestions.length >= SUGGESTION_LIMIT && (
+            <div className="sticky bottom-0 border-t border-border bg-popover px-3 py-1.5 text-[10px] font-mono text-muted-foreground">
+              First {SUGGESTION_LIMIT} of many - type to narrow.
+            </div>
+          )}
         </div>
       )}
     </div>

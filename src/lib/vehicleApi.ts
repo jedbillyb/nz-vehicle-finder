@@ -111,12 +111,21 @@ export async function fetchBreakdown(
   return res.json();
 }
 
+/**
+ * How many values a dropdown asks for. The lists are meant to be complete -
+ * every value that is still selectable, popularity-first - so this is only a
+ * ceiling for fields like MODEL that have six figures of distinct values.
+ */
+export const SUGGESTION_LIMIT = 250;
+
 const makeModelCache: Record<string, string[]> = {};
 
 export async function preloadModelsForMake(make: string) {
   if (makeModelCache[make]) return;
   try {
-    const res = await fetch(`${API_BASE}/api/suggestions/MODEL?MAKE=${encodeURIComponent(make)}`);
+    const res = await fetch(
+      `${API_BASE}/api/suggestions/MODEL?limit=${SUGGESTION_LIMIT}&MAKE=${encodeURIComponent(make)}`
+    );
     const data = await res.json();
     makeModelCache[make] = data;
   } catch {
@@ -129,8 +138,8 @@ export function getModelsForMake(make: string, prefix: string): string[] {
   if (!cached) return [];
   const vals = Array.from(new Set(cached.map(v => String(v || "").trim()).filter(Boolean)));
   const p = prefix.trim().toUpperCase();
-  if (!p) return vals.slice(0, 10);
-  return vals.filter(v => v.toUpperCase().startsWith(p)).slice(0, 10);
+  if (!p) return vals.slice(0, SUGGESTION_LIMIT);
+  return vals.filter(v => v.toUpperCase().startsWith(p)).slice(0, SUGGESTION_LIMIT);
 }
 
 let suggestionCache: Record<string, string[]> = {};
@@ -159,10 +168,10 @@ export function getSuggestionsLocal(
   const all = (suggestionCache[field] || []).map(v => String(v || "").trim()).filter(Boolean);
   const vals = Array.from(new Set(all));
   const p = prefix.trim().toUpperCase();
-  if (!p) return vals.slice(0, 10);
+  if (!p) return vals.slice(0, SUGGESTION_LIMIT);
   const starts = vals.filter(v => v.toUpperCase().startsWith(p));
   const contains = vals.filter(v => !v.toUpperCase().startsWith(p) && v.toUpperCase().includes(p));
-  return starts.concat(contains).slice(0, 10);
+  return starts.concat(contains).slice(0, SUGGESTION_LIMIT);
 }
 
 export interface FleetOverview {
@@ -212,13 +221,14 @@ export async function fetchTopModels(
 export async function getSuggestions(
   field: keyof Vehicle,
   query: string,
-  filterBy?: Partial<Record<keyof Vehicle, string>>,
+  /** Every other active filter, so the values offered are ones that still return rows. */
+  filterBy?: Record<string, string | undefined>,
   signal?: AbortSignal
 ): Promise<string[]> {
-  const params = new URLSearchParams({ q: query });
+  const params = new URLSearchParams({ q: query, limit: String(SUGGESTION_LIMIT) });
   if (filterBy) {
     for (const [k, v] of Object.entries(filterBy)) {
-      if (v) params.set(k, v);
+      if (v && v.trim()) params.set(k, v.trim());
     }
   }
 

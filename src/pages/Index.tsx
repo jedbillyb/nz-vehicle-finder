@@ -195,6 +195,27 @@ export default function Index() {
     });
   };
 
+  /**
+   * The filters a given field's suggestions must respect: every other active
+   * filter, ranges included. This is what makes a mismatched combination
+   * unselectable - a value only appears in a dropdown if rows still exist for it
+   * alongside everything else that is set. A field never constrains itself, or
+   * picking one make would leave that make as the only one you could add.
+   */
+  const suggestionContextFor = useCallback(
+    (field: string): Record<string, string> | undefined => {
+      const context: Record<string, string> = {};
+      for (const [key, value] of Object.entries(filters)) {
+        if (!value || !value.trim()) continue;
+        const base = key.endsWith("_MIN") || key.endsWith("_MAX") ? key.slice(0, -4) : key;
+        if (base === field) continue;
+        context[key] = value.trim();
+      }
+      return Object.keys(context).length > 0 ? context : undefined;
+    },
+    [filters]
+  );
+
   const updateValidity = (key: string, isValid: boolean) => {
     setValidity(prev => ({ ...prev, [key]: isValid }));
   };
@@ -506,13 +527,7 @@ export default function Index() {
                 value={(filters[f.key] as string) || ""}
                 onChange={(v) => updateFilter(f.key, v)}
                 onValidationChange={(isValid) => updateValidity(f.key, isValid)}
-                filterBy={
-                  f.key === "MODEL" && filters.MAKE
-                    ? { MAKE: filters.MAKE }
-                    : f.key === "SUBMODEL" && filters.MAKE
-                    ? { MAKE: filters.MAKE, ...(filters.MODEL ? { MODEL: filters.MODEL } : {}) }
-                    : undefined
-                }
+                filterBy={suggestionContextFor(f.key)}
               />
             ))}
             <RangeField label="YEAR" fieldMin="VEHICLE_YEAR_MIN" fieldMax="VEHICLE_YEAR_MAX" valueMin={filters.VEHICLE_YEAR_MIN || ""} valueMax={filters.VEHICLE_YEAR_MAX || ""} onChangeMin={(v) => updateFilter("VEHICLE_YEAR_MIN", v)} onChangeMax={(v) => updateFilter("VEHICLE_YEAR_MAX", v)} min={1950} max={2026} />
@@ -554,6 +569,7 @@ export default function Index() {
                       value={(filters[f.key] as string) || ""}
                       onChange={(v) => updateFilter(f.key, v)}
                       onValidationChange={(isValid) => updateValidity(f.key, isValid)}
+                      filterBy={suggestionContextFor(f.key)}
                     />
                   ))}
                   <RangeField label="Gross mass" fieldMin="GROSS_VEHICLE_MASS_MIN" fieldMax="GROSS_VEHICLE_MASS_MAX" valueMin={filters.GROSS_VEHICLE_MASS_MIN || ""} valueMax={filters.GROSS_VEHICLE_MASS_MAX || ""} onChangeMin={(v) => updateFilter("GROSS_VEHICLE_MASS_MIN", v)} onChangeMax={(v) => updateFilter("GROSS_VEHICLE_MASS_MAX", v)} min={0} max={50000} />

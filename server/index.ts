@@ -177,12 +177,45 @@ function buildFilterClauses(filters: Record<string, string>) {
 }
 
 /**
+ * A dropdown lists everything that is still selectable, not a top-10 slice, so
+ * these ceilings only exist to keep a field like MODEL (164k distinct values)
+ * from shipping its whole vocabulary on every keystroke.
+ */
+const SUGGESTION_LIMIT_DEFAULT = 250;
+const SUGGESTION_LIMIT_MAX = 1000;
+
+function clampSuggestionLimit(raw: unknown): number {
+  const n = parseInt(typeof raw === "string" ? raw : "", 10);
+  if (!Number.isFinite(n)) return SUGGESTION_LIMIT_DEFAULT;
+  return Math.min(Math.max(n, 1), SUGGESTION_LIMIT_MAX);
+}
+
+/**
+ * The other filters a field's suggestions must respect. Every filter counts -
+ * ranges included - so a value the dropdown offers always returns rows; that is
+ * what stops a mismatched combination (TESLA + DIESEL) from being selectable at
+ * all. The field's own terms are deliberately left out: constraining MAKE by
+ * MAKE=TOYOTA would leave TOYOTA as the only make you could ever add.
+ */
+function constraintsFor(field: string, query: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(query)) {
+    if (key === "q" || key === "limit") continue;
+    if (typeof value !== "string" || !value.trim()) continue;
+    const base = key.endsWith("_MIN") || key.endsWith("_MAX") ? key.slice(0, -4) : key;
+    if (base === field) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+/**
  * Suggestions match anywhere in a value, but a value *starting* with what was
  * typed is nearly always what the user meant. Without this, typing "P" returned
  * the first 100 makes containing a p anywhere in alphabetical order (AAKRON
  * XPRESS, ALPHA, ALPINE, ...) and no make beginning with P ever survived the cut.
  */
-function rankSuggestions(values: string[], q: string, limit = 100): string[] {
+function rankSuggestions(values: string[], q: string, limit = SUGGESTION_LIMIT_DEFAULT): string[] {
   const needle = q.toUpperCase();
   const prefix: string[] = [];
   const elsewhere: string[] = [];
@@ -290,45 +323,40 @@ app.get("/api/suggestions/:field", (req, res) => {
   const { field } = req.params;
   if (!ALLOWED_FIELDS.has(field)) return res.status(400).json([]);
 
-  const { q = "", ...filterBy } = req.query as Record<string, string>;
-  const activeFilters = Object.entries(filterBy).filter(
-    ([k, v]) => typeof v === "string" && v.trim() !== "" && ALLOWED_FIELDS.has(k)
-  );
+  const q = typeof req.query.q === "string" ? req.query.q : "";
+  const limit = clampSuggestionLimit(req.query.limit);
+  const constraints = constraintsFor(field, req.query as Record<string, unknown>);
+  const { where, clauses, params } = buildFilterClauses(constraints);
 
-  if (activeFilters.length === 0) {
-    const all = popularityOrdered(field);
-    const unique = Array.from(new Set(all));
-    return res.json(q ? rankSuggestions(unique, q) : unique.slice(0, 100));
+  // Nothing else is set, so every value in the field is still reachable and the
+  // precomputed popularity order answers without touching the database.
+  if (clauses.length === 0) {
+    const unique = Array.from(new Set(popularityOrdered(field)));
+    return res.json(q ? rankSuggestions(unique, q, limit) : unique.slice(0, limit));
   }
-
 
   if (!db) return res.status(503).json([]);
 
-  const cacheKey = `${field}|${q}|${JSON.stringify(activeFilters)}`;
+  const cacheKey = `${field}|${q}|${limit}|${JSON.stringify(constraints)}`;
   const cached = getCachedSuggestion(cacheKey);
   if (cached) return res.json(cached);
 
-  const params: any[] = [];
-  const clauses: string[] = [];
-  for (const [key, value] of activeFilters) {
-    const clause = buildFieldClause(key, parseFilterValue(value));
-    if (!clause) continue;
-    clauses.push(clause.sql);
-    params.push(...clause.params);
-  }
   // Prefix matches first here too, for the same reason as rankSuggestions, but
   // within each group the commonest values lead - "TOYOTA" before "TOYOPET".
+  // Popularity is counted over the filtered set, so the order reflects what is
+  // common *given the other filters*, not what is common overall.
+  const sqlParams: any[] = [...params];
+  let whereSql = `${where} AND TRIM(COALESCE(CAST("${field}" AS TEXT), '')) != ''`;
   let order = `cnt DESC, "${field}"`;
   if (q) {
-    clauses.push(`UPPER("${field}") LIKE ?`);
-    params.push(`%${q.toUpperCase()}%`);
+    whereSql += ` AND UPPER("${field}") LIKE ?`;
+    sqlParams.push(`%${q.toUpperCase()}%`);
     order = `CASE WHEN UPPER("${field}") LIKE ? THEN 0 ELSE 1 END, cnt DESC, "${field}"`;
+    sqlParams.push(`${q.toUpperCase()}%`);
   }
-  if (clauses.length === 0) return res.json([]);
-  const where = "WHERE " + clauses.join(" AND ");
-  const sql = `SELECT "${field}", COUNT(*) as cnt FROM fleet ${where} GROUP BY "${field}" ORDER BY ${order} LIMIT 100`;
-  if (q) params.push(`${q.toUpperCase()}%`);
-  const rows = (getStmt(sql) || db.prepare(sql)).all(...params) as any[];
+  const sql = `SELECT "${field}", COUNT(*) as cnt FROM fleet ${whereSql} GROUP BY "${field}" ORDER BY ${order} LIMIT ?`;
+  sqlParams.push(limit);
+  const rows = (getStmt(sql) || db.prepare(sql)).all(...sqlParams) as any[];
   const result = Array.from(new Set(rows.map((r: any) => String(r[field] || "").trim()).filter(Boolean)));
   setCachedSuggestion(cacheKey, result);
   res.json(result);
