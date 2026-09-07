@@ -184,6 +184,22 @@ function buildFilterClauses(filters: Record<string, string>) {
 const SUGGESTION_LIMIT_DEFAULT = 250;
 const SUGGESTION_LIMIT_MAX = 1000;
 
+/**
+ * How many matching rows a suggestion query may read before it stops.
+ *
+ * better-sqlite3 is synchronous, so a suggestion query holds up every other
+ * request on the process while it runs, and grouping a broad filter over the
+ * whole table is not cheap: BASIC_COLOUR=WHITE took 2.3s and VEHICLE_YEAR>=2000
+ * took 9.9s on the live database. The cap bounds that to roughly half a second.
+ *
+ * Anything narrow enough to fit under the cap - which is nearly every real
+ * combination of filters - is still counted exactly. Past it the counts come
+ * from the rows read so far, so the ordering is approximate; the values
+ * themselves are always real rows, which is what stops the dropdown offering a
+ * combination that returns nothing.
+ */
+const SUGGESTION_SCAN_CAP = 300000;
+
 function clampSuggestionLimit(raw: unknown): number {
   const n = parseInt(typeof raw === "string" ? raw : "", 10);
   if (!Number.isFinite(n)) return SUGGESTION_LIMIT_DEFAULT;
@@ -345,19 +361,27 @@ app.get("/api/suggestions/:field", (req, res) => {
   // within each group the commonest values lead - "TOYOTA" before "TOYOPET".
   // Popularity is counted over the filtered set, so the order reflects what is
   // common *given the other filters*, not what is common overall.
+  //
+  // The counting happens inside a capped subquery: SQLite will not flatten a
+  // subquery that carries its own LIMIT into an aggregate, so the scan really
+  // does stop at SUGGESTION_SCAN_CAP rows.
   const sqlParams: any[] = [...params];
-  let whereSql = `${where} AND TRIM(COALESCE(CAST("${field}" AS TEXT), '')) != ''`;
-  let order = `cnt DESC, "${field}"`;
+  const value = `TRIM(CAST("${field}" AS TEXT))`;
+  let innerWhere = `${where} AND ${value} != ''`;
+  let order = `cnt DESC, val`;
   if (q) {
-    whereSql += ` AND UPPER("${field}") LIKE ?`;
+    innerWhere += ` AND UPPER(${value}) LIKE ?`;
     sqlParams.push(`%${q.toUpperCase()}%`);
-    order = `CASE WHEN UPPER("${field}") LIKE ? THEN 0 ELSE 1 END, cnt DESC, "${field}"`;
-    sqlParams.push(`${q.toUpperCase()}%`);
+    order = `CASE WHEN UPPER(val) LIKE ? THEN 0 ELSE 1 END, cnt DESC, val`;
   }
-  const sql = `SELECT "${field}", COUNT(*) as cnt FROM fleet ${whereSql} GROUP BY "${field}" ORDER BY ${order} LIMIT ?`;
+  const sql =
+    `SELECT val, COUNT(*) as cnt FROM ` +
+    `(SELECT ${value} as val FROM fleet ${innerWhere} LIMIT ${SUGGESTION_SCAN_CAP}) ` +
+    `GROUP BY val ORDER BY ${order} LIMIT ?`;
+  if (q) sqlParams.push(`${q.toUpperCase()}%`);
   sqlParams.push(limit);
   const rows = (getStmt(sql) || db.prepare(sql)).all(...sqlParams) as any[];
-  const result = Array.from(new Set(rows.map((r: any) => String(r[field] || "").trim()).filter(Boolean)));
+  const result = Array.from(new Set(rows.map((r: any) => String(r.val || "").trim()).filter(Boolean)));
   setCachedSuggestion(cacheKey, result);
   res.json(result);
 });
