@@ -254,14 +254,22 @@
 /* ── API docs: one readable column, code under the text it explains ── */
 .doc-col {
   max-width: 860px;
+  margin: 0 auto;
 }
 .doc-endpoint {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.doc-pricing,
 .doc-offers {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (max-width: 600px) {
+  .doc-offers { grid-template-columns: 1fr; }
+}
+.doc-pricing {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 12px;

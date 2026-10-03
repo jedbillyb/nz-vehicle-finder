@@ -722,23 +722,6 @@ export default function Index() {
             <h2 style={{ fontSize: 14, color: "#374151", letterSpacing: 0, margin: "0 0 8px", fontWeight: 500 }}>Use the filters above to search</h2>
             <p style={{ fontSize: 12, color: "#6b7280", letterSpacing: 0, margin: 0 }}>Set at least one filter, then click Run Search</p>
           </div>
-          <div style={{ background: "#ffffff", border: "2px solid #0ea5e9", borderRadius: 8, padding: "18px 20px", marginBottom: 40, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-            <div style={{ flex: "1 1 320px" }}>
-              <div style={{ fontSize: 9, color: "#0369a1", letterSpacing: "0.18em", fontWeight: 700, marginBottom: 6 }}>DEVELOPER API</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>Put this data in your own app</div>
-              <div style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.6 }}>
-                Every vehicle on the register as JSON, refreshed monthly from NZTA. 500 requests a month free, no card needed.
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Link to="/account" onClick={() => captureEvent("api_cta_clicked", { location: "home_callout", source: "index" })} style={{ padding: "8px 18px", background: "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, fontSize: 11, fontWeight: 700, letterSpacing: "0.02em", textDecoration: "none", whiteSpace: "nowrap" }}>
-                Get a free API key
-              </Link>
-              <Link to="/developers" onClick={() => captureEvent("api_docs_link_clicked", { location: "home_callout", source: "index" })} style={{ padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, fontSize: 11, letterSpacing: "0.02em", textDecoration: "none", whiteSpace: "nowrap" }}>
-                Read the docs
-              </Link>
-            </div>
-          </div>
           <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 40, color: "#374151", fontSize: 13, lineHeight: 1.8 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Search the NZ Motor Vehicle Register</h2>
             <p style={{ marginBottom: 12 }}>NZ Vehicle Finder gives you free public access to New Zealand's Motor Vehicle Register - the same database maintained by Waka Kotahi. Our fleet search tool allows you to search across 5.9 million registered vehicles by make, model, colour, fuel type, region, and more.</p>
@@ -780,6 +763,23 @@ export default function Index() {
                 <strong style={{ color: "#111827" }}>{q}</strong> {a}
               </div>
             ))}
+            <div style={{ background: "#ffffff", border: "2px solid #0ea5e9", borderRadius: 8, padding: "18px 20px", marginTop: 32, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 320px" }}>
+                <div style={{ fontSize: 9, color: "#0369a1", letterSpacing: "0.18em", fontWeight: 700, marginBottom: 6 }}>DEVELOPER API</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>Put this data in your own app</div>
+                <div style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.6 }}>
+                  Every vehicle on the register as JSON, refreshed monthly from NZTA. 500 requests a month free, no card needed.
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <Link to="/account" onClick={() => captureEvent("api_cta_clicked", { location: "home_callout", source: "index" })} style={{ padding: "8px 18px", background: "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, fontSize: 11, fontWeight: 700, letterSpacing: "0.02em", textDecoration: "none", whiteSpace: "nowrap" }}>
+                  Get a free API key
+                </Link>
+                <Link to="/developers" onClick={() => captureEvent("api_docs_link_clicked", { location: "home_callout", source: "index" })} style={{ padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, fontSize: 11, letterSpacing: "0.02em", textDecoration: "none", whiteSpace: "nowrap" }}>
+                  Read the docs
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       )}

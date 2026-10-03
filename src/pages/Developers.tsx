@@ -65,8 +65,11 @@ function Pre({ title, children }: { title?: string; children: string }) {
 /** A band whose content sits in one readable column. */
 function DocBand({ title, tone, children }: { title?: ReactNode; tone?: "white" | "grey"; children: ReactNode }) {
   return (
-    <Band title={title} tone={tone}>
-      <div className="doc-col">{children}</div>
+    <Band tone={tone}>
+      <div className="doc-col">
+        {title && <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>{title}</h2>}
+        {children}
+      </div>
     </Band>
   );
 }
