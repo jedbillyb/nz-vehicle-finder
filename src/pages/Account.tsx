@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
 import { captureEvent } from "@/lib/posthog";
 import {
-  createApiKey, fetchAccount, openBillingPortal, requestSignInLink, revokeApiKey, signOut, startCheckout, syncBilling,
+  createApiKey, fetchAccount, openBillingPortal, renameApiKey, requestSignInLink, revokeApiKey, signOut, startCheckout, syncBilling,
   verifySignInToken, type Account as AccountData,
 } from "@/lib/account";
 import { Band, PageShell, StatCard } from "@/components/PageShell";
@@ -111,6 +111,20 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
     }
   };
 
+  const [editing, setEditing] = useState<{ id: number; name: string } | null>(null);
+  const saveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editing) return;
+    setError(null);
+    try {
+      await renameApiKey(editing.id, editing.name);
+      setEditing(null);
+      reload();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
   const revoke = async (id: number) => {
     if (!window.confirm("Revoke this key? Anything using it stops working straight away.")) return;
     setError(null);
@@ -130,7 +144,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
 
   return (
     <>
-      <div className="page-band" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "flex", flexWrap: "wrap", gap: 12 }}>
+      <div className="page-band" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         <StatCard label="REQUESTS THIS MONTH" value={used.toLocaleString("en-NZ")} sub={`of ${limit.toLocaleString("en-NZ")} · resets ${fmtDate(resetsAt)}`}>
           <div style={{ height: 6, background: "#f3f4f6", borderRadius: 999, overflow: "hidden", marginTop: 10, minWidth: 180 }}>
             <div style={{ height: "100%", width: `${pct}%`, background: pct >= 90 ? "#ef4444" : "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
@@ -161,7 +175,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
 
       <Band title="API keys">
         {newKey && (
-          <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, padding: 14, marginBottom: 14, maxWidth: 820 }}>
+          <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, padding: 14, marginBottom: 14 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#166534", marginBottom: 8 }}>
               Copy your new key now. You won't be able to see it again.
             </div>
@@ -173,7 +187,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
             </div>
           </div>
         )}
-        <div style={{ maxWidth: 820 }}>
+        <div>
           {account.keys.length === 0 ? (
             <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 14px" }}>No keys yet. Create one to start calling the API.</p>
           ) : (
@@ -181,7 +195,31 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
               {account.keys.map((k, i) => (
                 <div key={k.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderTop: i ? "1px solid #f3f4f6" : "none", flexWrap: "wrap" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{k.name || "Unnamed key"}</div>
+                    {editing?.id === k.id ? (
+                      <form onSubmit={saveName} style={{ display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
+                        <input
+                          autoFocus
+                          aria-label="Key name"
+                          value={editing.name}
+                          maxLength={60}
+                          onChange={(e) => setEditing({ id: k.id, name: e.target.value })}
+                          onKeyDown={(e) => e.key === "Escape" && setEditing(null)}
+                          style={{ ...input, padding: "4px 8px", fontSize: 13 }}
+                        />
+                        <button type="submit" style={{ ...primaryButton, padding: "4px 12px", fontSize: 12 }}>Save</button>
+                        <button type="button" style={{ ...secondaryButton, padding: "4px 12px", fontSize: 12 }} onClick={() => setEditing(null)}>Cancel</button>
+                      </form>
+                    ) : (
+                      <div style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+                        {k.name || "Unnamed key"}
+                        <button
+                          onClick={() => setEditing({ id: k.id, name: k.name ?? "" })}
+                          style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 12, color: "#0369a1", fontWeight: 500 }}
+                        >
+                          Rename
+                        </button>
+                      </div>
+                    )}
                     <div style={{ fontSize: 11, color: "#6b7280" }}>
                       <span style={code}>{k.prefix}…</span> · created {fmtDate(k.created_at)} · last used {fmtDate(k.last_used_at)}
                     </div>
@@ -206,11 +244,11 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
             Your last payment failed. Update your card in Manage billing to keep your plan.
           </p>
         )}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "stretch" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
           {account.tiers.map((t) => {
             const current = t.id === account.tier.id;
             return (
-              <div key={t.id} style={{ ...panel, minWidth: 200, flex: "0 1 240px", border: current ? "2px solid #0ea5e9" : panel.border, display: "flex", flexDirection: "column", gap: 4 }}>
+              <div key={t.id} style={{ ...panel, border: current ? "2px solid #0ea5e9" : panel.border, display: "flex", flexDirection: "column", gap: 4 }}>
                 <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", fontWeight: 700 }}>{t.name.toUpperCase()}</div>
                 <div style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em", lineHeight: 1 }}>
                   {t.priceNzd === 0 ? "Free" : `NZ$${t.priceNzd}`}

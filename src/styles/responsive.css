@@ -244,22 +244,25 @@
   .hero-sponsor {
     width: auto !important;
   }
-}
-
-/* ── API docs: text left, code right on wide screens ────────── */
-.doc-endpoint {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
-}
-@media (min-width: 1000px) {
-  .doc-endpoint {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 32px;
+  /* Line band content up with the hero's 16px phone gutter */
+  .page-band {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
   }
 }
-.doc-pricing {
+
+/* ── API docs: one readable column, code under the text it explains ── */
+.doc-col {
+  max-width: 860px;
+}
+.doc-endpoint {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.doc-pricing,
+.doc-offers {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 12px;
 }

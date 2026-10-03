@@ -11,6 +11,7 @@ import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "../shared/pagin
 import { AccountStore, createAccounts } from "./accounts.js";
 import { createBilling } from "./billing.js";
 import { FREE_MAX_RESULT_DEPTH, limitPerIp } from "./rateLimit.js";
+import { CONTACT_EMAIL } from "../shared/contact.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -616,7 +617,7 @@ app.post("/api/feedback", async (req, res) => {
       const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
       await resend.emails.send({
         from: process.env.FEEDBACK_FROM_EMAIL,
-        to: "hello@jedbillyb.com",
+        to: CONTACT_EMAIL.support,
         subject: `NZ Vehicle Finder feedback: ${stars}`,
         text: [
           `Rating: ${rating}/5 ${stars}`,

@@ -173,7 +173,8 @@ How it works:
 - **Endpoints:** `/vehicles`, `/breakdown` (counts grouped by up to 5 fields, API-only),
   `/values/{field}`, `/makes/{make}/models`, `/fleet`.
 - **Custom data:** bulk extracts and one-off breakdowns are sold by quote; the docs page has
-  an "Ask for a quote" email link. Open register data only, never owner details.
+  an "Ask for a quote" email link. Built from the public register; plate or VIN reports
+  would need NZTA Motochek access (about 19c a lookup).
 - **Attribution:** every v1 response carries the NZTA CC BY 4.0 attribution and the snapshot
   date.
 

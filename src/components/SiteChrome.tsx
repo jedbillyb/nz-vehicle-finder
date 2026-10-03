@@ -145,9 +145,9 @@ export function HeroAside({ source, api }: { source: string; api?: { to: string;
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => captureEvent("sponsor_link_clicked", { location: "hero", source })}
-        style={{ fontSize: 12, color: "#6b7280", textDecoration: "none", textAlign: "center" }}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "#b91c1c", textDecoration: "none", border: "1px solid #fecaca", background: "#fff5f5", borderRadius: 10, padding: "8px 18px" }}
       >
-        <span style={{ color: "#ef4444" }}>♥</span> Sponsor this project
+        <span aria-hidden>♥</span>Sponsor this project
       </a>
     </div>
   );

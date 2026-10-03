@@ -57,6 +57,9 @@ export async function fetchAccount(): Promise<Account | null> {
 export const createApiKey = (name: string) =>
   call<{ key: string; info: ApiKeyInfo }>("/api/account/keys", { method: "POST", body: JSON.stringify({ name }) });
 
+export const renameApiKey = (id: number, name: string) =>
+  call<{ ok: true }>(`/api/account/keys/${id}`, { method: "PATCH", body: JSON.stringify({ name }) });
+
 export const revokeApiKey = (id: number) => call<{ ok: true }>(`/api/account/keys/${id}`, { method: "DELETE" });
 
 /** Both return a Stripe-hosted page to send the browser to. */

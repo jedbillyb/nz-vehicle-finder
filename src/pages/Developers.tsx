@@ -5,15 +5,44 @@ import { BURST_PER_SECOND, TIERS, TIER_ORDER } from "../../shared/apiTiers";
 import { MAX_PAGE_SIZE, MIN_PAGE_SIZE, DEFAULT_PAGE_SIZE } from "../../shared/pagination";
 import { Band, PageShell } from "@/components/PageShell";
 import { code } from "@/lib/pageStyles";
+import { CONTACT_EMAIL } from "../../shared/contact";
 
 /*
  * Laid out like the Stripe and Resend API references: each endpoint is one
- * block with a short description and a parameter table on the left, and the
- * request and response on the right (stacked on phones).
+ * block with a short description, a parameter table, then the request and
+ * response directly under it.
  */
 
 const BASE = "https://vehiclefinder.co.nz/api/v1";
-const CONTACT = "mailto:hello@jedbillyb.com?subject=Custom%20vehicle%20data";
+const CONTACT =
+  `mailto:${CONTACT_EMAIL.quotes}?subject=` +
+  encodeURIComponent("Custom report request") +
+  "&body=" +
+  encodeURIComponent("Which report (model, market, extract or monthly):\nWhich vehicles (make, model, years, region...):\nFormat (PDF, CSV, both):\nOne-off or every month:\n");
+
+/** What the custom service offers, all built from the public register. */
+const OFFERS = [
+  {
+    title: "Model report",
+    example: "e.g. every Toyota Aqua in NZ",
+    includes: ["How many are on the road", "Ages and year-by-year counts", "Submodels, engines, colours", "Where they're registered", "NZ new vs imported"],
+  },
+  {
+    title: "Market report",
+    example: "e.g. EVs in Canterbury, utes since 2018",
+    includes: ["Top makes and models", "Fuel and body type mix", "Region by region split", "Fleet age profile"],
+  },
+  {
+    title: "Data extract",
+    example: "e.g. every 2015+ diesel, as CSV",
+    includes: ["Any slice of the register", "Or the whole thing", "CSV or JSON", "Columns of your choice"],
+  },
+  {
+    title: "Monthly update",
+    example: "Any of the above, refreshed",
+    includes: ["Re-run when NZTA publishes", "Emailed to you each month", "Spot changes in the fleet"],
+  },
+];
 
 const TEXT_FIELDS = [
   "MAKE", "MODEL", "SUBMODEL", "BASIC_COLOUR", "MOTIVE_POWER", "BODY_TYPE", "TRANSMISSION_TYPE",
@@ -30,6 +59,15 @@ function Pre({ title, children }: { title?: string; children: string }) {
       {title && <div style={{ fontSize: 11, color: "#94a3b8", padding: "8px 14px", borderBottom: "1px solid #1e293b", fontWeight: 600 }}>{title}</div>}
       <pre style={{ ...code, color: "#e2e8f0", padding: "12px 14px", overflowX: "auto", margin: 0, lineHeight: 1.6 }}>{children}</pre>
     </div>
+  );
+}
+
+/** A band whose content sits in one readable column. */
+function DocBand({ title, tone, children }: { title?: ReactNode; tone?: "white" | "grey"; children: ReactNode }) {
+  return (
+    <Band title={title} tone={tone}>
+      <div className="doc-col">{children}</div>
+    </Band>
   );
 }
 
@@ -62,7 +100,7 @@ function Endpoint({ path, summary, params, request, response, tone }: {
 }) {
   const id = path.replace(/[^a-z]+/gi, "-").replace(/^-|-$/g, "");
   return (
-    <Band tone={tone}>
+    <DocBand tone={tone}>
       <div id={id} className="doc-endpoint">
         <div style={{ minWidth: 0 }}>
           <h3 style={{ ...code, fontSize: 16, margin: "0 0 8px", display: "flex", alignItems: "center", gap: 8 }}>
@@ -82,7 +120,7 @@ function Endpoint({ path, summary, params, request, response, tone }: {
           <Pre title="Response">{response}</Pre>
         </div>
       </div>
-    </Band>
+    </DocBand>
   );
 }
 
@@ -99,7 +137,7 @@ export default function Developers() {
     });
   }, []);
 
-  const p = { fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 12px", maxWidth: 760 } as const;
+  const p = { fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 12px" } as const;
 
   return (
     <PageShell
@@ -110,9 +148,9 @@ export default function Developers() {
       intro="Every vehicle on the NZ Motor Vehicle Register as JSON. Search it, or count it any way you like. Refreshed automatically each month from NZTA."
       heroApi={{ to: "/account", title: "Get an API key", sub: "500 free requests a month" }}
     >
-      <Band title="Quick start" tone="grey">
+      <DocBand title="Quick start" tone="grey">
         <div className="doc-endpoint">
-          <ol style={{ ...p, paddingLeft: 20, listStyle: "decimal" }}>
+          <ol style={{ ...p, paddingLeft: 0, listStyle: "decimal inside" }}>
             <li><Link to="/account" style={{ color: "#0369a1", fontWeight: 600 }}>Sign in</Link> with your email. No password, no card.</li>
             <li>Create a key on your account page.</li>
             <li>Send it as a Bearer token. That's it.</li>
@@ -122,9 +160,9 @@ export default function Developers() {
   -d MAKE=TOYOTA \\
   -d MODEL=AQUA`}</Pre>
         </div>
-      </Band>
+      </DocBand>
 
-      <Band title="Authentication">
+      <DocBand title="Authentication">
         <p style={p}>
           Send your key in the <C>Authorization: Bearer</C> header (or <C>X-API-Key</C>). Keep it on your server: anyone with
           the key can spend your quota. Lost a key? Revoke it and make a new one on your <Link to="/account" style={{ color: "#0369a1" }}>account page</Link>.
@@ -133,7 +171,7 @@ export default function Developers() {
           Base URL: <C>{BASE}</C>. Every response is <C>{"{ data, source }"}</C>, where <C>source</C> holds the snapshot date
           and the NZTA credit line. The data is CC BY 4.0: if you publish it, credit NZTA.
         </p>
-      </Band>
+      </DocBand>
 
       <Endpoint
         tone="grey"
@@ -241,9 +279,9 @@ export default function Developers() {
 }`}
       />
 
-      <Band title={<span id="filters">Filters</span>}>
+      <DocBand title={<span id="filters">Filters</span>}>
         <p style={p}>Any endpoint above takes these as query parameters. Matching ignores case.</p>
-        <div style={{ maxWidth: 760, marginBottom: 16 }}>
+        <div style={{ marginBottom: 16 }}>
           <Table
             head={["Write", "Matches"]}
             rows={[
@@ -261,14 +299,14 @@ export default function Developers() {
             ["Number", <span style={{ ...code, lineHeight: 1.8 }}>{NUMBER_FIELDS.join(", ")}</span>],
           ]}
         />
-      </Band>
+      </DocBand>
 
-      <Band title="Limits and errors" tone="grey">
+      <DocBand title="Limits and errors" tone="grey">
         <p style={p}>
           Each call uses one request from your monthly quota, which resets on the 1st (UTC). One key can make
           up to {BURST_PER_SECOND} calls a second. Every response has <C>X-RateLimit-Remaining</C> and <C>X-RateLimit-Reset</C> headers.
         </p>
-        <div style={{ maxWidth: 760 }}>
+        <div>
           <Table
             head={["Status", "Meaning"]}
             rows={[
@@ -280,9 +318,9 @@ export default function Developers() {
             ]}
           />
         </div>
-      </Band>
+      </DocBand>
 
-      <Band title="Pricing">
+      <DocBand title="Pricing">
         <div className="doc-pricing">
           {TIER_ORDER.map((id) => TIERS[id]).map((t) => (
             <div key={t.id} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: "18px 20px", background: "#ffffff" }}>
@@ -303,20 +341,28 @@ export default function Developers() {
         <p style={{ ...p, margin: "14px 0 0" }}>
           <Link to="/account" style={{ color: "#0369a1", fontWeight: 600 }}>Start free</Link>, upgrade any time. Card payments by Stripe, cancel whenever.
         </p>
-      </Band>
+      </DocBand>
 
-      <Band title="Custom data and full breakdowns" tone="grey">
+      <DocBand title="Custom reports and data" tone="grey">
         <p style={p}>
-          Need the whole register as a file, a breakdown the API doesn't cover, or a regular report? Skip the NZTA
-          data request and tell us what you want. You get it as CSV or JSON, usually within a couple of days.
+          Don't want to write code? Tell us what you need and we'll pull it for you, as a PDF report, a spreadsheet or both.
+          Faster than a data request to NZTA, and you only pay for what you ask for.
         </p>
-        <p style={{ ...p, fontSize: 13, color: "#6b7280" }}>
-          Open register data only. Owner names and addresses are not in the public register and can't be supplied.
-        </p>
+        <div className="doc-offers" style={{ marginBottom: 16 }}>
+          {OFFERS.map((o) => (
+            <div key={o.title} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: "16px 18px", background: "#ffffff" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{o.title}</div>
+              <div style={{ fontSize: 12, color: "#0369a1", margin: "2px 0 8px" }}>{o.example}</div>
+              <ul style={{ margin: 0, paddingLeft: 18, listStyle: "disc", fontSize: 13, color: "#374151", lineHeight: 1.6 }}>
+                {o.includes.map((i) => <li key={i}>{i}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
         <a href={CONTACT} style={{ display: "inline-block", background: "#0ea5e9", color: "#ffffff", fontWeight: 700, fontSize: 14, padding: "10px 18px", borderRadius: 8, textDecoration: "none" }}>
           Ask for a quote
         </a>
-      </Band>
+      </DocBand>
     </PageShell>
   );
 }

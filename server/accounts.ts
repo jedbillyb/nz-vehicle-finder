@@ -191,6 +191,12 @@ export class AccountStore {
     };
   }
 
+  renameKey(userId: number, keyId: number, name: string | null): boolean {
+    return this.db.prepare(
+      "UPDATE api_keys SET name = ? WHERE id = ? AND user_id = ? AND revoked_at IS NULL"
+    ).run(name, keyId, userId).changes > 0;
+  }
+
   revokeKey(userId: number, keyId: number, now = new Date()): boolean {
     return this.db.prepare(
       "UPDATE api_keys SET revoked_at = ? WHERE id = ? AND user_id = ? AND revoked_at IS NULL"
@@ -363,13 +369,23 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     });
   });
 
+  const keyNameFrom = (req: Request) =>
+    typeof req.body?.name === "string" ? req.body.name.trim().slice(0, 60) || null : null;
+
   router.post("/account/keys", (req, res) => {
     const user = sessionUser(req);
     if (!user) return res.status(401).json({ error: "Not signed in" });
-    const name = typeof req.body?.name === "string" ? req.body.name.trim().slice(0, 60) || null : null;
-    const created = store.createKey(user.id, name);
+    const created = store.createKey(user.id, keyNameFrom(req));
     if (!created) return res.status(400).json({ error: `You can have at most ${MAX_KEYS_PER_ACCOUNT} active keys. Revoke one first.` });
     res.json(created);
+  });
+
+  router.patch("/account/keys/:id", (req, res) => {
+    const user = sessionUser(req);
+    if (!user) return res.status(401).json({ error: "Not signed in" });
+    const ok = store.renameKey(user.id, Number(req.params.id), keyNameFrom(req));
+    if (!ok) return res.status(404).json({ error: "Key not found" });
+    res.json({ ok: true });
   });
 
   router.delete("/account/keys/:id", (req, res) => {

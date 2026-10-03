@@ -79,6 +79,15 @@ describe("API keys", () => {
     expect(store.revokeKey(other.id, info.id)).toBe(false);
   });
 
+  it("renames a key, but only for its owner", () => {
+    const owner = signIn("owner@x.nz").user;
+    const other = signIn("other@x.nz").user;
+    const { info } = store.createKey(owner.id, "old")!;
+    expect(store.renameKey(other.id, info.id, "stolen")).toBe(false);
+    expect(store.renameKey(owner.id, info.id, "Production")).toBe(true);
+    expect(store.listKeys(owner.id)[0].name).toBe("Production");
+  });
+
   it(`caps an account at ${MAX_KEYS_PER_ACCOUNT} active keys`, () => {
     const { user } = signIn();
     for (let i = 0; i < MAX_KEYS_PER_ACCOUNT; i++) expect(store.createKey(user.id, null)).not.toBeNull();

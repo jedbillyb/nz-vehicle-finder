@@ -152,7 +152,7 @@ export default function FleetOverview() {
 
         {/* Stat cards */}
         {data && (
-          <div className="page-band" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "flex", flexWrap: "wrap", gap: 12 }}>
+          <div className="page-band" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
             <StatCard
               label="TOTAL REGISTERED"
               value={data.total.toLocaleString("en-NZ")}
