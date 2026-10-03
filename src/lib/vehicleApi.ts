@@ -135,10 +135,21 @@ export async function preloadModelsForMake(make: string) {
   }
 }
 
+/** Trimmed, de-duplicated values, built once per list instead of on every call. */
+const cleanedLists = new WeakMap<string[], string[]>();
+function cleaned(list: string[]): string[] {
+  let vals = cleanedLists.get(list);
+  if (!vals) {
+    vals = Array.from(new Set(list.map(v => String(v || "").trim()).filter(Boolean)));
+    cleanedLists.set(list, vals);
+  }
+  return vals;
+}
+
 export function getModelsForMake(make: string, prefix: string): string[] {
   const cached = makeModelCache[make];
   if (!cached) return [];
-  const vals = Array.from(new Set(cached.map(v => String(v || "").trim()).filter(Boolean)));
+  const vals = cleaned(cached);
   const p = prefix.trim().toUpperCase();
   if (!p) return vals.slice(0, SUGGESTION_LIMIT);
   return vals.filter(v => v.toUpperCase().startsWith(p)).slice(0, SUGGESTION_LIMIT);
@@ -167,8 +178,9 @@ export function getSuggestionsLocal(
 ): string[] {
   // We use the local cache (loaded from autocomplete.json) as a fast fallback.
   // Ranked the same way as the server: values starting with what was typed first.
-  const all = (suggestionCache[field] || []).map(v => String(v || "").trim()).filter(Boolean);
-  const vals = Array.from(new Set(all));
+  const list = suggestionCache[field];
+  if (!list) return [];
+  const vals = cleaned(list);
   const p = prefix.trim().toUpperCase();
   if (!p) return vals.slice(0, SUGGESTION_LIMIT);
   const starts = vals.filter(v => v.toUpperCase().startsWith(p));

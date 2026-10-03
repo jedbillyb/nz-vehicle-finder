@@ -28,6 +28,9 @@ interface SearchFieldProps {
   helpText?: string;
 }
 
+/** Shared empty list, so the memos below don't see a new array every render. */
+const NO_SUGGESTIONS: string[] = [];
+
 export function SearchField({
   label,
   field,
@@ -55,7 +58,7 @@ export function SearchField({
     [filterBy]
   );
 
-  const { data: remoteSuggestions = [], isFetching, isError } = useQuery({
+  const { data: remoteSuggestions = NO_SUGGESTIONS, isFetching, isError } = useQuery({
     queryKey: ["suggestions", field, debouncedInput, filterBy],
     queryFn: ({ signal }) => getSuggestions(field, debouncedInput, filterBy, signal),
     enabled: (showSuggestions || !!input.trim()) && (debouncedInput.length > 0 || hasActiveFilters),

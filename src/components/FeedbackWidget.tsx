@@ -206,10 +206,9 @@ export function FeedbackWidget() {
             onClick={handleClose}
             style={{
               position: "fixed", inset: 0,
-              background: isMobile ? "rgba(15,23,42,0.45)" : "rgba(15,23,42,0.25)",
+              // No backdrop blur: it repaints the whole page on every keystroke.
+              background: isMobile ? "rgba(15,23,42,0.5)" : "rgba(15,23,42,0.32)",
               zIndex: 50,
-              backdropFilter: "blur(3px)",
-              WebkitBackdropFilter: "blur(3px)",
               opacity: mounted ? 1 : 0,
               transition: "opacity 0.18s ease",
             }}

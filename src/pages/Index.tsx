@@ -217,7 +217,9 @@ export default function Index() {
   );
 
   const updateValidity = (key: string, isValid: boolean) => {
-    setValidity(prev => ({ ...prev, [key]: isValid }));
+    // Bail out when nothing changed: the fields report on every render, so a
+    // fresh object here would re-render the page forever.
+    setValidity(prev => (prev[key] === isValid ? prev : { ...prev, [key]: isValid }));
   };
 
   useEffect(() => {
