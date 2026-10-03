@@ -29,6 +29,7 @@ export function FeedbackWidget() {
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [comment, setComment] = useState("");
+  const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
@@ -64,6 +65,7 @@ export function FeedbackWidget() {
       setRating(0);
       setHovered(0);
       setComment("");
+      setEmail("");
     }, 180);
   };
 
@@ -82,10 +84,11 @@ export function FeedbackWidget() {
           comment: comment.trim() || null,
           page_path: pagePath,
           distinct_id: getDistinctId(),
+          email: email.trim() || null,
         }),
       });
       if (!res.ok) throw new Error("Request failed");
-      captureEvent("feedback_submitted", { rating, has_comment: comment.trim().length > 0, page_path: pagePath });
+      captureEvent("feedback_submitted", { rating, has_comment: comment.trim().length > 0, has_email: email.trim().length > 0, page_path: pagePath });
       toast("Thanks for your feedback!");
       handleClose();
     } catch {
@@ -320,6 +323,36 @@ export function FeedbackWidget() {
                   outline: "none",
                   boxSizing: "border-box",
                   lineHeight: 1.5,
+                  background: "#f8fafc",
+                  transition: "border-color 0.15s ease, background 0.15s ease",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#0ea5e9";
+                  e.currentTarget.style.background = "#ffffff";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#e2e8f0";
+                  e.currentTarget.style.background = "#f8fafc";
+                }}
+              />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Your email, if you'd like a reply (optional)"
+                maxLength={200}
+                autoComplete="email"
+                style={{
+                  width: "100%",
+                  marginTop: 8,
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 10,
+                  padding: "10px 12px",
+                  fontSize: isMobile ? 16 : 13,
+                  color: "#374151",
+                  fontFamily: "inherit",
+                  outline: "none",
+                  boxSizing: "border-box",
                   background: "#f8fafc",
                   transition: "border-color 0.15s ease, background 0.15s ease",
                 }}

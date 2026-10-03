@@ -78,6 +78,8 @@ try {
     page_path TEXT,
     distinct_id TEXT
   )`);
+  const cols = feedbackDb.prepare("PRAGMA table_info(feedback)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "email")) feedbackDb.exec("ALTER TABLE feedback ADD COLUMN email TEXT");
   console.log("Feedback DB ready:", feedbackDbPath);
 } catch (err) {
   console.error("Feedback DB failed to open:", (err as Error).message);
@@ -597,7 +599,7 @@ function topModelsHandler(req: express.Request, res: express.Response) {
 app.get("/api/top-models/:make", topModelsHandler);
 
 app.post("/api/feedback", async (req, res) => {
-  const { rating, comment, page_path, distinct_id } = req.body ?? {};
+  const { rating, comment, page_path, distinct_id, email } = req.body ?? {};
 
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     return res.status(400).json({ error: "rating must be an integer 1-5" });
@@ -605,11 +607,14 @@ app.post("/api/feedback", async (req, res) => {
   const safeComment = typeof comment === "string" ? comment.trim().slice(0, 1000) : null;
   const safePath = typeof page_path === "string" ? page_path.slice(0, 200) : null;
   const safeDistinctId = typeof distinct_id === "string" ? distinct_id.slice(0, 100) : null;
+  // Optional, so the reply can go straight back to the person. A bad address is dropped, not rejected.
+  const trimmedEmail = typeof email === "string" ? email.trim().slice(0, 200) : "";
+  const safeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail) ? trimmedEmail : null;
 
   if (feedbackDb) {
     feedbackDb.prepare(
-      `INSERT INTO feedback (created_at, rating, comment, page_path, distinct_id) VALUES (?, ?, ?, ?, ?)`
-    ).run(new Date().toISOString(), rating, safeComment, safePath, safeDistinctId);
+      `INSERT INTO feedback (created_at, rating, comment, page_path, distinct_id, email) VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(new Date().toISOString(), rating, safeComment, safePath, safeDistinctId, safeEmail);
   }
 
   if (resend && process.env.FEEDBACK_FROM_EMAIL) {
@@ -618,10 +623,12 @@ app.post("/api/feedback", async (req, res) => {
       await resend.emails.send({
         from: process.env.FEEDBACK_FROM_EMAIL,
         to: CONTACT_EMAIL.support,
-        subject: `NZ Vehicle Finder feedback: ${stars}`,
+        subject: `NZ Vehicle Finder feedback: ${stars}${safeEmail ? " (reply wanted)" : ""}`,
+        ...(safeEmail ? { replyTo: safeEmail } : {}),
         text: [
           `Rating: ${rating}/5 ${stars}`,
           safeComment ? `Comment: ${safeComment}` : "No comment",
+          safeEmail ? `Email: ${safeEmail} (hit Reply to answer them)` : "No email given",
           safePath ? `Page: ${safePath}` : "",
           safeDistinctId ? `User: ${safeDistinctId}` : "",
         ].filter(Boolean).join("\n"),
