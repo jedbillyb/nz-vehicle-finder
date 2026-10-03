@@ -8,6 +8,7 @@ import {
 } from "@/lib/account";
 import { Band, PageShell, StatCard } from "@/components/PageShell";
 import { code, input, label, primaryButton, secondaryButton } from "@/lib/pageStyles";
+import { BURST_PER_SECOND } from "../../shared/apiTiers";
 
 const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" }) : "Never";
@@ -77,22 +78,23 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
   const [newKey, setNewKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [redirecting, setRedirecting] = useState(false);
+  /** Which Stripe button was clicked (a tier id, or "portal"), while the browser is sent there. */
+  const [redirecting, setRedirecting] = useState<string | null>(null);
 
   const { used, limit, resetsAt } = account.usage;
   const { billing } = account;
   const pct = Math.min((used / limit) * 100, 100);
 
   /** Checkout and the billing portal are pages on stripe.com; send the browser there. */
-  const goToStripe = async (event: string, get: () => Promise<{ url: string }>) => {
+  const goToStripe = async (which: string, event: string, get: () => Promise<{ url: string }>) => {
     setError(null);
-    setRedirecting(true);
+    setRedirecting(which);
     captureEvent(event);
     try {
       window.location.href = (await get()).url;
     } catch (err) {
       setError((err as Error).message);
-      setRedirecting(false);
+      setRedirecting(null);
     }
   };
 
@@ -244,30 +246,42 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
             Your last payment failed. Update your card in Manage billing to keep your plan.
           </p>
         )}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
           {account.tiers.map((t) => {
             const current = t.id === account.tier.id;
+            const busy = redirecting !== null;
+            const planButton = { width: "100%", padding: "11px 18px", fontSize: 13, borderRadius: 8 } as const;
+            const includes = [
+              `${t.monthlyRequests.toLocaleString("en-NZ")} requests a month`,
+              `Up to ${BURST_PER_SECOND} calls a second`,
+              "Every endpoint and filter",
+              t.priceNzd === 0 ? "No card needed" : "Cancel any time",
+            ];
             return (
-              <div key={t.id} style={{ ...panel, border: current ? "2px solid #0ea5e9" : panel.border, display: "flex", flexDirection: "column", gap: 4 }}>
-                <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", fontWeight: 700 }}>{t.name.toUpperCase()}</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em", lineHeight: 1 }}>
-                  {t.priceNzd === 0 ? "Free" : `NZ$${t.priceNzd}`}
-                  {t.priceNzd > 0 && <span style={{ fontSize: 12, fontWeight: 500, color: "#6b7280" }}> / month</span>}
+              <div key={t.id} style={{ ...panel, border: current ? "2px solid #0ea5e9" : panel.border, display: "flex", flexDirection: "column" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{t.name}</div>
+                <div style={{ fontSize: 30, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em", lineHeight: 1.1, margin: "4px 0 12px" }}>
+                  NZ${t.priceNzd}
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#6b7280" }}> / month</span>
                 </div>
-                <div style={{ fontSize: 11, color: "#4b5563", marginBottom: 10 }}>{t.monthlyRequests.toLocaleString("en-NZ")} requests / month</div>
+                <ul style={{ margin: "0 0 16px", paddingLeft: 18, listStyle: "disc", fontSize: 13, color: "#374151", lineHeight: 1.7 }}>
+                  {includes.map((i) => <li key={i}>{i}</li>)}
+                </ul>
                 <div style={{ marginTop: "auto" }}>
                   {current ? (
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#0369a1", letterSpacing: "0.1em" }}>CURRENT PLAN</div>
+                    <button style={{ ...secondaryButton, ...planButton, color: "#0369a1", borderColor: "#bae6fd", background: "#f0f9ff", fontWeight: 700, cursor: "default" }} disabled>
+                      Your current plan
+                    </button>
                   ) : !billing.enabled ? (
-                    <div style={{ fontSize: 11, color: "#9ca3af" }}>Paid plans coming soon</div>
+                    <button style={{ ...secondaryButton, ...planButton, cursor: "default" }} disabled>Coming soon</button>
                   ) : billing.subscribed ? (
                     // Switching or cancelling an existing subscription happens in Stripe's portal.
-                    <button style={secondaryButton} disabled={redirecting} onClick={() => goToStripe("billing_portal_opened", openBillingPortal)}>
-                      {t.priceNzd === 0 ? "Cancel plan" : "Switch plan"}
+                    <button style={{ ...secondaryButton, ...planButton, fontWeight: 600 }} disabled={busy} onClick={() => goToStripe(t.id, "billing_portal_opened", openBillingPortal)}>
+                      {redirecting === t.id ? "Opening Stripe..." : t.priceNzd === 0 ? "Cancel paid plan" : `Switch to ${t.name}`}
                     </button>
                   ) : t.priceNzd > 0 ? (
-                    <button style={primaryButton} disabled={redirecting} onClick={() => goToStripe("checkout_started", () => startCheckout(t.id))}>
-                      Upgrade
+                    <button style={{ ...primaryButton, ...planButton, opacity: busy && redirecting !== t.id ? 0.5 : 1 }} disabled={busy} onClick={() => goToStripe(t.id, "checkout_started", () => startCheckout(t.id))}>
+                      {redirecting === t.id ? "Opening Stripe..." : `Upgrade to ${t.name}`}
                     </button>
                   ) : null}
                 </div>
@@ -276,8 +290,8 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
           })}
         </div>
         {billing.subscribed && (
-          <button style={{ ...secondaryButton, marginTop: 14 }} disabled={redirecting} onClick={() => goToStripe("billing_portal_opened", openBillingPortal)}>
-            Manage billing, invoices and card
+          <button style={{ ...secondaryButton, marginTop: 14 }} disabled={redirecting !== null} onClick={() => goToStripe("portal", "billing_portal_opened", openBillingPortal)}>
+            {redirecting === "portal" ? "Opening Stripe..." : "Manage billing, invoices and card"}
           </button>
         )}
         <p style={{ fontSize: 12, color: "#6b7280", margin: "14px 0 0" }}>
