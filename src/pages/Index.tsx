@@ -422,7 +422,7 @@ export default function Index() {
     [results, sort]
   );
 
-  const displayResults = isMobile ? sortedResults.slice(0, Math.ceil(sortedResults.length / 2)) : sortedResults;
+  const displayResults = sortedResults;
 
   return (
     <div

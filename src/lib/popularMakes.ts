@@ -1,5 +1,5 @@
 // Top makes by NZ Motor Vehicle Register registrations.
-// Counts are approximate snapshots — refresh periodically.
+// Counts are approximate snapshots, refresh periodically.
 // Slugs match the lowercase, hyphenated form used in /stats/:make routes.
 
 export type PopularMake = {
