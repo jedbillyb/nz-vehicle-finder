@@ -152,7 +152,7 @@ export default function FleetOverview() {
 
         {/* Stat cards */}
         {data && (
-          <div style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "flex", flexWrap: "wrap", gap: 12 }}>
+          <div className="page-band" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "flex", flexWrap: "wrap", gap: 12 }}>
             <StatCard
               label="TOTAL REGISTERED"
               value={data.total.toLocaleString("en-NZ")}
@@ -183,7 +183,7 @@ export default function FleetOverview() {
 
         {/* Breakdowns */}
         {data && (
-          <div style={{ padding: "24px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb" }}>
+          <div className="page-band" style={{ padding: "24px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb" }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 32 }}>
               <div>
                 <h2 style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", marginBottom: 12, fontWeight: 700 }}>FUEL TYPE</h2>
@@ -203,7 +203,7 @@ export default function FleetOverview() {
 
         {/* Top makes */}
         {data && (
-          <section style={{ padding: "24px 24px 32px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+          <section className="page-band" style={{ padding: "24px 24px 32px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>
               Top makes by registrations
             </h2>
@@ -231,7 +231,7 @@ export default function FleetOverview() {
 
         {/* Regions */}
         {data && (
-          <section style={{ padding: "24px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb" }}>
+          <section className="page-band" style={{ padding: "24px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb" }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>
               Browse by region
             </h2>

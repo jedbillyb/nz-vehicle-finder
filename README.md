@@ -170,6 +170,10 @@ How it works:
   recovered; revoke it and make a new one. Each account can have at most 5.
 - **Quota:** counted per account per calendar month (UTC). Over the limit returns `429`.
   Each key is also capped at 5 requests per second, and throttled requests aren't counted.
+- **Endpoints:** `/vehicles`, `/breakdown` (counts grouped by up to 5 fields, API-only),
+  `/values/{field}`, `/makes/{make}/models`, `/fleet`.
+- **Custom data:** bulk extracts and one-off breakdowns are sold by quote; the docs page has
+  an "Ask for a quote" email link. Open register data only, never owner details.
 - **Attribution:** every v1 response carries the NZTA CC BY 4.0 attribution and the snapshot
   date.
 

@@ -130,7 +130,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
 
   return (
     <>
-      <div style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "flex", flexWrap: "wrap", gap: 12 }}>
+      <div className="page-band" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "flex", flexWrap: "wrap", gap: 12 }}>
         <StatCard label="REQUESTS THIS MONTH" value={used.toLocaleString("en-NZ")} sub={`of ${limit.toLocaleString("en-NZ")} · resets ${fmtDate(resetsAt)}`}>
           <div style={{ height: 6, background: "#f3f4f6", borderRadius: 999, overflow: "hidden", marginTop: 10, minWidth: 180 }}>
             <div style={{ height: "100%", width: `${pct}%`, background: pct >= 90 ? "#ef4444" : "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
@@ -156,7 +156,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
       </div>
 
       {error && (
-        <div style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
+        <div className="page-band" style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
       )}
 
       <Band title="API keys">
@@ -296,10 +296,10 @@ export default function Account() {
       crumb="Account"
       title="API account"
       intro="Your API keys, this month's usage and your plan. Calls to the NZ Vehicle Register API count against your monthly quota."
-      heroApi={{ to: "/developers", title: "API DOCS", sub: "ENDPOINTS & EXAMPLES" }}
+      heroApi={{ to: "/developers", title: "Read the API docs", sub: "Endpoints and examples" }}
     >
       {error && (
-        <div style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
+        <div className="page-band" style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
       )}
       {loading ? (
         <Band tone="grey"><p style={{ color: "#6b7280", margin: 0, fontSize: 13 }}>Loading...</p></Band>

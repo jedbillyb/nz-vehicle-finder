@@ -452,13 +452,19 @@ app.get("/api/suggestions/:field", suggestionsHandler);
 
 const breakdownCache = new Map<string, { data: any; ts: number }>();
 const BREAKDOWN_TTL = 5 * 60 * 1000; // 5 min
+const BREAKDOWN_CACHE_MAX = 500;
+function cacheBreakdown(key: string, data: unknown) {
+  if (breakdownCache.size >= BREAKDOWN_CACHE_MAX) breakdownCache.delete(breakdownCache.keys().next().value!);
+  breakdownCache.set(key, { data, ts: Date.now() });
+}
 
 app.get("/api/breakdown", limitPerIp(30, 60_000), (req, res) => {
   if (!db) return res.status(503).json({});
 
   const filters = req.query as Record<string, string>;
+  // Range bounds (VEHICLE_YEAR_MIN etc.) are filters too, keyed by their base field.
   const activeFilters = Object.entries(filters).filter(
-    ([k, v]) => v && v.trim() && ALLOWED_FIELDS.has(k)
+    ([k, v]) => typeof v === "string" && v.trim() && ALLOWED_FIELDS.has(k.replace(/_(MIN|MAX)$/, ""))
   );
 
   // No filters → return instant precomputed result
@@ -491,9 +497,51 @@ app.get("/api/breakdown", limitPerIp(30, 60_000), (req, res) => {
     breakdown[row.grp].push({ value: row.val || "UNKNOWN", count: row.cnt });
   }
 
-  breakdownCache.set(cacheKey, { data: breakdown, ts: Date.now() });
+  cacheBreakdown(cacheKey, breakdown);
   res.json(breakdown);
 });
+
+const BREAKDOWN_DEFAULT_FIELDS = ["MOTIVE_POWER", "BASIC_COLOUR", "BODY_TYPE", "TRANSMISSION_TYPE", "MAKE"];
+const BREAKDOWN_MAX_FIELDS = 5;
+const BREAKDOWN_LIMIT_MAX = 1000;
+
+/**
+ * API-only: vehicle counts grouped by any field (or up to five at once),
+ * under any filters. `by` picks the fields, `limit` how many values per field.
+ */
+function apiBreakdownHandler(req: express.Request, res: express.Response) {
+  if (!db) return res.status(503).json({ error: "Database not available" });
+  const { by, limit: limitParam, ...filters } = req.query as Record<string, string>;
+
+  const fields = typeof by === "string" && by.trim()
+    ? Array.from(new Set(by.split(",").map((f) => f.trim().toUpperCase()).filter(Boolean)))
+    : BREAKDOWN_DEFAULT_FIELDS;
+  const unknown = fields.filter((f) => !ALLOWED_FIELDS.has(f));
+  if (unknown.length) return res.status(400).json({ error: `Unknown field: ${unknown.join(", ")}` });
+  if (fields.length > BREAKDOWN_MAX_FIELDS) return res.status(400).json({ error: `At most ${BREAKDOWN_MAX_FIELDS} fields in by` });
+
+  const parsed = parseInt(limitParam ?? "", 10);
+  const limit = Number.isNaN(parsed) ? 50 : Math.min(Math.max(parsed, 1), BREAKDOWN_LIMIT_MAX);
+
+  const cacheKey = JSON.stringify(["v1", fields, limit, Object.entries(filters).sort()]);
+  const cached = breakdownCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < BREAKDOWN_TTL) return res.json(cached.data);
+
+  const { where, params } = buildFilterClauses(filters);
+  const totalSql = `SELECT COUNT(*) as n FROM fleet ${where}`;
+  const total = ((getStmt(totalSql) || db.prepare(totalSql)).get(...params) as { n: number }).n;
+
+  const groups: Record<string, { value: string; count: number }[]> = {};
+  for (const f of fields) {
+    const sql = `SELECT COALESCE("${f}",'UNKNOWN') as val, COUNT(*) as cnt FROM fleet ${where} GROUP BY val ORDER BY cnt DESC LIMIT ?`;
+    const rows = (getStmt(sql) || db.prepare(sql)).all(...params, limit) as { val: string; cnt: number }[];
+    groups[f] = rows.map((r) => ({ value: String(r.val || "UNKNOWN"), count: r.cnt }));
+  }
+
+  const data = { total, groups };
+  cacheBreakdown(cacheKey, data);
+  res.json(data);
+}
 
 function vehiclesHandler(req: express.Request, res: express.Response) {
   if (!db) {
@@ -651,6 +699,7 @@ v1.get("/vehicles", vehiclesHandler);
 v1.get("/values/:field", suggestionsHandler);
 v1.get("/fleet", fleetOverviewHandler);
 v1.get("/makes/:make/models", topModelsHandler);
+v1.get("/breakdown", apiBreakdownHandler);
 v1.use((_req, res) => res.status(404).json({ error: "Unknown endpoint. See https://vehiclefinder.co.nz/developers" }));
 app.use("/api/v1", v1);
 

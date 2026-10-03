@@ -407,7 +407,7 @@ export default function ModelStats() {
         )}
 
         {otherModels.length > 0 && (
-          <section style={{ padding: "24px 24px 32px", background: "#ffffff", borderTop: "1px solid #e5e7eb" }}>
+          <section className="page-band" style={{ padding: "24px 24px 32px", background: "#ffffff", borderTop: "1px solid #e5e7eb" }}>
             <div style={{ maxWidth: 1200, margin: "0 auto" }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>
                 Other {makeDisplay} models

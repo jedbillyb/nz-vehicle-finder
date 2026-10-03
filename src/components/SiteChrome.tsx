@@ -20,20 +20,15 @@ function NavLinks({ location, gap }: { location: string; gap: number }) {
           to={item.to}
           end={item.end}
           onClick={() => captureEvent("nav_link_clicked", { location, to: item.to })}
-          style={({ isActive }) =>
-            item.to === "/developers"
-              ? // The API is what keeps the site running, so it gets a pill rather than plain text.
-                { fontSize: "10px", fontWeight: 800, letterSpacing: "0.12em", color: "#0369a1", background: "#ffffff", borderRadius: 999, padding: "1px 9px", textDecoration: isActive ? "underline" : "none", textUnderlineOffset: 3 }
-              : {
-                  fontSize: "10px",
-                  fontWeight: 700,
-                  letterSpacing: "0.12em",
-                  color: "#ffffff",
-                  textDecoration: isActive ? "underline" : "none",
-                  textUnderlineOffset: 3,
-                  opacity: isActive ? 1 : 0.85,
-                }
-          }
+          style={({ isActive }) => ({
+            fontSize: "10px",
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            color: "#ffffff",
+            textDecoration: isActive ? "underline" : "none",
+            textUnderlineOffset: 3,
+            opacity: isActive ? 1 : 0.85,
+          })}
         >
           {item.label}
         </NavLink>
@@ -126,38 +121,33 @@ export function SiteHeader({
   );
 }
 
-const asideBox: React.CSSProperties = {
-  fontSize: 13, fontWeight: 700, textDecoration: "none", padding: "10px 24px", borderRadius: 8, letterSpacing: "0.1em",
-  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2, minWidth: 160,
-  background: "#ffffff",
-};
-
 /**
- * The boxes on the right of every page's hero: the API (the thing that pays
- * for the site) and the sponsor link. `api` swaps the API box's target, e.g.
- * on the docs page it points at the account page instead.
+ * The panel on the right of every page's hero: a solid API button (the thing
+ * that pays for the site) with a quiet sponsor link under it. `api` swaps the
+ * button's target, e.g. on the docs page it points at the account page.
  */
 export function HeroAside({ source, api }: { source: string; api?: { to: string; title: string; sub: string } }) {
-  const apiLink = api ?? { to: "/developers", title: "GET THIS DATA", sub: "VIA THE API" };
+  const apiLink = api ?? { to: "/developers", title: "Get this data", sub: "Via the API, 500 free requests a month" };
   return (
-    <div className="hero-sponsor" style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+    <div className="hero-sponsor" style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 10, width: 240, flexShrink: 0, marginTop: 8 }}>
       <Link
         to={apiLink.to}
         onClick={() => captureEvent("api_cta_clicked", { location: "hero", source })}
-        style={{ ...asideBox, color: "#0369a1", border: "2px solid #0ea5e9" }}
+        style={{ display: "block", textDecoration: "none", background: "#0ea5e9", color: "#ffffff", borderRadius: 10, padding: "14px 18px", boxShadow: "0 1px 2px rgba(15,23,42,0.08)" }}
       >
-        <span>{apiLink.title}</span>
-        <span style={{ fontSize: 9, marginTop: 3 }}>{apiLink.sub}</span>
+        <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 15, fontWeight: 700 }}>
+          {apiLink.title} <span aria-hidden>→</span>
+        </span>
+        <span style={{ display: "block", fontSize: 12, marginTop: 2, color: "#e0f2fe" }}>{apiLink.sub}</span>
       </Link>
       <a
         href="https://buymeacoffee.com/jedbillyb"
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => captureEvent("sponsor_link_clicked", { location: "hero", source })}
-        style={{ ...asideBox, color: "#ef4444", border: "2px solid #ef4444" }}
+        style={{ fontSize: 12, color: "#6b7280", textDecoration: "none", textAlign: "center" }}
       >
-        <span>SPONSOR</span>
-        <span style={{ fontSize: 9, marginTop: 3 }}>THIS PROJECT</span>
+        <span style={{ color: "#ef4444" }}>♥</span> Sponsor this project
       </a>
     </div>
   );

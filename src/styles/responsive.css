@@ -229,3 +229,37 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ── Centre page content on wide screens ────────────────────── */
+/* Bands stay full-bleed (their colours run edge to edge); only the content
+   inside is held to a 1200px column, by growing the side padding. */
+@media (min-width: 768px) {
+  .stats-hero,
+  .page-band {
+    padding-left: max(24px, calc((100% - 1200px) / 2)) !important;
+    padding-right: max(24px, calc((100% - 1200px) / 2)) !important;
+  }
+}
+@media (max-width: 767px) {
+  .hero-sponsor {
+    width: auto !important;
+  }
+}
+
+/* ── API docs: text left, code right on wide screens ────────── */
+.doc-endpoint {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+@media (min-width: 1000px) {
+  .doc-endpoint {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 32px;
+  }
+}
+.doc-pricing {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
