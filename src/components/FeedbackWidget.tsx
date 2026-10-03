@@ -292,13 +292,15 @@ export function FeedbackWidget() {
 
             {/* Stars */}
             <div style={{ padding: isMobile ? "18px 18px 12px" : "16px 16px 12px" }}>
-              <div style={{ display: "flex", gap: 6, marginBottom: 14, justifyContent: "center" }}>
+              <div
+                style={{ display: "flex", gap: 6, marginBottom: 14, justifyContent: "center" }}
+                onMouseLeave={() => !isMobile && setHovered(0)}
+              >
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
                     key={n}
                     aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
                     onMouseEnter={() => !isMobile && setHovered(n)}
-                    onMouseLeave={() => !isMobile && setHovered(0)}
                     onClick={() => setRating(n)}
                     style={{
                       background: "none", border: "none", cursor: "pointer",
@@ -346,6 +348,7 @@ export function FeedbackWidget() {
                   e.currentTarget.style.background = "#f8fafc";
                 }}
               />
+              <div style={{ position: "relative", marginTop: 8 }}>
               <input
                 type="email"
                 value={email}
@@ -357,10 +360,9 @@ export function FeedbackWidget() {
                 autoComplete="email"
                 style={{
                   width: "100%",
-                  marginTop: 8,
                   border: `1px solid ${showEmailError ? "#ef4444" : "#e2e8f0"}`,
                   borderRadius: 10,
-                  padding: "10px 12px",
+                  padding: showEmailError ? "10px 96px 10px 12px" : "10px 12px",
                   fontSize: isMobile ? 16 : 13,
                   color: "#374151",
                   fontFamily: "inherit",
@@ -379,11 +381,17 @@ export function FeedbackWidget() {
                   e.currentTarget.style.background = "#f8fafc";
                 }}
               />
+              {/* Inside the box, so flagging a bad email doesn't push the buttons down. */}
               {showEmailError && (
-                <div id="feedback-email-error" role="alert" style={{ fontSize: 12, color: "#dc2626", marginTop: 6 }}>
-                  Check your email address, or leave it blank.
-                </div>
+                <span
+                  id="feedback-email-error"
+                  role="alert"
+                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 11, fontWeight: 600, color: "#dc2626", pointerEvents: "none" }}
+                >
+                  Invalid email
+                </span>
               )}
+              </div>
             </div>
 
             {/* Submit */}
