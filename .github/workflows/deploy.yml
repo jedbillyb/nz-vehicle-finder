@@ -32,5 +32,5 @@ jobs:
             cp /tmp/nzvf-autocomplete.json server/public/autocomplete.json
             npm install
             npm run build
-            sudo cp -r dist/* /var/www/html/nz-vehicle-finder/
+            sudo cp -r dist/. /var/www/html/nz-vehicle-finder/
             pm2 restart vehicle-api
