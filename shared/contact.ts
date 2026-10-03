@@ -1,11 +1,10 @@
 /**
- * Where each kind of email goes. They all reach hello@jedbillyb.com for now.
- * Once Cloudflare Email Routing forwards support@, quotes@, api@ and security@
- * on vehiclefinder.co.nz, point these at those addresses.
+ * Where each kind of email goes. Cloudflare Email Routing forwards all four
+ * to hello@jedbillyb.com; replies are sent through Resend's SMTP.
  */
 export const CONTACT_EMAIL = {
-  support: "hello@jedbillyb.com",
-  quotes: "hello@jedbillyb.com",
-  api: "hello@jedbillyb.com",
-  security: "hello@jedbillyb.com",
+  support: "support@vehiclefinder.co.nz",
+  quotes: "quotes@vehiclefinder.co.nz",
+  api: "api@vehiclefinder.co.nz",
+  security: "security@vehiclefinder.co.nz",
 } as const;
