@@ -9,6 +9,8 @@ import ModelStats from "./pages/ModelStats";
 import FleetOverview from "./pages/FleetOverview";
 import RegionStats from "./pages/RegionStats";
 import NotFound from "./pages/NotFound";
+import Account from "./pages/Account";
+import Developers from "./pages/Developers";
 import { AnalyticsTracker } from "./components/AnalyticsTracker";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/stats/:make/:model" element={<ModelStats />} />
           <Route path="/nz-fleet" element={<FleetOverview />} />
           <Route path="/region/:tla" element={<RegionStats />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/developers" element={<Developers />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

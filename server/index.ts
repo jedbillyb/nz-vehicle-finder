@@ -8,6 +8,7 @@ import { readFileSync } from "fs";
 import { Resend } from "resend";
 import { parseFilterValue, type FilterTerm } from "../shared/filterTerms.js";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "../shared/pagination.js";
+import { AccountStore, createAccounts } from "./accounts.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -372,8 +373,8 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true, db: !!db });
 });
 
-app.get("/api/suggestions/:field", (req, res) => {
-  const { field } = req.params;
+function suggestionsHandler(req: express.Request, res: express.Response) {
+  const field = String(req.params.field);
   if (!ALLOWED_FIELDS.has(field)) return res.status(400).json([]);
 
   const q = typeof req.query.q === "string" ? req.query.q : "";
@@ -418,7 +419,8 @@ app.get("/api/suggestions/:field", (req, res) => {
   const result = Array.from(new Set(rows.map((r: any) => String(r.val || "").trim()).filter(Boolean)));
   setCachedSuggestion(cacheKey, result);
   res.json(result);
-});
+}
+app.get("/api/suggestions/:field", suggestionsHandler);
 
 const breakdownCache = new Map<string, { data: any; ts: number }>();
 const BREAKDOWN_TTL = 5 * 60 * 1000; // 5 min
@@ -465,7 +467,7 @@ app.get("/api/breakdown", (req, res) => {
   res.json(breakdown);
 });
 
-app.get("/api/vehicles", (req, res) => {
+function vehiclesHandler(req: express.Request, res: express.Response) {
   if (!db) {
     return res.status(503).json({ error: "Database not available", vehicles: [], total: 0, page: 1, pages: 0 });
   }
@@ -483,28 +485,31 @@ app.get("/api/vehicles", (req, res) => {
   const total = (db.prepare(`SELECT COUNT(*) as count FROM fleet ${where}`).get(...params) as any).count;
   const vehicles = db.prepare(`SELECT ${RESULT_COLUMNS} FROM fleet ${where} LIMIT ? OFFSET ?`).all(...params, limit, offset);
   res.json({ vehicles, total, page: currentPage, pages: Math.ceil(total / limit), limit });
-});
+}
+app.get("/api/vehicles", vehiclesHandler);
 
-app.get("/api/fleet-overview", (_req, res) => {
+function fleetOverviewHandler(_req: express.Request, res: express.Response) {
   if (!fleetOverview) return res.status(503).json({});
   res.json(fleetOverview);
-});
+}
+app.get("/api/fleet-overview", fleetOverviewHandler);
 
 app.get("/api/top-regions", (_req, res) => {
   if (!fleetOverview) return res.status(503).json([]);
   res.json(fleetOverview.regions);
 });
 
-app.get("/api/top-models/:make", (req, res) => {
+function topModelsHandler(req: express.Request, res: express.Response) {
   if (!db) return res.status(503).json([]);
-  const make = req.params.make.replace(/_/g, " ").toUpperCase();
+  const make = String(req.params.make).replace(/_/g, " ").toUpperCase();
   const rows = db
     .prepare(
       `SELECT TRIM(MODEL) as model, COUNT(*) as count FROM fleet WHERE UPPER(MAKE) = ? AND MODEL IS NOT NULL AND LENGTH(TRIM(MODEL)) > 0 GROUP BY TRIM(MODEL) ORDER BY count DESC LIMIT 24`
     )
     .all(make) as { model: string; count: number }[];
   res.json(rows);
-});
+}
+app.get("/api/top-models/:make", topModelsHandler);
 
 app.post("/api/feedback", async (req, res) => {
   const { rating, comment, page_path, distinct_id } = req.body ?? {};
@@ -542,6 +547,71 @@ app.post("/api/feedback", async (req, res) => {
   }
 
   res.json({ ok: true });
+});
+
+// --- Paid API ---
+
+const accountStore = new AccountStore(path.resolve(__dirname, "../database/accounts.db"));
+// vehiclefinder.co.nz is verified in Resend, so any address on it can send.
+const loginFrom = process.env.LOGIN_FROM_EMAIL || "NZ Vehicle Finder <login@vehiclefinder.co.nz>";
+const accounts = createAccounts(accountStore, {
+  publicUrl: (process.env.PUBLIC_URL || "https://vehiclefinder.co.nz").replace(/\/+$/, ""),
+  sendLoginEmail: async (email, link) => {
+    if (!resend || !loginFrom) {
+      // Local development has no mail setup; the link is all you need.
+      console.log(`Sign-in link for ${email}: ${link}`);
+      return;
+    }
+    const { error } = await resend.emails.send({
+      from: loginFrom,
+      to: email,
+      subject: "Your NZ Vehicle Finder sign-in link",
+      text: [
+        "Sign in to NZ Vehicle Finder:",
+        "",
+        link,
+        "",
+        "The link works once and expires in 15 minutes.",
+        "If you did not ask for this, ignore this email.",
+      ].join("\n"),
+    });
+    if (error) throw new Error(error.message);
+  },
+});
+app.use("/api", accounts.router);
+
+/**
+ * Every v1 response is { data, source }. The source block carries the NZTA
+ * attribution the CC BY 4.0 licence requires, and the snapshot date so callers
+ * can tell how fresh the data is.
+ */
+const v1 = express.Router();
+v1.use(accounts.requireApiKey);
+v1.use((_req, res, next) => {
+  const json = res.json.bind(res);
+  res.json = (body: unknown) =>
+    json(res.statusCode >= 400 ? body : {
+      data: body,
+      source: {
+        name: "NZTA Motor Vehicle Register",
+        licence: "CC BY 4.0",
+        attribution: "Contains data from the NZ Transport Agency Motor Vehicle Register, licensed under CC BY 4.0.",
+        snapshot_date: fleetOverview?.snapshotDate ?? null,
+      },
+    });
+  next();
+});
+v1.get("/vehicles", vehiclesHandler);
+v1.get("/values/:field", suggestionsHandler);
+v1.get("/fleet", fleetOverviewHandler);
+v1.get("/makes/:make/models", topModelsHandler);
+v1.use((_req, res) => res.status(404).json({ error: "Unknown endpoint. See https://vehiclefinder.co.nz/developers" }));
+app.use("/api/v1", v1);
+
+// Never send a stack trace to the client.
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error(err);
+  if (!res.headersSent) res.status(500).json({ error: "Internal server error" });
 });
 
 app.listen(3001);

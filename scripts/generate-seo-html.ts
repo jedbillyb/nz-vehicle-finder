@@ -130,6 +130,14 @@ function getSeoForUrl(fullUrl: string): { title: string; description: string } {
     };
   }
 
+  if (urlPath === "/developers") {
+    return {
+      title: "NZ Vehicle Register API | NZ Vehicle Finder",
+      description:
+        "A JSON API over the full NZ Motor Vehicle Register: search 5.9 million vehicles by make, model, year, fuel, region and more. Free tier included.",
+    };
+  }
+
   if (urlPath === "/nz-fleet") {
     return {
       title: "NZ Vehicle Register: 5.9 million vehicles in New Zealand | NZ Vehicle Finder",

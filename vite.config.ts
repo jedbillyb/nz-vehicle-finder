@@ -10,6 +10,10 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    // Account calls use relative /api paths so the session cookie stays same-origin.
+    proxy: {
+      "/api": "http://localhost:3001",
+    },
   },
   plugins: [react()],
   resolve: {

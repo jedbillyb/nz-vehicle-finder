@@ -149,6 +149,44 @@ VITE_POSTHOG_HOST=https://us.i.posthog.com
 
 Tracked events: page views, searches (with active filters), zero-result queries, CSV exports, and copy-link clicks.
 
+## Paid API
+
+Developers sign up at `/account`, create keys, and call `/api/v1/*`. The docs live at
+`/developers`. Plans and limits are in `shared/apiTiers.ts`, the one place to change prices
+or quotas.
+
+| Piece | Where |
+|---|---|
+| Accounts, sign-in links, keys, quota | `server/accounts.ts` (tests: `src/test/accounts.test.ts`) |
+| v1 routes and the `{ data, source }` wrapper | bottom of `server/index.ts` |
+| Account page / docs page | `src/pages/Account.tsx`, `src/pages/Developers.tsx` |
+| Database | `database/accounts.db` on the server (SQLite, not in git; back it up) |
+
+How it works:
+
+- **Sign-in:** emailed magic link, no passwords. The link works once and expires after
+  15 minutes. Sessions are an httpOnly cookie on `/api` that lasts 30 days.
+- **Keys:** look like `nzvf_...`. Only a SHA-256 hash is stored, so a lost key can't be
+  recovered; revoke it and make a new one. Each account can have at most 5.
+- **Quota:** counted per account per calendar month (UTC). Over the limit returns `429`.
+  Each key is also capped at 5 requests per second, and throttled requests aren't counted.
+- **Attribution:** every v1 response carries the NZTA CC BY 4.0 attribution and the snapshot
+  date.
+
+Environment variables (all optional):
+
+- `RESEND_API_KEY`: without it, sign-in links are printed to the server console instead of
+  emailed, which is how local development works.
+- `LOGIN_FROM_EMAIL`: defaults to `NZ Vehicle Finder <login@vehiclefinder.co.nz>`.
+- `PUBLIC_URL`: base of the sign-in link, defaults to `https://vehiclefinder.co.nz`. Set it to
+  `http://localhost:8080` locally.
+
+To change someone's plan by hand (until Stripe is wired up):
+
+```bash
+node -e 'new (require("better-sqlite3"))("database/accounts.db").prepare("UPDATE users SET tier=? WHERE email=?").run("starter","them@example.com")'
+```
+
 ## Deployment
 
 Every push to `main` deploys through GitHub Actions (`.github/workflows/deploy.yml`). It SSHes

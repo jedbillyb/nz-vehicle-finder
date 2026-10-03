@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 *.db
 database/vehicles.db-*
+database/accounts.db-*
 .env
 
 # Generated on the server by database/import-mvr.ts from the live database
