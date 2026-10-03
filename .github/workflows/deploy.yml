@@ -19,7 +19,16 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             cd /home/ubuntu/nz-vehicle-finder
+            # autocomplete.json is generated here from the live database and is
+            # not in git. Keep it safe across the pull (the commit that stopped
+            # tracking it would otherwise delete it).
+            cp public/autocomplete.json /tmp/nzvf-autocomplete.json
+            # npm install rewrites the lockfile on this Node version; drop that
+            # so the pull never refuses over it.
+            git checkout -- package-lock.json
             git pull origin main
+            cp /tmp/nzvf-autocomplete.json public/autocomplete.json
+            cp /tmp/nzvf-autocomplete.json server/public/autocomplete.json
             npm install
             npm run build
             sudo cp -r dist/* /var/www/html/nz-vehicle-finder/

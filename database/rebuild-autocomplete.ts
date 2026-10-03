@@ -14,9 +14,8 @@
  *   npx tsx database/rebuild-autocomplete.ts
  *   npx tsx database/rebuild-autocomplete.ts --out=/tmp   # don't touch the checkout
  *
- * autocomplete.json is tracked, so writing it inside a deployed checkout leaves a
- * dirty tree that blocks the next pull. --out writes a single copy elsewhere for
- * copying back to a machine that can commit it.
+ * autocomplete.json is generated on the server and not tracked in git, so writing
+ * it inside the deployed checkout is fine. --out writes a single copy elsewhere.
  */
 import Database from "better-sqlite3";
 import { existsSync, writeFileSync } from "fs";

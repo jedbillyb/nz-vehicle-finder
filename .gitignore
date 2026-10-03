@@ -25,3 +25,9 @@ dist-ssr
 *.db
 database/vehicles.db-*
 .env
+
+# Generated on the server by database/import-mvr.ts from the live database
+public/autocomplete.json
+server/public/autocomplete.json
+database/.refresh.lock
+database/mvr-download

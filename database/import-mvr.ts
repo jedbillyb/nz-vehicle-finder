@@ -12,11 +12,15 @@
  *   npx tsx database/import-mvr.ts              # full refresh
  *   npx tsx database/import-mvr.ts --keep-csv   # keep the downloaded CSVs
  *   npx tsx database/import-mvr.ts --no-swap    # build vehicles.db.new, don't swap
+ *   npx tsx database/import-mvr.ts --if-newer   # do nothing unless NZTA has a newer snapshot
+ *   npx tsx database/import-mvr.ts --drop-old   # don't keep vehicles.db.old afterwards
+ *
+ * database/auto-refresh.sh runs it with --if-newer --drop-old from a daily cron.
  *
  * Source: https://nzta.govt.nz/resources/new-zealand-motor-vehicle-register-statistics/new-zealand-vehicle-fleet-open-data-sets
  */
 import Database from "better-sqlite3";
-import { createWriteStream, existsSync, mkdirSync, renameSync, rmSync, statSync, writeFileSync, createReadStream } from "fs";
+import { createWriteStream, existsSync, mkdirSync, renameSync, rmSync, statSync, statfsSync, writeFileSync, createReadStream } from "fs";
 import { execFileSync } from "child_process";
 import { createInterface } from "readline";
 import path from "path";
@@ -34,6 +38,13 @@ const LAST_YEAR = new Date().getFullYear() + 2; // model years can run ahead of 
 
 const KEEP_CSV = process.argv.includes("--keep-csv");
 const NO_SWAP = process.argv.includes("--no-swap");
+const IF_NEWER = process.argv.includes("--if-newer");
+/**
+ * Each database is ~6 GB, so keeping the previous one as vehicles.db.old means
+ * the next unattended run needs room for three of them and fills the disk.
+ */
+const DROP_OLD = process.argv.includes("--drop-old");
+const OLD_DB = `${LIVE_DB}.old`;
 /** --only=2026,2027 builds from a subset of parts. Smoke-testing only, never for a real refresh. */
 const ONLY = process.argv.find((a) => a.startsWith("--only="))?.slice("--only=".length).split(",");
 
@@ -121,6 +132,39 @@ function parseLine(line: string): string[] {
   }
   out.push(field);
   return out;
+}
+
+/** When NZTA published the snapshot the live database was built from, if recorded. */
+function livePublishedAt(): string | null {
+  if (!existsSync(LIVE_DB)) return null;
+  try {
+    const live = new Database(LIVE_DB, { readonly: true });
+    try {
+      const row = live.prepare("SELECT value FROM dataset_meta WHERE key = 'published_at'").get() as { value: string } | undefined;
+      return row?.value ?? null;
+    } finally {
+      live.close();
+    }
+  } catch {
+    // Databases built before dataset_meta existed: treat as out of date.
+    return null;
+  }
+}
+
+/**
+ * A new database is about the size of the live one and the CSVs sit beside it
+ * until the end, so refuse to start without room for both plus some slack.
+ * Running out part-way would fill the disk the rest of the server shares.
+ */
+function checkFreeSpace(downloadSize: number) {
+  const { bavail, bsize } = statfsSync(path.dirname(LIVE_DB));
+  const free = bavail * bsize;
+  const dbSize = existsSync(LIVE_DB) ? statSync(LIVE_DB).size : 7 * 1024 ** 3;
+  const needed = downloadSize + dbSize * 1.15 + 2 * 1024 ** 3;
+  if (free < needed) {
+    throw new Error(`Not enough disk space: ${human(free)} free, need about ${human(needed)}`);
+  }
+  log(`Disk: ${human(free)} free, need about ${human(needed)}`);
 }
 
 /** HEAD a URL; returns null when the file does not exist. */
@@ -222,6 +266,21 @@ async function main() {
     .sort((a, b) => Date.parse(a) - Date.parse(b))
     .pop() ?? "unknown";
   log(`Found ${parts.length} parts (${parts.map((p) => p.label).join(", ")}), ${human(totalSize)}, published ${published}`);
+
+  if (IF_NEWER) {
+    const current = livePublishedAt();
+    if (current && published !== "unknown" && Date.parse(published) <= Date.parse(current)) {
+      log(`Live database is already on this snapshot (published ${current}). Nothing to do.`);
+      return;
+    }
+    log(`Live database was published ${current ?? "unknown"}, NZTA has ${published}. Refreshing.`);
+  }
+
+  if (DROP_OLD && existsSync(OLD_DB)) {
+    rmSync(OLD_DB, { force: true });
+    log("Removed previous vehicles.db.old");
+  }
+  checkFreeSpace(totalSize);
 
   log("Downloading...");
   for (const part of parts) await download(part.url, part.file, part.size);
@@ -326,11 +385,18 @@ async function main() {
   if (NO_SWAP) {
     log(`--no-swap set, leaving the new database at ${NEW_DB}`);
   } else {
-    if (existsSync(LIVE_DB)) renameSync(LIVE_DB, `${LIVE_DB}.old`);
+    if (existsSync(LIVE_DB)) renameSync(LIVE_DB, OLD_DB);
     renameSync(NEW_DB, LIVE_DB);
     // The old WAL/SHM belong to the replaced database.
     for (const suffix of ["-wal", "-shm"]) rmSync(`${LIVE_DB}${suffix}`, { force: true });
-    log(`Swapped into place. Previous database kept at ${LIVE_DB}.old`);
+    if (DROP_OLD) {
+      // The running API still holds the old file open, so its space only comes
+      // back once the API restarts.
+      rmSync(OLD_DB, { force: true });
+      log("Swapped into place. Previous database removed (--drop-old)");
+    } else {
+      log(`Swapped into place. Previous database kept at ${OLD_DB}`);
+    }
     log("Restart the API so it picks up the new file: pm2 restart vehicle-api");
   }
 
