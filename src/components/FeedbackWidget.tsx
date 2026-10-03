@@ -304,7 +304,6 @@ export function FeedbackWidget() {
                       background: "none", border: "none", cursor: "pointer",
                       padding: 4, display: "flex", alignItems: "center",
                       transform: n <= displayRating ? "scale(1.1)" : "scale(1)",
-                      transition: "transform 0.12s ease",
                       WebkitTapHighlightColor: "transparent",
                     }}
                   >
@@ -312,7 +311,6 @@ export function FeedbackWidget() {
                       size={isMobile ? 34 : 28}
                       fill={n <= displayRating ? "#f59e0b" : "none"}
                       stroke={n <= displayRating ? "#f59e0b" : "#cbd5e1"}
-                      style={{ transition: "fill 0.12s ease, stroke 0.12s ease" }}
                     />
                   </button>
                 ))}
