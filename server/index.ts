@@ -9,13 +9,35 @@ import { Resend } from "resend";
 import { parseFilterValue, type FilterTerm } from "../shared/filterTerms.js";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "../shared/pagination.js";
 import { AccountStore, createAccounts } from "./accounts.js";
+import { FREE_MAX_RESULT_DEPTH, limitPerIp } from "./rateLimit.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-app.use(cors());
+/**
+ * The free /api/* endpoints serve this site, so browsers elsewhere are refused.
+ * /api/v1 is gated by API keys instead and stays open to any origin.
+ */
+const siteCors = cors({
+  origin: [
+    "https://vehiclefinder.co.nz",
+    "https://www.vehiclefinder.co.nz",
+    "http://localhost:8080",
+    /\.lovable\.app$/,
+    /\.lovableproject\.com$/,
+  ],
+});
+const openCors = cors();
+app.use((req, res, next) => (req.path.startsWith("/api/v1/") ? openCors : siteCors)(req, res, next));
 app.use(compression());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+// Per-IP ceiling across the free site endpoints. Search and stats get tighter
+// limits on their routes below. Paid, account and health routes are exempt.
+const freeSiteLimit = limitPerIp(300, 60_000);
+app.use("/api", (req, res, next) =>
+  /^\/(v1|auth|account)(\/|$)/.test(req.path) || req.path === "/health" ? next() : freeSiteLimit(req, res, next)
+);
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -425,7 +447,7 @@ app.get("/api/suggestions/:field", suggestionsHandler);
 const breakdownCache = new Map<string, { data: any; ts: number }>();
 const BREAKDOWN_TTL = 5 * 60 * 1000; // 5 min
 
-app.get("/api/breakdown", (req, res) => {
+app.get("/api/breakdown", limitPerIp(30, 60_000), (req, res) => {
   if (!db) return res.status(503).json({});
 
   const filters = req.query as Record<string, string>;
@@ -481,12 +503,20 @@ function vehiclesHandler(req: express.Request, res: express.Response) {
   const currentPage = Math.max(parseInt(page, 10) || 1, 1);
   const offset = (currentPage - 1) * limit;
 
+  // The free site stops at FREE_MAX_RESULT_DEPTH results; API callers don't.
+  const maxPage = res.locals.apiUser ? Infinity : Math.max(Math.floor(FREE_MAX_RESULT_DEPTH / limit), 1);
+  if (currentPage > maxPage) {
+    return res.status(400).json({
+      error: `Site search shows the first ${FREE_MAX_RESULT_DEPTH.toLocaleString("en-NZ")} results. Narrow your filters, or use the API to go further: https://vehiclefinder.co.nz/developers`,
+    });
+  }
+
   const { where, params } = buildFilterClauses(filters);
   const total = (db.prepare(`SELECT COUNT(*) as count FROM fleet ${where}`).get(...params) as any).count;
   const vehicles = db.prepare(`SELECT ${RESULT_COLUMNS} FROM fleet ${where} LIMIT ? OFFSET ?`).all(...params, limit, offset);
-  res.json({ vehicles, total, page: currentPage, pages: Math.ceil(total / limit), limit });
+  res.json({ vehicles, total, page: currentPage, pages: Math.min(Math.ceil(total / limit), maxPage), limit });
 }
-app.get("/api/vehicles", vehiclesHandler);
+app.get("/api/vehicles", limitPerIp(60, 60_000), vehiclesHandler);
 
 function fleetOverviewHandler(_req: express.Request, res: express.Response) {
   if (!fleetOverview) return res.status(503).json({});

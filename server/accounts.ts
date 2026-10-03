@@ -8,6 +8,7 @@
 import Database from "better-sqlite3";
 import { createHash, randomBytes } from "crypto";
 import express, { type Request, type Response, type NextFunction } from "express";
+import { clientIp } from "./rateLimit.js";
 import { BURST_PER_SECOND, MAX_KEYS_PER_ACCOUNT, TIERS, TIER_ORDER, tierFor, type Tier } from "../shared/apiTiers.js";
 
 const LOGIN_TOKEN_TTL_MS = 15 * 60 * 1000;
@@ -256,15 +257,6 @@ function readCookie(req: Request, name: string): string | undefined {
   return undefined;
 }
 
-/**
- * The site sits behind Cloudflare and then nginx, so the socket address is
- * always loopback. Cloudflare passes the real client address in this header.
- */
-function clientIp(req: Request): string {
-  const cf = req.headers["cf-connecting-ip"];
-  return (typeof cf === "string" && cf) || req.ip || "unknown";
-}
-
 function apiKeyFrom(req: Request): string | undefined {
   const auth = req.headers.authorization;
   if (auth?.startsWith("Bearer ")) return auth.slice("Bearer ".length).trim();
@@ -366,6 +358,8 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
       return res.status(check.status).json({ error: check.error });
     }
     res.setHeader("X-RateLimit-Remaining", String(Math.max(check.tier.monthlyRequests - check.used, 0)));
+    // Shared handlers apply the free-site caps unless this is set.
+    res.locals.apiUser = check.user;
     next();
   }
 

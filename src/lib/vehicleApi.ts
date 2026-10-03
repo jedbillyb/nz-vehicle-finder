@@ -84,7 +84,9 @@ export async function searchVehicles(
     throw new Error(data?.error || "Database not available. Check the server logs.");
   }
   if (!res.ok) {
-    throw new Error(`Search failed with status ${res.status}`);
+    // 429 (rate limit) and 400 (past the free result depth) explain themselves.
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error || `Search failed with status ${res.status}`);
   }
 
   return res.json();

@@ -181,6 +181,16 @@ Environment variables (all optional):
 - `PUBLIC_URL`: base of the sign-in link, defaults to `https://vehiclefinder.co.nz`. Set it to
   `http://localhost:8080` locally.
 
+The free site endpoints (`/api/*` outside `/api/v1`) are kept for the website only, so other
+apps have to use the paid API. Limits are in `server/rateLimit.ts`:
+
+- **CORS:** only answers browsers on vehiclefinder.co.nz (plus `localhost:8080` and Lovable
+  previews).
+- **Rate limits per IP:** 300 requests a minute overall, 60 searches a minute and 30 stats
+  breakdowns a minute.
+- **Search depth:** site search shows the first 10,000 results of a query. `/api/v1` has no
+  depth cap.
+
 To change someone's plan by hand (until Stripe is wired up):
 
 ```bash
