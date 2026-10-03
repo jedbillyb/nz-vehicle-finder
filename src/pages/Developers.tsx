@@ -5,7 +5,7 @@ import { captureEvent } from "@/lib/posthog";
 import { fetchFleetOverview, type FleetOverview } from "@/lib/vehicleApi";
 import { BURST_PER_SECOND, TIERS, TIER_ORDER } from "../../shared/apiTiers";
 import { MAX_PAGE_SIZE, MIN_PAGE_SIZE, DEFAULT_PAGE_SIZE } from "../../shared/pagination";
-import { Band, HeroAction, PageShell, StatCard } from "@/components/PageShell";
+import { Band, PageShell, StatCard } from "@/components/PageShell";
 import { code, label } from "@/lib/pageStyles";
 
 const BASE = "https://vehiclefinder.co.nz/api/v1";
@@ -72,11 +72,7 @@ export default function Developers() {
       crumb="Developers"
       title="NZ Vehicle Register API"
       intro="JSON access to every vehicle on the NZ Motor Vehicle Register. Search by make, model, year, fuel type, region and more, refreshed automatically each month from NZTA."
-      heroAside={
-        <HeroAction to="/account" sub="500 REQUESTS / MONTH FREE" onClick={() => captureEvent("get_api_key_clicked", { location: "hero_developers" })}>
-          GET AN API KEY
-        </HeroAction>
-      }
+      heroApi={{ to: "/account", title: "GET AN API KEY", sub: "500 REQUESTS / MONTH FREE" }}
     >
       <div style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "flex", flexWrap: "wrap", gap: 12 }}>
         <StatCard label="VEHICLES" value={fleet ? fleet.total.toLocaleString("en-NZ") : "5.9M"} sub="Every vehicle on the register" />

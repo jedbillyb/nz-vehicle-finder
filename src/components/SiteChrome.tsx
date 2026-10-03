@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { captureEvent } from "@/lib/posthog";
 import { APP_VERSION } from "@/lib/version";
+import { useFleetOverview } from "@/lib/useFleetOverview";
 
 const NAV_ITEMS = [
   { to: "/", label: "SEARCH", end: true },
@@ -19,15 +20,20 @@ function NavLinks({ location, gap }: { location: string; gap: number }) {
           to={item.to}
           end={item.end}
           onClick={() => captureEvent("nav_link_clicked", { location, to: item.to })}
-          style={({ isActive }) => ({
-            fontSize: "10px",
-            fontWeight: 700,
-            letterSpacing: "0.12em",
-            color: "#ffffff",
-            textDecoration: isActive ? "underline" : "none",
-            textUnderlineOffset: 3,
-            opacity: isActive ? 1 : 0.85,
-          })}
+          style={({ isActive }) =>
+            item.to === "/developers"
+              ? // The API is what keeps the site running, so it gets a pill rather than plain text.
+                { fontSize: "10px", fontWeight: 800, letterSpacing: "0.12em", color: "#0369a1", background: "#ffffff", borderRadius: 999, padding: "1px 9px", textDecoration: isActive ? "underline" : "none", textUnderlineOffset: 3 }
+              : {
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  color: "#ffffff",
+                  textDecoration: isActive ? "underline" : "none",
+                  textUnderlineOffset: 3,
+                  opacity: isActive ? 1 : 0.85,
+                }
+          }
         >
           {item.label}
         </NavLink>
@@ -59,6 +65,101 @@ export function SiteTopbar({ right }: { right?: ReactNode }) {
       </div>
     </div>
     </>
+  );
+}
+
+/**
+ * The header every page shares: top bar, logo, site name, a one-line subtitle,
+ * and on the right a vehicle count (the whole fleet unless the page passes its
+ * own) or whatever the page puts there instead.
+ */
+export function SiteHeader({
+  subtitle,
+  count,
+  countLabel = "VEHICLES REGISTERED",
+  right,
+  onLogoClick,
+  source,
+}: {
+  subtitle: ReactNode;
+  count?: number | null;
+  countLabel?: string;
+  right?: ReactNode;
+  onLogoClick?: () => void;
+  source: string;
+}) {
+  const fleet = useFleetOverview();
+  const shown = count === undefined ? fleet?.total ?? null : count;
+  return (
+    <header style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff", position: "sticky", top: 0, zIndex: 40 }}>
+      <SiteTopbar right={fleet?.snapshotDate ? `DATA AS AT ${fleet.snapshotDate}` : undefined} />
+      <div className="header-main" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
+        <Link
+          to="/"
+          title="Home"
+          style={{ textDecoration: "none" }}
+          onClick={() => {
+            captureEvent("logo_home_clicked", { source });
+            onLogoClick?.();
+          }}
+        >
+          <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid #d1d5db" }}>
+            <img src="/favicon.svg" alt="Logo" style={{ width: "100%", height: "100%" }} />
+          </div>
+        </Link>
+        {/* Basis 0 so a long subtitle wraps inside the block instead of pushing the block under the logo. */}
+        <div style={{ flex: "1 1 0", minWidth: 0 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: "0.02em", margin: 0 }}>NZ Vehicle Finder</h1>
+          <p style={{ fontSize: 11, color: "#6b7280", letterSpacing: "0.12em", margin: 0, textTransform: "uppercase" }}>{subtitle}</p>
+        </div>
+        <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
+          {right ??
+            (shown !== null && (
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{shown.toLocaleString("en-NZ")}</div>
+                <div className="header-count-label" style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>{countLabel}</div>
+              </div>
+            ))}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+const asideBox: React.CSSProperties = {
+  fontSize: 13, fontWeight: 700, textDecoration: "none", padding: "10px 24px", borderRadius: 8, letterSpacing: "0.1em",
+  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2, minWidth: 160,
+  background: "#ffffff",
+};
+
+/**
+ * The boxes on the right of every page's hero: the API (the thing that pays
+ * for the site) and the sponsor link. `api` swaps the API box's target, e.g.
+ * on the docs page it points at the account page instead.
+ */
+export function HeroAside({ source, api }: { source: string; api?: { to: string; title: string; sub: string } }) {
+  const apiLink = api ?? { to: "/developers", title: "GET THIS DATA", sub: "VIA THE API" };
+  return (
+    <div className="hero-sponsor" style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+      <Link
+        to={apiLink.to}
+        onClick={() => captureEvent("api_cta_clicked", { location: "hero", source })}
+        style={{ ...asideBox, color: "#0369a1", border: "2px solid #0ea5e9" }}
+      >
+        <span>{apiLink.title}</span>
+        <span style={{ fontSize: 9, marginTop: 3 }}>{apiLink.sub}</span>
+      </Link>
+      <a
+        href="https://buymeacoffee.com/jedbillyb"
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => captureEvent("sponsor_link_clicked", { location: "hero", source })}
+        style={{ ...asideBox, color: "#ef4444", border: "2px solid #ef4444" }}
+      >
+        <span>SPONSOR</span>
+        <span style={{ fontSize: 9, marginTop: 3 }}>THIS PROJECT</span>
+      </a>
+    </div>
   );
 }
 

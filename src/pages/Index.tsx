@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { SearchField } from "@/components/SearchField";
 import { RangeField } from "@/components/RangeField";
 import { Pagination } from "@/components/Pagination";
@@ -23,7 +23,7 @@ import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
 import { toast } from "sonner";
 import { Search, RotateCcw, Download, Link2, LoaderCircle, ChevronDown } from "lucide-react";
-import { SiteFooter, SiteTopbar } from "@/components/SiteChrome";
+import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -459,48 +459,12 @@ export default function Index() {
         </div>
       )}
 
-      <header style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff", position: "sticky", top: 0, zIndex: 40 }}>
-        <SiteTopbar right={dataSnapshot ? `DATA AS AT ${dataSnapshot}` : undefined} />
-        {/* Main header row */}
-        <div className="header-main" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", border: '1px solid #d1d5db', borderColor: '#d1d5db' }} onClick={() => handleClear()} title="Clear filters" onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")} onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}>
-            <img src="/favicon.svg" alt="Logo" style={{ width: "100%", height: "100%" }} />
-          </div>
-          <div>
-            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: "0.02em", margin: 0 }}>NZ Vehicle Finder</h1>
-            <p style={{ fontSize: 12, color: "#4b5563", letterSpacing: "0.01em", margin: 0 }}>
-              NZ Motor Vehicle Register · {fleetTotal.toLocaleString("en-NZ")} records
-            </p>
-          </div>
-          {total === null && (
-            <div style={{ marginLeft: "auto" }}>
-              <a className="header-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "header" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
-                style={{ fontSize: 10, fontWeight: 600, color: "#9ca3af", textDecoration: "none",
-                  padding: "5px 12px", border: "1px solid #e5e7eb", borderRadius: 6,
-                  letterSpacing: "0.04em", display: "inline-flex", alignItems: "center",
-                  marginLeft: "auto" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#4b5563"; (e.currentTarget as HTMLAnchorElement).style.borderColor = "#9ca3af"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#9ca3af"; (e.currentTarget as HTMLAnchorElement).style.borderColor = "#e5e7eb"; }}>
-                Support this project
-              </a>
-            </div>
-          )}
-          {total !== null && (
-            <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString('en-NZ')}</div>
-                <div style={{ fontSize: 13, fontWeight: 400, color: "#9ca3af" }}>matches found</div>
-              </div>
-              <a className="header-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "header_with_results" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
-                style={{ fontSize: 10, fontWeight: 600, color: "#9ca3af", textDecoration: "none", padding: "5px 12px", border: "1px solid #e5e7eb", borderRadius: 6, letterSpacing: "0.04em", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#4b5563"; (e.currentTarget as HTMLAnchorElement).style.borderColor = "#9ca3af"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#9ca3af"; (e.currentTarget as HTMLAnchorElement).style.borderColor = "#e5e7eb"; }}>
-                Support this project
-              </a>
-            </div>
-          )}
-        </div>
-      </header>
+      <SiteHeader
+        source="index"
+        subtitle="NZ Motor Vehicle Register · Fleet search"
+        onLogoClick={handleClear}
+        {...(total !== null ? { count: total, countLabel: "MATCHES FOUND" } : {})}
+      />
 
       <div style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff" }}>
         {/* Filter panel */}
@@ -632,6 +596,15 @@ export default function Index() {
                       {copiedLink ? "Copied!" : "Copy link"}
                     </button>
                   )}
+                  {total !== null && (
+                    <Link
+                      to="/developers"
+                      onClick={() => captureEvent("api_cta_clicked", { location: "results_actions", source: "index" })}
+                      style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", borderRadius: 999, fontSize: 11, letterSpacing: "0.02em", whiteSpace: "nowrap", textDecoration: "none", fontWeight: 600 }}
+                    >
+                      Get via API
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -747,6 +720,23 @@ export default function Index() {
             <h2 style={{ fontSize: 14, color: "#374151", letterSpacing: 0, margin: "0 0 8px", fontWeight: 500 }}>Use the filters above to search</h2>
             <p style={{ fontSize: 12, color: "#6b7280", letterSpacing: 0, margin: 0 }}>Set at least one filter, then click Run Search</p>
           </div>
+          <div style={{ background: "#ffffff", border: "2px solid #0ea5e9", borderRadius: 8, padding: "18px 20px", marginBottom: 40, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 320px" }}>
+              <div style={{ fontSize: 9, color: "#0369a1", letterSpacing: "0.18em", fontWeight: 700, marginBottom: 6 }}>DEVELOPER API</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>Put this data in your own app</div>
+              <div style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.6 }}>
+                Every vehicle on the register as JSON, refreshed monthly from NZTA. 500 requests a month free, no card needed.
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <Link to="/account" onClick={() => captureEvent("api_cta_clicked", { location: "home_callout", source: "index" })} style={{ padding: "8px 18px", background: "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, fontSize: 11, fontWeight: 700, letterSpacing: "0.02em", textDecoration: "none", whiteSpace: "nowrap" }}>
+                Get a free API key
+              </Link>
+              <Link to="/developers" onClick={() => captureEvent("api_docs_link_clicked", { location: "home_callout", source: "index" })} style={{ padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, fontSize: 11, letterSpacing: "0.02em", textDecoration: "none", whiteSpace: "nowrap" }}>
+                Read the docs
+              </Link>
+            </div>
+          </div>
           <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 40, color: "#374151", fontSize: 13, lineHeight: 1.8 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Search the NZ Motor Vehicle Register</h2>
             <p style={{ marginBottom: 12 }}>NZ Vehicle Finder gives you free public access to New Zealand's Motor Vehicle Register - the same database maintained by Waka Kotahi. Our fleet search tool allows you to search across 5.9 million registered vehicles by make, model, colour, fuel type, region, and more.</p>
@@ -780,6 +770,7 @@ export default function Index() {
               ["Can I filter by import status?", "Yes - use the Import Status field to filter between vehicles registered new in New Zealand and used imports."],
               ["Can I search by region?", "Yes - use the Registered Region field to filter by Territorial Local Authority (TLA)."],
               ["Can I export results?", "Yes - after running a search, use the Export CSV button to download your results."],
+              ["Is there an API?", "Yes - the NZ Vehicle Register API gives you the same data as JSON for your own apps and spreadsheets. The free plan includes 500 requests a month; see vehiclefinder.co.nz/developers."],
               ["Can I share a search?", "Yes - use the Copy Link button to get a shareable URL with your current filters applied."],
               ["How many vehicles are in the register?", "The register currently contains 5.9 million vehicle records covering all registered vehicles in New Zealand."],
             ].map(([q, a]) => (

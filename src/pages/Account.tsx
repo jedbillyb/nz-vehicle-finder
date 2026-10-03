@@ -6,7 +6,7 @@ import {
   createApiKey, fetchAccount, openBillingPortal, requestSignInLink, revokeApiKey, signOut, startCheckout, syncBilling,
   verifySignInToken, type Account as AccountData,
 } from "@/lib/account";
-import { Band, HeroAction, PageShell, StatCard } from "@/components/PageShell";
+import { Band, PageShell, StatCard } from "@/components/PageShell";
 import { code, input, label, primaryButton, secondaryButton } from "@/lib/pageStyles";
 
 const fmtDate = (iso: string | null) =>
@@ -296,7 +296,7 @@ export default function Account() {
       crumb="Account"
       title="API account"
       intro="Your API keys, this month's usage and your plan. Calls to the NZ Vehicle Register API count against your monthly quota."
-      heroAside={<HeroAction to="/developers" sub="ENDPOINTS & EXAMPLES">API DOCS</HeroAction>}
+      heroApi={{ to: "/developers", title: "API DOCS", sub: "ENDPOINTS & EXAMPLES" }}
     >
       {error && (
         <div style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>

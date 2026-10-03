@@ -12,7 +12,7 @@ import { applySeo } from "@/lib/seo";
 import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
 import { modelToSlug, slugToMakeUpper, slugToModel, titleCaseModel } from "@/lib/slugs";
-import { SiteFooter, SiteTopbar } from "@/components/SiteChrome";
+import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -280,35 +280,18 @@ export default function ModelStats() {
       }}
     >
       <div style={{ flex: 1 }}>
-        <header style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff" }}>
-          <SiteTopbar right={new Date().toISOString().split("T")[0]} />
-          <div className="header-main" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
-            <Link to="/" style={{ textDecoration: "none" }} onClick={() => captureEvent("logo_home_clicked", { source: "model_stats_page", make: makeUpper, model: modelUpper })}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid #d1d5db" }}>
-                <img src="/favicon.svg" alt="Logo" style={{ width: "100%", height: "100%" }} />
-              </div>
-            </Link>
-            <div>
-              <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: "0.02em", margin: 0 }}>
-                NZ Vehicle Finder
-              </h1>
-              <p style={{ fontSize: 11, color: "#6b7280", letterSpacing: "0.12em", margin: 0, textTransform: "uppercase" }}>
-                <Link to={`/stats/${makeSlug}`} style={{ color: "#0ea5e9", textDecoration: "none" }} onClick={() => captureEvent("breadcrumb_make_clicked", { make: makeUpper, model: modelUpper })}>
-                  {makeUpper} Statistics
-                </Link>
-                {" "}· {modelUpper}
-              </p>
-            </div>
-            {total !== null && (
-              <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString("en-NZ")}</div>
-                  <div className="header-count-label" style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>VEHICLES REGISTERED</div>
-                </div>
-              </div>
-            )}
-          </div>
-        </header>
+        <SiteHeader
+          source="model_stats_page"
+          count={total}
+          subtitle={
+            <>
+              <Link to={`/stats/${makeSlug}`} style={{ color: "#0ea5e9", textDecoration: "none" }} onClick={() => captureEvent("breadcrumb_make_clicked", { make: makeUpper, model: modelUpper })}>
+                {makeUpper} Statistics
+              </Link>
+              {" "}· {modelUpper}
+            </>
+          }
+        />
 
         <div className="stats-hero" style={{ padding: "20px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32 }}>
           <div style={{ flex: 1 }}>
@@ -336,17 +319,7 @@ export default function ModelStats() {
               Refine further <span aria-hidden>→</span>
             </Link>
           </div>
-          <a
-            className="hero-sponsor"
-            onClick={() => captureEvent("sponsor_link_clicked", { location: "hero_model_stats" })}
-            href="https://buymeacoffee.com/jedbillyb"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ fontSize: 13, fontWeight: 700, color: "#ef4444", textDecoration: "none", padding: "10px 24px", border: "2px solid #ef4444", borderRadius: 8, letterSpacing: "0.1em", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2, marginTop: 8, minWidth: 160 }}
-          >
-            <span>SPONSOR</span>
-            <span style={{ fontSize: 9, marginTop: 3 }}>THIS PROJECT</span>
-          </a>
+          <HeroAside source="model_stats_page" />
         </div>
 
         <ResultStats data={breakdown} loading={breakdownLoading} />

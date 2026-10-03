@@ -13,7 +13,7 @@ import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
 import { getMakeBlurb } from "@/lib/makeContent";
 import { modelToSlug, slugToMakeUpper, titleCaseModel } from "@/lib/slugs";
-import { SiteFooter, SiteTopbar } from "@/components/SiteChrome";
+import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -271,37 +271,18 @@ export default function MakeStats() {
       }}
     >
       <div style={{ flex: 1 }}>
-        <header style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff" }}>
-          <SiteTopbar right={new Date().toISOString().split("T")[0]} />
-          {/* Main header row */}
-          <div className="header-main" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 16, background: "#ffffff" }}>
-            <Link to="/" style={{ textDecoration: "none" }} onClick={() => captureEvent("logo_home_clicked", { source: "stats_page", make: makeUpper })}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid #d1d5db" }}>
-                <img src="/favicon.svg" alt="Logo" style={{ width: "100%", height: "100%" }} />
-              </div>
-            </Link>
-            <div>
-              <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: "0.02em", margin: 0 }}>
-                NZ Vehicle Finder
-              </h1>
-              <p style={{ fontSize: 11, color: "#6b7280", letterSpacing: "0.12em", margin: 0, textTransform: "uppercase" }}>
-                NZ Motor Vehicle Register · {makeUpper} Statistics
-              </p>
-            </div>
-            {total !== null && (
-              <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{total.toLocaleString('en-NZ')}</div>
-                  <div className="header-count-label" style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>VEHICLES REGISTERED</div>
-                </div>
-              </div>
-            )}
-          </div>
-        </header>
+        <SiteHeader source="stats_page" subtitle={<>NZ Motor Vehicle Register · {makeUpper} Statistics</>} count={total} />
         
         {/* Hero heading */}
         <div className="stats-hero" style={{ padding: "20px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32 }}>
           <div style={{ flex: 1 }}>
+            <nav style={{ fontSize: 11, color: "#9ca3af", marginBottom: 10, letterSpacing: "0.05em" }}>
+              <Link to="/" style={{ color: "#6b7280", textDecoration: "none" }}>Home</Link>
+              <span style={{ margin: "0 6px" }}>/</span>
+              <Link to="/nz-fleet" style={{ color: "#6b7280", textDecoration: "none" }}>NZ Fleet</Link>
+              <span style={{ margin: "0 6px" }}>/</span>
+              <span style={{ color: "#111827" }}>{makeDisplay}</span>
+            </nav>
             <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
               {total !== null ? total.toLocaleString('en-NZ') : "..."} {makeDisplay} vehicles registered in NZ
             </h2>
@@ -323,11 +304,7 @@ export default function MakeStats() {
               Refine further <span aria-hidden>→</span>
             </Link>
           </div>
-          <a className="hero-sponsor" onClick={() => captureEvent("sponsor_link_clicked", { location: "hero_stats" })} href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 13, fontWeight: 700, color: "#ef4444", textDecoration: "none", padding: "10px 24px", border: "2px solid #ef4444", borderRadius: 8, letterSpacing: "0.1em", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2, marginTop: 8, minWidth: 160 }}>
-            <span>SPONSOR</span>
-            <span style={{ fontSize: 9, marginTop: 3 }}>THIS PROJECT</span>
-          </a>
+          <HeroAside source="stats_page" />
         </div>
 
         {/* Breakdown */}
