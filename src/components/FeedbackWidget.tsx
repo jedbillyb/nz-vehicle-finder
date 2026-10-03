@@ -3,6 +3,7 @@ import { MessageSquare, X, Star } from "lucide-react";
 import { toast } from "sonner";
 import { captureEvent } from "@/lib/posthog";
 import { API_BASE } from "@/lib/vehicleApi";
+import { isValidEmail } from "../../shared/email";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -30,6 +31,9 @@ export function FeedbackWidget() {
   const [hovered, setHovered] = useState(0);
   const [comment, setComment] = useState("");
   const [email, setEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
+  const emailInvalid = email.trim() !== "" && !isValidEmail(email);
+  const showEmailError = emailInvalid && emailTouched;
   const [submitting, setSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
@@ -66,12 +70,17 @@ export function FeedbackWidget() {
       setHovered(0);
       setComment("");
       setEmail("");
+      setEmailTouched(false);
     }, 180);
   };
 
   const handleSubmit = async () => {
     if (rating === 0) {
       toast("Please select a rating first");
+      return;
+    }
+    if (emailInvalid) {
+      setEmailTouched(true);
       return;
     }
     setSubmitting(true);
@@ -87,6 +96,11 @@ export function FeedbackWidget() {
           email: email.trim() || null,
         }),
       });
+      if (res.status === 400) {
+        const body = await res.json().catch(() => ({}));
+        toast.error(body?.error ?? "Couldn't send feedback");
+        return;
+      }
       if (!res.ok) throw new Error("Request failed");
       captureEvent("feedback_submitted", { rating, has_comment: comment.trim().length > 0, has_email: email.trim().length > 0, page_path: pagePath });
       toast("Thanks for your feedback!");
@@ -340,12 +354,14 @@ export function FeedbackWidget() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Your email, if you'd like a reply (optional)"
-                maxLength={200}
+                maxLength={254}
+                aria-invalid={showEmailError}
+                aria-describedby={showEmailError ? "feedback-email-error" : undefined}
                 autoComplete="email"
                 style={{
                   width: "100%",
                   marginTop: 8,
-                  border: "1px solid #e2e8f0",
+                  border: `1px solid ${showEmailError ? "#ef4444" : "#e2e8f0"}`,
                   borderRadius: 10,
                   padding: "10px 12px",
                   fontSize: isMobile ? 16 : 13,
@@ -361,10 +377,16 @@ export function FeedbackWidget() {
                   e.currentTarget.style.background = "#ffffff";
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "#e2e8f0";
+                  setEmailTouched(true);
+                  e.currentTarget.style.borderColor = emailInvalid ? "#ef4444" : "#e2e8f0";
                   e.currentTarget.style.background = "#f8fafc";
                 }}
               />
+              {showEmailError && (
+                <div id="feedback-email-error" role="alert" style={{ fontSize: 12, color: "#dc2626", marginTop: 6 }}>
+                  Check your email address, or leave it blank.
+                </div>
+              )}
             </div>
 
             {/* Submit */}
@@ -393,12 +415,12 @@ export function FeedbackWidget() {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={submitting || rating === 0}
+                disabled={submitting || rating === 0 || showEmailError}
                 style={{
                   flex: 1,
                   padding: isMobile ? "12px 0" : "10px 0",
-                  background: rating === 0 ? "#f1f5f9" : submitting ? "#7dd3fc" : "#0ea5e9",
-                  color: rating === 0 ? "#94a3b8" : "#ffffff",
+                  background: rating === 0 || showEmailError ? "#f1f5f9" : submitting ? "#7dd3fc" : "#0ea5e9",
+                  color: rating === 0 || showEmailError ? "#94a3b8" : "#ffffff",
                   border: "none",
                   borderRadius: 10,
                   fontSize: 12,

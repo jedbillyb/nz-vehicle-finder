@@ -9,6 +9,7 @@ import Database from "better-sqlite3";
 import { createHash, randomBytes } from "crypto";
 import express, { type Request, type Response, type NextFunction } from "express";
 import { clientIp } from "./rateLimit.js";
+import { isValidEmail } from "../shared/email.js";
 import { BURST_PER_SECOND, MAX_KEYS_PER_ACCOUNT, TIERS, TIER_ORDER, tierFor, type Tier } from "../shared/apiTiers.js";
 
 const LOGIN_TOKEN_TTL_MS = 15 * 60 * 1000;
@@ -50,7 +51,7 @@ export function nextMonthStart(date: Date): string {
 export function normaliseEmail(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
   const email = raw.trim().toLowerCase();
-  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
+  if (!isValidEmail(email)) return null;
   return email;
 }
 

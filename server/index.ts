@@ -12,6 +12,7 @@ import { AccountStore, createAccounts } from "./accounts.js";
 import { createBilling } from "./billing.js";
 import { FREE_MAX_RESULT_DEPTH, limitPerIp } from "./rateLimit.js";
 import { CONTACT_EMAIL } from "../shared/contact.js";
+import { isValidEmail } from "../shared/email.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -607,9 +608,12 @@ app.post("/api/feedback", async (req, res) => {
   const safeComment = typeof comment === "string" ? comment.trim().slice(0, 1000) : null;
   const safePath = typeof page_path === "string" ? page_path.slice(0, 200) : null;
   const safeDistinctId = typeof distinct_id === "string" ? distinct_id.slice(0, 100) : null;
-  // Optional, so the reply can go straight back to the person. A bad address is dropped, not rejected.
-  const trimmedEmail = typeof email === "string" ? email.trim().slice(0, 200) : "";
-  const safeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail) ? trimmedEmail : null;
+  // Optional, so the reply can go straight back to the person; if given, it must be valid.
+  const trimmedEmail = typeof email === "string" ? email.trim() : "";
+  if (trimmedEmail && !isValidEmail(trimmedEmail)) {
+    return res.status(400).json({ error: "That email address doesn't look right" });
+  }
+  const safeEmail = trimmedEmail || null;
 
   if (feedbackDb) {
     feedbackDb.prepare(
