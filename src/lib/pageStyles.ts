@@ -1,14 +1,6 @@
 import type { CSSProperties } from "react";
 
-/** Shared inline styles for the plain content pages (account, developer docs). */
-export const card: CSSProperties = {
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
-  borderRadius: 8,
-  padding: "18px 20px",
-  marginBottom: 16,
-};
-
+/** Shared inline styles for the API pages (account, developer docs). */
 export const label: CSSProperties = {
   fontSize: 10,
   color: "#6b7280",

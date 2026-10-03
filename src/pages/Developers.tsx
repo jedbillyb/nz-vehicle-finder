@@ -1,10 +1,12 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
+import { captureEvent } from "@/lib/posthog";
+import { fetchFleetOverview, type FleetOverview } from "@/lib/vehicleApi";
 import { BURST_PER_SECOND, TIERS, TIER_ORDER } from "../../shared/apiTiers";
 import { MAX_PAGE_SIZE, MIN_PAGE_SIZE, DEFAULT_PAGE_SIZE } from "../../shared/pagination";
-import { PageShell } from "@/components/PageShell";
-import { card, code, label, primaryButton } from "@/lib/pageStyles";
+import { Band, HeroAction, PageShell, StatCard } from "@/components/PageShell";
+import { code, label } from "@/lib/pageStyles";
 
 const BASE = "https://vehiclefinder.co.nz/api/v1";
 
@@ -29,12 +31,11 @@ function C({ children }: { children: ReactNode }) {
   return <code style={{ ...code, background: "#f3f4f6", padding: "1px 5px", borderRadius: 4 }}>{children}</code>;
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, tone, children }: { title: string; tone?: "white" | "grey"; children: ReactNode }) {
   return (
-    <section style={card}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 10px", color: "#0f172a" }}>{title}</h2>
-      <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{children}</div>
-    </section>
+    <Band title={title} tone={tone}>
+      <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6, maxWidth: 900 }}>{children}</div>
+    </Band>
   );
 }
 
@@ -49,6 +50,11 @@ function Endpoint({ path, children, example }: { path: string; children: ReactNo
 }
 
 export default function Developers() {
+  const [fleet, setFleet] = useState<FleetOverview | null>(null);
+  useEffect(() => {
+    fetchFleetOverview().then(setFleet).catch(() => {});
+  }, []);
+
   useEffect(() => {
     applySeo({
       title: "NZ Vehicle Register API | NZ Vehicle Finder",
@@ -60,16 +66,24 @@ export default function Developers() {
   }, []);
 
   return (
-    <PageShell subtitle="Developer API" crumb="Developers">
-      <h1 style={{ fontSize: 32, fontWeight: 800, color: "#0f172a", margin: "0 0 8px", letterSpacing: "-0.02em" }}>
-        NZ Vehicle Register API
-      </h1>
-      <p style={{ fontSize: 16, color: "#374151", margin: "0 0 16px" }}>
-        JSON access to every vehicle on the NZ Motor Vehicle Register, refreshed automatically each month from NZTA.
-      </p>
-      <Link to="/account" style={{ ...primaryButton, display: "inline-block", textDecoration: "none", marginBottom: 20 }}>
-        Get a free API key
-      </Link>
+    <PageShell
+      source="developers_page"
+      subtitle="Developer API"
+      crumb="Developers"
+      title="NZ Vehicle Register API"
+      intro="JSON access to every vehicle on the NZ Motor Vehicle Register. Search by make, model, year, fuel type, region and more, refreshed automatically each month from NZTA."
+      heroAside={
+        <HeroAction to="/account" sub="500 REQUESTS / MONTH FREE" onClick={() => captureEvent("get_api_key_clicked", { location: "hero_developers" })}>
+          GET AN API KEY
+        </HeroAction>
+      }
+    >
+      <div style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "flex", flexWrap: "wrap", gap: 12 }}>
+        <StatCard label="VEHICLES" value={fleet ? fleet.total.toLocaleString("en-NZ") : "5.9M"} sub="Every vehicle on the register" />
+        <StatCard label="DATA AS AT" value={fleet?.snapshotDate ?? "Monthly"} sub="Refreshed automatically from NZTA" />
+        <StatCard label="ENDPOINTS" value="4" sub="Search, values, models, fleet" />
+        <StatCard label="FREE TIER" value={TIERS.free.monthlyRequests.toLocaleString("en-NZ")} sub="Requests a month, no card" />
+      </div>
 
       <Section title="Quick start">
         <ol style={{ margin: 0, paddingLeft: 20 }}>
@@ -83,7 +97,7 @@ export default function Developers() {
         </p>
       </Section>
 
-      <Section title="Responses">
+      <Section title="Responses" tone="grey">
         Every successful response wraps the result in <C>data</C> and adds a <C>source</C> block with the snapshot date:
         <Pre>{`{
   "data": { ... },
@@ -128,7 +142,7 @@ export default function Developers() {
         </Endpoint>
       </Section>
 
-      <Section title="Filters">
+      <Section title="Filters" tone="grey">
         <p style={{ margin: "0 0 8px" }}>Pass filters as query parameters. Matching ignores case.</p>
         <ul style={{ margin: "0 0 10px", paddingLeft: 20 }}>
           <li><C>MAKE=TOYOTA</C> matches exactly.</li>
@@ -156,19 +170,20 @@ export default function Developers() {
         </ul>
       </Section>
 
-      <Section title="Pricing">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+      <Section title="Pricing" tone="grey">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
           {TIER_ORDER.map((id) => TIERS[id]).map((t) => (
-            <div key={t.id} style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 14 }}>
-              <div style={{ fontWeight: 700 }}>{t.name}</div>
-              <div style={{ fontSize: 22, fontWeight: 800 }}>
-                {t.priceNzd === 0 ? "Free" : `NZ$${t.priceNzd}`}
-                {t.priceNzd > 0 && <span style={{ fontSize: 12, fontWeight: 500, color: "#6b7280" }}>/month</span>}
-              </div>
-              <div style={{ fontSize: 12, color: "#4b5563" }}>{t.monthlyRequests.toLocaleString("en-NZ")} requests / month</div>
-            </div>
+            <StatCard
+              key={t.id}
+              label={t.name.toUpperCase()}
+              value={t.priceNzd === 0 ? "Free" : `NZ$${t.priceNzd}`}
+              sub={`${t.monthlyRequests.toLocaleString("en-NZ")} requests / month${t.priceNzd ? " · billed monthly" : ""}`}
+            />
           ))}
         </div>
+        <p style={{ margin: "12px 0 0" }}>
+          <Link to="/account" style={{ color: "#0369a1", fontWeight: 600 }}>Sign in to upgrade</Link>. Payments are handled by Stripe and you can cancel any time.
+        </p>
         <p style={{ margin: "10px 0 0", fontSize: 13, color: "#6b7280" }}>
           Need more? Email <a href="mailto:hello@jedbillyb.com" style={{ color: "#0369a1" }}>hello@jedbillyb.com</a>.
         </p>

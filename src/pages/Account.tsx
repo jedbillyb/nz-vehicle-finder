@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
+import { captureEvent } from "@/lib/posthog";
 import {
   createApiKey, fetchAccount, openBillingPortal, requestSignInLink, revokeApiKey, signOut, startCheckout, syncBilling,
   verifySignInToken, type Account as AccountData,
 } from "@/lib/account";
-import { PageShell } from "@/components/PageShell";
-import { card, code, input, label, primaryButton, secondaryButton } from "@/lib/pageStyles";
+import { Band, HeroAction, PageShell, StatCard } from "@/components/PageShell";
+import { code, input, label, primaryButton, secondaryButton } from "@/lib/pageStyles";
 
 const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" }) : "Never";
+
+const panel: React.CSSProperties = { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "16px 20px" };
+const errorText: React.CSSProperties = { color: "#b91c1c", fontSize: 13, margin: "10px 0 0" };
 
 function SignIn() {
   const [email, setEmail] = useState("");
@@ -22,6 +26,7 @@ function SignIn() {
     setError(null);
     try {
       await requestSignInLink(email);
+      captureEvent("api_signin_requested");
       setState("sent");
     } catch (err) {
       setError((err as Error).message);
@@ -29,39 +34,41 @@ function SignIn() {
     }
   };
 
-  if (state === "sent") {
-    return (
-      <div style={card}>
-        <div style={label}>Check your email</div>
-        <p style={{ margin: 0, fontSize: 14 }}>
-          We sent a sign-in link to <strong>{email}</strong>. It works once and expires in 15 minutes.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div style={card}>
-      <div style={label}>Sign in or create an account</div>
-      <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151" }}>
-        Enter your email and we'll send you a sign-in link. No password needed. New accounts start on the free plan.
-      </p>
-      <form onSubmit={submit} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <input
-          type="email"
-          required
-          autoComplete="email"
-          placeholder="you@example.co.nz"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={input}
-        />
-        <button type="submit" disabled={state === "sending"} style={primaryButton}>
-          {state === "sending" ? "Sending..." : "Email me a link"}
-        </button>
-      </form>
-      {error && <p style={{ color: "#b91c1c", fontSize: 13, margin: "10px 0 0" }}>{error}</p>}
-    </div>
+    <Band tone="grey" title="Sign in or create an account">
+      <div style={{ ...panel, maxWidth: 560 }}>
+        {state === "sent" ? (
+          <>
+            <div style={label}>Check your email</div>
+            <p style={{ margin: 0, fontSize: 14 }}>
+              We sent a sign-in link to <strong>{email}</strong>. It works once and expires in 15 minutes.
+            </p>
+          </>
+        ) : (
+          <>
+            <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151" }}>
+              Enter your email and we'll send you a sign-in link. No password needed. New accounts start on the free plan
+              with 500 requests a month.
+            </p>
+            <form onSubmit={submit} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="you@example.co.nz"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={input}
+              />
+              <button type="submit" disabled={state === "sending"} style={primaryButton}>
+                {state === "sending" ? "Sending..." : "Email me a link"}
+              </button>
+            </form>
+            {error && <p style={errorText}>{error}</p>}
+          </>
+        )}
+      </div>
+    </Band>
   );
 }
 
@@ -74,11 +81,13 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
 
   const { used, limit, resetsAt } = account.usage;
   const { billing } = account;
+  const pct = Math.min((used / limit) * 100, 100);
 
   /** Checkout and the billing portal are pages on stripe.com; send the browser there. */
-  const goToStripe = async (get: () => Promise<{ url: string }>) => {
+  const goToStripe = async (event: string, get: () => Promise<{ url: string }>) => {
     setError(null);
     setRedirecting(true);
+    captureEvent(event);
     try {
       window.location.href = (await get()).url;
     } catch (err) {
@@ -86,13 +95,13 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
       setRedirecting(false);
     }
   };
-  const pct = Math.min((used / limit) * 100, 100);
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     try {
       const { key } = await createApiKey(keyName);
+      captureEvent("api_key_created");
       setNewKey(key);
       setCopied(false);
       setKeyName("");
@@ -121,38 +130,38 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
 
   return (
     <>
-      <div style={{ ...card, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={label}>Signed in as</div>
-          <div style={{ fontSize: 15, fontWeight: 600, overflowWrap: "anywhere" }}>{account.email}</div>
-        </div>
-        <button
-          style={secondaryButton}
-          onClick={async () => {
-            await signOut();
-            reload();
-          }}
-        >
-          Sign out
-        </button>
+      <div style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "flex", flexWrap: "wrap", gap: 12 }}>
+        <StatCard label="REQUESTS THIS MONTH" value={used.toLocaleString("en-NZ")} sub={`of ${limit.toLocaleString("en-NZ")} · resets ${fmtDate(resetsAt)}`}>
+          <div style={{ height: 6, background: "#f3f4f6", borderRadius: 999, overflow: "hidden", marginTop: 10, minWidth: 180 }}>
+            <div style={{ height: "100%", width: `${pct}%`, background: pct >= 90 ? "#ef4444" : "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
+          </div>
+        </StatCard>
+        <StatCard
+          label="PLAN"
+          value={account.tier.name}
+          sub={account.tier.priceNzd === 0 ? "No card on file" : `NZ$${account.tier.priceNzd} / month`}
+        />
+        <StatCard label="API KEYS" value={account.keys.length} sub="active" />
+        <StatCard label="SIGNED IN AS" value={<span style={{ fontSize: 15, fontWeight: 700, overflowWrap: "anywhere" }}>{account.email}</span>}>
+          <button
+            style={{ ...secondaryButton, marginTop: 10, padding: "4px 12px", fontSize: 11 }}
+            onClick={async () => {
+              await signOut();
+              reload();
+            }}
+          >
+            Sign out
+          </button>
+        </StatCard>
       </div>
 
-      <div style={card}>
-        <div style={label}>Usage this month · {account.tier.name} plan</div>
-        <div style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", lineHeight: 1 }}>
-          {used.toLocaleString("en-NZ")}
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#6b7280" }}> / {limit.toLocaleString("en-NZ")} requests</span>
-        </div>
-        <div style={{ height: 8, background: "#f3f4f6", borderRadius: 999, overflow: "hidden", margin: "12px 0 6px" }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: pct >= 90 ? "#ef4444" : "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
-        </div>
-        <div style={{ fontSize: 12, color: "#6b7280" }}>Resets {fmtDate(resetsAt)}</div>
-      </div>
+      {error && (
+        <div style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
+      )}
 
-      <div style={card}>
-        <div style={label}>API keys</div>
+      <Band title="API keys">
         {newKey && (
-          <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 6, padding: 12, marginBottom: 14 }}>
+          <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, padding: 14, marginBottom: 14, maxWidth: 820 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#166534", marginBottom: 8 }}>
               Copy your new key now. You won't be able to see it again.
             </div>
@@ -164,80 +173,79 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
             </div>
           </div>
         )}
-        {account.keys.length === 0 ? (
-          <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 14px" }}>No keys yet. Create one to start calling the API.</p>
-        ) : (
-          <div style={{ marginBottom: 14 }}>
-            {account.keys.map((k) => (
-              <div key={k.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f3f4f6", flexWrap: "wrap" }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{k.name || "Unnamed key"}</div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>
-                    <span style={code}>{k.prefix}…</span> · created {fmtDate(k.created_at)} · last used {fmtDate(k.last_used_at)}
+        <div style={{ maxWidth: 820 }}>
+          {account.keys.length === 0 ? (
+            <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 14px" }}>No keys yet. Create one to start calling the API.</p>
+          ) : (
+            <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 14 }}>
+              {account.keys.map((k, i) => (
+                <div key={k.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderTop: i ? "1px solid #f3f4f6" : "none", flexWrap: "wrap" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{k.name || "Unnamed key"}</div>
+                    <div style={{ fontSize: 11, color: "#6b7280" }}>
+                      <span style={code}>{k.prefix}…</span> · created {fmtDate(k.created_at)} · last used {fmtDate(k.last_used_at)}
+                    </div>
                   </div>
+                  <button style={{ ...secondaryButton, color: "#b91c1c", borderColor: "#fecaca" }} onClick={() => revoke(k.id)}>
+                    Revoke
+                  </button>
                 </div>
-                <button style={{ ...secondaryButton, color: "#b91c1c", borderColor: "#fecaca" }} onClick={() => revoke(k.id)}>
-                  Revoke
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        <form onSubmit={create} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <input placeholder="Key name (optional)" value={keyName} maxLength={60} onChange={(e) => setKeyName(e.target.value)} style={input} />
-          <button type="submit" style={primaryButton}>Create key</button>
-        </form>
-        {error && <p style={{ color: "#b91c1c", fontSize: 13, margin: "10px 0 0" }}>{error}</p>}
-      </div>
-
-      <div style={card}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
-          <div style={{ ...label, marginBottom: 0, flex: 1 }}>Plans</div>
-          {billing.subscribed && (
-            <button style={secondaryButton} disabled={redirecting} onClick={() => goToStripe(openBillingPortal)}>
-              Manage billing
-            </button>
+              ))}
+            </div>
           )}
+          <form onSubmit={create} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <input placeholder="Key name (optional)" value={keyName} maxLength={60} onChange={(e) => setKeyName(e.target.value)} style={input} />
+            <button type="submit" style={primaryButton}>Create key</button>
+          </form>
         </div>
+      </Band>
+
+      <Band tone="grey" title="Plans">
         {billing.status === "past_due" && (
-          <p style={{ fontSize: 13, color: "#b91c1c", margin: "0 0 10px" }}>
+          <p style={{ fontSize: 13, color: "#b91c1c", margin: "0 0 12px" }}>
             Your last payment failed. Update your card in Manage billing to keep your plan.
           </p>
         )}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "stretch" }}>
           {account.tiers.map((t) => {
             const current = t.id === account.tier.id;
             return (
-              <div key={t.id} style={{ border: current ? "2px solid #0ea5e9" : "1px solid #e5e7eb", borderRadius: 8, padding: 14 }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>{t.name}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, margin: "4px 0" }}>
+              <div key={t.id} style={{ ...panel, minWidth: 200, flex: "0 1 240px", border: current ? "2px solid #0ea5e9" : panel.border, display: "flex", flexDirection: "column", gap: 4 }}>
+                <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", fontWeight: 700 }}>{t.name.toUpperCase()}</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em", lineHeight: 1 }}>
                   {t.priceNzd === 0 ? "Free" : `NZ$${t.priceNzd}`}
-                  {t.priceNzd > 0 && <span style={{ fontSize: 12, fontWeight: 500, color: "#6b7280" }}>/month</span>}
+                  {t.priceNzd > 0 && <span style={{ fontSize: 12, fontWeight: 500, color: "#6b7280" }}> / month</span>}
                 </div>
-                <div style={{ fontSize: 12, color: "#4b5563", marginBottom: 10 }}>{t.monthlyRequests.toLocaleString("en-NZ")} requests / month</div>
-                {current ? (
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#0369a1" }}>Current plan</div>
-                ) : !billing.enabled ? (
-                  <div style={{ fontSize: 12, color: "#9ca3af" }}>Paid plans coming soon</div>
-                ) : billing.subscribed ? (
-                  // Switching or cancelling an existing subscription happens in Stripe's portal.
-                  <button style={secondaryButton} disabled={redirecting} onClick={() => goToStripe(openBillingPortal)}>
-                    {t.priceNzd === 0 ? "Cancel plan" : "Switch plan"}
-                  </button>
-                ) : t.priceNzd > 0 ? (
-                  <button style={primaryButton} disabled={redirecting} onClick={() => goToStripe(() => startCheckout(t.id))}>
-                    Upgrade
-                  </button>
-                ) : null}
+                <div style={{ fontSize: 11, color: "#4b5563", marginBottom: 10 }}>{t.monthlyRequests.toLocaleString("en-NZ")} requests / month</div>
+                <div style={{ marginTop: "auto" }}>
+                  {current ? (
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#0369a1", letterSpacing: "0.1em" }}>CURRENT PLAN</div>
+                  ) : !billing.enabled ? (
+                    <div style={{ fontSize: 11, color: "#9ca3af" }}>Paid plans coming soon</div>
+                  ) : billing.subscribed ? (
+                    // Switching or cancelling an existing subscription happens in Stripe's portal.
+                    <button style={secondaryButton} disabled={redirecting} onClick={() => goToStripe("billing_portal_opened", openBillingPortal)}>
+                      {t.priceNzd === 0 ? "Cancel plan" : "Switch plan"}
+                    </button>
+                  ) : t.priceNzd > 0 ? (
+                    <button style={primaryButton} disabled={redirecting} onClick={() => goToStripe("checkout_started", () => startCheckout(t.id))}>
+                      Upgrade
+                    </button>
+                  ) : null}
+                </div>
               </div>
             );
           })}
         </div>
-      </div>
-
-      <p style={{ fontSize: 13, color: "#4b5563" }}>
-        New to the API? Read the <Link to="/developers" style={{ color: "#0369a1" }}>developer docs</Link>.
-      </p>
+        {billing.subscribed && (
+          <button style={{ ...secondaryButton, marginTop: 14 }} disabled={redirecting} onClick={() => goToStripe("billing_portal_opened", openBillingPortal)}>
+            Manage billing, invoices and card
+          </button>
+        )}
+        <p style={{ fontSize: 12, color: "#6b7280", margin: "14px 0 0" }}>
+          Payments are handled by Stripe. Cancel any time; your plan runs to the end of the month you paid for.
+        </p>
+      </Band>
     </>
   );
 }
@@ -268,6 +276,7 @@ export default function Account() {
     if (query.get("billing") === "success") {
       // Back from Stripe checkout. Pull the new plan now rather than waiting on the webhook.
       window.history.replaceState(null, "", "/account");
+      captureEvent("checkout_completed");
       syncBilling().catch(() => {}).finally(reload);
       return;
     }
@@ -281,10 +290,33 @@ export default function Account() {
   }, [reload]);
 
   return (
-    <PageShell subtitle="API account" crumb="Account">
-      <h1 style={{ fontSize: 32, fontWeight: 800, color: "#0f172a", margin: "0 0 16px", letterSpacing: "-0.02em" }}>API account</h1>
-      {error && <div style={{ ...card, borderColor: "#fecaca", color: "#b91c1c", fontSize: 14 }}>{error}</div>}
-      {loading ? <p style={{ color: "#6b7280" }}>Loading...</p> : account ? <Dashboard account={account} reload={reload} /> : <SignIn />}
+    <PageShell
+      source="account_page"
+      subtitle="API account"
+      crumb="Account"
+      title="API account"
+      intro="Your API keys, this month's usage and your plan. Calls to the NZ Vehicle Register API count against your monthly quota."
+      heroAside={<HeroAction to="/developers" sub="ENDPOINTS & EXAMPLES">API DOCS</HeroAction>}
+    >
+      {error && (
+        <div style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
+      )}
+      {loading ? (
+        <Band tone="grey"><p style={{ color: "#6b7280", margin: 0, fontSize: 13 }}>Loading...</p></Band>
+      ) : account ? (
+        <Dashboard account={account} reload={reload} />
+      ) : (
+        <SignIn />
+      )}
+      {!loading && !account && (
+        <Band title="What you get">
+          <p style={{ fontSize: 14, color: "#374151", margin: 0, maxWidth: 800 }}>
+            JSON access to all 5.9 million vehicles on the NZ Motor Vehicle Register: search by make, model, year, fuel,
+            region and more, refreshed every month from NZTA. See the <Link to="/developers" style={{ color: "#0369a1" }}>API docs</Link> for
+            endpoints and pricing.
+          </p>
+        </Band>
+      )}
     </PageShell>
   );
 }

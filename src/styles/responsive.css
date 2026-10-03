@@ -14,6 +14,16 @@
   }
 }
 
+/* ── Site nav strip — phones only, stands in for the top bar ── */
+.site-nav-mobile {
+  display: flex !important;
+}
+@media (min-width: 640px) {
+  .site-nav-mobile {
+    display: none !important;
+  }
+}
+
 /* ── Fix iOS Safari input zoom (triggers when font-size < 16px) */
 @media (max-width: 767px) {
   input, select, textarea {
