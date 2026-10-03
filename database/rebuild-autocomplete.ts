@@ -18,7 +18,7 @@
  * it inside the deployed checkout is fine. --out writes a single copy elsewhere.
  */
 import Database from "better-sqlite3";
-import { existsSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -69,6 +69,7 @@ const targets = outArg
       path.join(ROOT, "server", "public", "autocomplete.json"),
     ];
 for (const target of targets) {
+  mkdirSync(path.dirname(target), { recursive: true });
   writeFileSync(target, json);
   log(`Wrote ${target}`);
 }

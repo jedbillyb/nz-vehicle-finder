@@ -369,6 +369,8 @@ async function main() {
   }
   const json = JSON.stringify(autocomplete);
   // The API reads public/, the built site serves a copy of the same file.
+  // server/public holds nothing tracked, so a fresh checkout may not have it.
+  mkdirSync(path.join(ROOT, "server", "public"), { recursive: true });
   writeFileSync(path.join(ROOT, "public", "autocomplete.json"), json);
   writeFileSync(path.join(ROOT, "server", "public", "autocomplete.json"), json);
 

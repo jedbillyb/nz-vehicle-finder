@@ -28,6 +28,7 @@ jobs:
             git checkout -- package-lock.json
             git pull origin main
             cp /tmp/nzvf-autocomplete.json public/autocomplete.json
+            mkdir -p server/public
             cp /tmp/nzvf-autocomplete.json server/public/autocomplete.json
             npm install
             npm run build
