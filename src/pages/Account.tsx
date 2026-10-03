@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
 import {
-  createApiKey, fetchAccount, requestSignInLink, revokeApiKey, signOut, verifySignInToken, type Account as AccountData,
+  createApiKey, fetchAccount, openBillingPortal, requestSignInLink, revokeApiKey, signOut, startCheckout, syncBilling,
+  verifySignInToken, type Account as AccountData,
 } from "@/lib/account";
 import { PageShell } from "@/components/PageShell";
 import { card, code, input, label, primaryButton, secondaryButton } from "@/lib/pageStyles";
@@ -69,8 +70,22 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
   const [newKey, setNewKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   const { used, limit, resetsAt } = account.usage;
+  const { billing } = account;
+
+  /** Checkout and the billing portal are pages on stripe.com; send the browser there. */
+  const goToStripe = async (get: () => Promise<{ url: string }>) => {
+    setError(null);
+    setRedirecting(true);
+    try {
+      window.location.href = (await get()).url;
+    } catch (err) {
+      setError((err as Error).message);
+      setRedirecting(false);
+    }
+  };
   const pct = Math.min((used / limit) * 100, 100);
 
   const create = async (e: React.FormEvent) => {
@@ -176,7 +191,19 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
       </div>
 
       <div style={card}>
-        <div style={label}>Plans</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+          <div style={{ ...label, marginBottom: 0, flex: 1 }}>Plans</div>
+          {billing.subscribed && (
+            <button style={secondaryButton} disabled={redirecting} onClick={() => goToStripe(openBillingPortal)}>
+              Manage billing
+            </button>
+          )}
+        </div>
+        {billing.status === "past_due" && (
+          <p style={{ fontSize: 13, color: "#b91c1c", margin: "0 0 10px" }}>
+            Your last payment failed. Update your card in Manage billing to keep your plan.
+          </p>
+        )}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
           {account.tiers.map((t) => {
             const current = t.id === account.tier.id;
@@ -190,9 +217,18 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
                 <div style={{ fontSize: 12, color: "#4b5563", marginBottom: 10 }}>{t.monthlyRequests.toLocaleString("en-NZ")} requests / month</div>
                 {current ? (
                   <div style={{ fontSize: 12, fontWeight: 700, color: "#0369a1" }}>Current plan</div>
-                ) : (
+                ) : !billing.enabled ? (
                   <div style={{ fontSize: 12, color: "#9ca3af" }}>Paid plans coming soon</div>
-                )}
+                ) : billing.subscribed ? (
+                  // Switching or cancelling an existing subscription happens in Stripe's portal.
+                  <button style={secondaryButton} disabled={redirecting} onClick={() => goToStripe(openBillingPortal)}>
+                    {t.priceNzd === 0 ? "Cancel plan" : "Switch plan"}
+                  </button>
+                ) : t.priceNzd > 0 ? (
+                  <button style={primaryButton} disabled={redirecting} onClick={() => goToStripe(() => startCheckout(t.id))}>
+                    Upgrade
+                  </button>
+                ) : null}
               </div>
             );
           })}
@@ -228,7 +264,14 @@ export default function Account() {
   }, []);
 
   useEffect(() => {
-    const token = new URLSearchParams(window.location.search).get("token");
+    const query = new URLSearchParams(window.location.search);
+    if (query.get("billing") === "success") {
+      // Back from Stripe checkout. Pull the new plan now rather than waiting on the webhook.
+      window.history.replaceState(null, "", "/account");
+      syncBilling().catch(() => {}).finally(reload);
+      return;
+    }
+    const token = query.get("token");
     if (!token) return reload();
     // Take the one-time token out of the address bar and history before using it.
     window.history.replaceState(null, "", "/account");

@@ -33,6 +33,7 @@ export interface Account {
   tiers: Tier[];
   usage: { used: number; limit: number; resetsAt: string };
   keys: ApiKeyInfo[];
+  billing: { enabled: boolean; subscribed: boolean; status: string | null };
 }
 
 export const requestSignInLink = (email: string) =>
@@ -57,3 +58,11 @@ export const createApiKey = (name: string) =>
   call<{ key: string; info: ApiKeyInfo }>("/api/account/keys", { method: "POST", body: JSON.stringify({ name }) });
 
 export const revokeApiKey = (id: number) => call<{ ok: true }>(`/api/account/keys/${id}`, { method: "DELETE" });
+
+/** Both return a Stripe-hosted page to send the browser to. */
+export const startCheckout = (tier: string) =>
+  call<{ url: string }>("/api/billing/checkout", { method: "POST", body: JSON.stringify({ tier }) });
+
+export const openBillingPortal = () => call<{ url: string }>("/api/billing/portal", { method: "POST" });
+
+export const syncBilling = () => call<{ ok: true }>("/api/billing/sync", { method: "POST" });

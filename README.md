@@ -191,7 +191,38 @@ apps have to use the paid API. Limits are in `server/rateLimit.ts`:
 - **Search depth:** site search shows the first 10,000 results of a query. `/api/v1` has no
   depth cap.
 
-To change someone's plan by hand (until Stripe is wired up):
+### Billing (Stripe)
+
+Plans are Stripe subscriptions in NZD. The account page's **Upgrade** button opens Stripe
+Checkout, and **Manage billing** opens Stripe's customer portal, where customers switch plan,
+update their card, see invoices and cancel (cancelling takes effect at the end of the period).
+
+Stripe decides who is on which plan. Every webhook event, and the account page after
+checkout, re-reads the customer's subscriptions from Stripe and sets the tier from whatever is
+active (`server/billing.ts`). A failed payment (`past_due`) keeps the plan while Stripe
+retries the card. A cancelled or unpaid subscription drops the account to free.
+
+The server needs two values in its `.env` (not in git):
+
+- `STRIPE_SECRET_KEY`: a restricted key ("Full access, except sensitive operations").
+- `STRIPE_WEBHOOK_SECRET`: printed by the setup script when it creates the webhook.
+
+Without the key, the plans show "coming soon".
+
+`scripts/stripe-setup.ts` creates the prices (lookup keys `nzvf_starter_monthly` and
+`nzvf_pro_monthly`), the portal settings and the webhook. It is safe to re-run, and after
+changing a price in `shared/apiTiers.ts` you re-run it:
+
+```bash
+STRIPE_SECRET_KEY=rk_... npx tsx scripts/stripe-setup.ts --webhook-url=https://vehiclefinder.co.nz/api/billing/webhook
+```
+
+**Going live:** in the Stripe dashboard, switch off test mode and create a live restricted key
+the same way. Run the setup script with it. Then replace both `STRIPE_` lines in the server's
+`.env` with the live values and run `pm2 restart vehicle-api`.
+
+To change someone's plan by hand (only for accounts without a Stripe subscription, since a
+sync from Stripe overwrites it):
 
 ```bash
 node -e 'new (require("better-sqlite3"))("database/accounts.db").prepare("UPDATE users SET tier=? WHERE email=?").run("starter","them@example.com")'

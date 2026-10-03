@@ -96,6 +96,36 @@ export class AccountStore {
         PRIMARY KEY (user_id, month)
       );
     `);
+    // Columns added after the first release; ALTER only what is missing.
+    const columns = new Set((this.db.prepare("PRAGMA table_info(users)").all() as { name: string }[]).map((c) => c.name));
+    if (!columns.has("stripe_subscription_id")) this.db.exec("ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT");
+    if (!columns.has("subscription_status")) this.db.exec("ALTER TABLE users ADD COLUMN subscription_status TEXT");
+    this.db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_stripe_customer ON users (stripe_customer_id)");
+  }
+
+  billingFor(userId: number): { stripeCustomerId: string | null; subscriptionId: string | null; subscriptionStatus: string | null } {
+    const row = this.db.prepare(
+      "SELECT stripe_customer_id, stripe_subscription_id, subscription_status FROM users WHERE id = ?"
+    ).get(userId) as { stripe_customer_id: string | null; stripe_subscription_id: string | null; subscription_status: string | null } | undefined;
+    return {
+      stripeCustomerId: row?.stripe_customer_id ?? null,
+      subscriptionId: row?.stripe_subscription_id ?? null,
+      subscriptionStatus: row?.subscription_status ?? null,
+    };
+  }
+
+  setStripeCustomer(userId: number, customerId: string) {
+    this.db.prepare("UPDATE users SET stripe_customer_id = ? WHERE id = ?").run(customerId, userId);
+  }
+
+  userByStripeCustomer(customerId: string): User | null {
+    return (this.db.prepare("SELECT id, email, tier, created_at FROM users WHERE stripe_customer_id = ?").get(customerId) as
+      | User | undefined) ?? null;
+  }
+
+  setBilling(userId: number, b: { tier: string; subscriptionId: string | null; subscriptionStatus: string | null }) {
+    this.db.prepare("UPDATE users SET tier = ?, stripe_subscription_id = ?, subscription_status = ? WHERE id = ?")
+      .run(b.tier, b.subscriptionId, b.subscriptionStatus, userId);
   }
 
   createLoginToken(email: string, now = Date.now()): string {
@@ -267,6 +297,7 @@ function apiKeyFrom(req: Request): string | undefined {
 export interface AccountsOptions {
   sendLoginEmail: (email: string, link: string) => Promise<void>;
   publicUrl: string;
+  billingEnabled: boolean;
 }
 
 export function createAccounts(store: AccountStore, opts: AccountsOptions) {
@@ -324,6 +355,11 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
       tiers: TIER_ORDER.map((id) => TIERS[id]),
       usage: { used: store.usageFor(user.id, now), limit: tier.monthlyRequests, resetsAt: nextMonthStart(now) },
       keys: store.listKeys(user.id),
+      billing: {
+        enabled: opts.billingEnabled,
+        subscribed: !!store.billingFor(user.id).subscriptionId,
+        status: store.billingFor(user.id).subscriptionStatus,
+      },
     });
   });
 
@@ -363,5 +399,5 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     next();
   }
 
-  return { router, requireApiKey };
+  return { router, requireApiKey, sessionUser };
 }

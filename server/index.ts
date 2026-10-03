@@ -9,6 +9,7 @@ import { Resend } from "resend";
 import { parseFilterValue, type FilterTerm } from "../shared/filterTerms.js";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "../shared/pagination.js";
 import { AccountStore, createAccounts } from "./accounts.js";
+import { createBilling } from "./billing.js";
 import { FREE_MAX_RESULT_DEPTH, limitPerIp } from "./rateLimit.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -29,6 +30,11 @@ const siteCors = cors({
 const openCors = cors();
 app.use((req, res, next) => (req.path.startsWith("/api/v1/") ? openCors : siteCors)(req, res, next));
 app.use(compression());
+// Stripe signs the raw bytes, so its webhook must be parsed before express.json() sees it.
+// Declared as a forward reference: the billing module is built further down.
+app.post("/api/billing/webhook", express.raw({ type: "application/json" }), (req, res, next) =>
+  billing.webhook(req, res).catch(next)
+);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -36,7 +42,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // limits on their routes below. Paid, account and health routes are exempt.
 const freeSiteLimit = limitPerIp(300, 60_000);
 app.use("/api", (req, res, next) =>
-  /^\/(v1|auth|account)(\/|$)/.test(req.path) || req.path === "/health" ? next() : freeSiteLimit(req, res, next)
+  /^\/(v1|auth|account|billing)(\/|$)/.test(req.path) || req.path === "/health" ? next() : freeSiteLimit(req, res, next)
 );
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -584,8 +590,10 @@ app.post("/api/feedback", async (req, res) => {
 const accountStore = new AccountStore(path.resolve(__dirname, "../database/accounts.db"));
 // vehiclefinder.co.nz is verified in Resend, so any address on it can send.
 const loginFrom = process.env.LOGIN_FROM_EMAIL || "NZ Vehicle Finder <login@vehiclefinder.co.nz>";
+const publicUrl = (process.env.PUBLIC_URL || "https://vehiclefinder.co.nz").replace(/\/+$/, "");
 const accounts = createAccounts(accountStore, {
-  publicUrl: (process.env.PUBLIC_URL || "https://vehiclefinder.co.nz").replace(/\/+$/, ""),
+  publicUrl,
+  billingEnabled: !!process.env.STRIPE_SECRET_KEY,
   sendLoginEmail: async (email, link) => {
     if (!resend || !loginFrom) {
       // Local development has no mail setup; the link is all you need.
@@ -609,6 +617,14 @@ const accounts = createAccounts(accountStore, {
   },
 });
 app.use("/api", accounts.router);
+
+const billing = createBilling(accountStore, {
+  secretKey: process.env.STRIPE_SECRET_KEY,
+  webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  publicUrl,
+  sessionUser: accounts.sessionUser,
+});
+app.use("/api", billing.router);
 
 /**
  * Every v1 response is { data, source }. The source block carries the NZTA
