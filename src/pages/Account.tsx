@@ -3,13 +3,13 @@ import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
 import { captureEvent, identifyUser, resetUser } from "@/lib/posthog";
 import {
-  createApiKey, deleteSavedSearch, fetchAccount, hasPendingSave, openBillingPortal, renameApiKey, renameSavedSearch, requestSignInLink,
-  revokeApiKey, saveSearch, signOut, startCheckout, syncBilling, takePendingSave, verifySignInToken, type Account as AccountData,
-  type SavedSearch,
+  createApiKey, deleteSavedSearch, fetchAccount, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
+  revokeApiKey, saveSearch, setPendingPlan, signOut, startCheckout, syncBilling, takePendingPlan, takePendingSave, verifySignInToken,
+  type Account as AccountData, type SavedSearch,
 } from "@/lib/account";
 import { Band, PageShell, StatCard } from "@/components/PageShell";
 import { code, input, label, primaryButton, secondaryButton } from "@/lib/pageStyles";
-import { BURST_PER_SECOND } from "../../shared/apiTiers";
+import { BURST_PER_SECOND, TIERS, TIER_ORDER, type Tier, type TierId } from "../../shared/apiTiers";
 import { MAX_SAVED_SEARCH_NAME, MAX_SAVED_SEARCHES } from "../../shared/savedSearch";
 import { Star } from "lucide-react";
 
@@ -19,18 +19,51 @@ const fmtDate = (iso: string | null) =>
 const panel: React.CSSProperties = { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "16px 20px" };
 const errorText: React.CSSProperties = { color: "#b91c1c", fontSize: 13, margin: "10px 0 0" };
 
-function SignIn({ pendingSave }: { pendingSave: boolean }) {
+const fmtRequests = (t: Tier) => `${t.monthlyRequests.toLocaleString("en-NZ")} requests a month`;
+
+/** One plan as a selectable row: name and allowance on the left, price on the right. */
+function PlanOption({ tier, selected, onSelect }: { tier: Tier; selected: boolean; onSelect: () => void }) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      onClick={onSelect}
+      style={{
+        display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left", cursor: "pointer",
+        padding: "12px 14px", borderRadius: 8, background: selected ? "#f0f9ff" : "#ffffff",
+        border: selected ? "2px solid #0ea5e9" : "1px solid #e5e7eb", margin: selected ? 0 : 1,
+      }}
+    >
+      <span style={{ width: 16, height: 16, borderRadius: 999, flexShrink: 0, border: selected ? "5px solid #0ea5e9" : "2px solid #d1d5db", background: "#ffffff" }} />
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{tier.name}</span>
+        <span style={{ display: "block", fontSize: 12, color: "#6b7280" }}>{fmtRequests(tier)}</span>
+      </span>
+      <span style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", whiteSpace: "nowrap" }}>
+        {tier.priceNzd === 0 ? "Free" : `NZ$${tier.priceNzd}`}
+        {tier.priceNzd > 0 && <span style={{ fontSize: 12, fontWeight: 500, color: "#6b7280" }}> /mo</span>}
+      </span>
+    </button>
+  );
+}
+
+function SignIn({ pendingSave, initialPlan }: { pendingSave: boolean; initialPlan: TierId }) {
   const [email, setEmail] = useState("");
+  const [plan, setPlan] = useState<TierId>(initialPlan);
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
+  const tier = TIERS[plan];
+  const paid = tier.priceNzd > 0;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setState("sending");
     setError(null);
     try {
-      await requestSignInLink(email);
-      captureEvent("api_signin_requested");
+      await requestSignInLink(email, paid ? plan : undefined);
+      setPendingPlan(paid ? plan : null);
+      captureEvent("api_signin_requested", { plan });
       setState("sent");
     } catch (err) {
       setError((err as Error).message);
@@ -39,45 +72,98 @@ function SignIn({ pendingSave }: { pendingSave: boolean }) {
   };
 
   return (
-    <Band tone="grey" title="Sign in or create an account">
+    <Band tone="grey" title="Create an account or sign in">
       {pendingSave && state !== "sent" && (
-        <div style={{ ...panel, maxWidth: 560, marginBottom: 12, background: "#fffbeb", borderColor: "#fcd34d", fontSize: 14, color: "#92400e", display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ ...panel, marginBottom: 12, background: "#fffbeb", borderColor: "#fcd34d", fontSize: 14, color: "#92400e", display: "flex", gap: 8, alignItems: "center" }}>
           <Star size={14} fill="#f59e0b" color="#f59e0b" style={{ flexShrink: 0 }} />
           Sign in to save your search. It's saved to your account as soon as you're in.
         </div>
       )}
-      <div style={{ ...panel, maxWidth: 560 }}>
-        {state === "sent" ? (
-          <>
-            <div style={label}>Check your email</div>
-            <p style={{ margin: 0, fontSize: 14 }}>
-              We sent a sign-in link to <strong>{email}</strong>. It works once and expires in 15 minutes.
-            </p>
-          </>
-        ) : (
-          <>
-            <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151" }}>
-              Enter your email and we'll send you a sign-in link. No password needed. Your account keeps your saved
-              searches, and API keys on the free plan with 500 requests a month.
-            </p>
-            <form onSubmit={submit} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <input
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.co.nz"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={input}
+      <div className="signup-grid">
+        <div>
+          <div style={{ ...label, marginBottom: 8 }}>1. Pick a plan</div>
+          <div role="radiogroup" aria-label="Plan" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {TIER_ORDER.map((id) => (
+              <PlanOption
+                key={id}
+                tier={TIERS[id]}
+                selected={id === plan}
+                onSelect={() => {
+                  if (state === "sent") return;
+                  setPlan(id);
+                  captureEvent("plan_selected", { plan: id, source: "signup" });
+                }}
               />
-              <button type="submit" disabled={state === "sending"} style={primaryButton}>
-                {state === "sending" ? "Sending..." : "Email me a link"}
-              </button>
-            </form>
-            {error && <p style={errorText}>{error}</p>}
-          </>
-        )}
+            ))}
+          </div>
+          <p style={{ fontSize: 12, color: "#6b7280", margin: "10px 0 0" }}>
+            Every plan gets every endpoint and filter. Change or cancel any time.
+          </p>
+        </div>
+
+        <div style={panel}>
+          <div style={{ ...label, marginBottom: 8 }}>2. Your email</div>
+          {state === "sent" ? (
+            <p style={{ margin: 0, fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
+              We sent a link to <strong>{email}</strong>. It works once and expires in 15 minutes.
+              {paid
+                ? <> Open it on any device and you'll go straight to secure checkout for <strong>{tier.name}</strong>.</>
+                : <> Open it to finish signing in.</>}
+            </p>
+          ) : (
+            <>
+              <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
+                We'll email you a sign-in link. No password. New here? The link creates your account.
+                {paid
+                  ? <> Then you go straight to Stripe to pay NZ${tier.priceNzd} a month for <strong>{tier.name}</strong>.</>
+                  : <> No card needed.</>}
+              </p>
+              <form onSubmit={submit} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="you@example.co.nz"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={{ ...input, flex: "1 1 220px" }}
+                />
+                <button type="submit" disabled={state === "sending"} style={primaryButton}>
+                  {state === "sending" ? "Sending..." : paid ? `Continue with ${tier.name}` : "Email me a link"}
+                </button>
+              </form>
+              {error && <p style={errorText}>{error}</p>}
+            </>
+          )}
+        </div>
       </div>
+    </Band>
+  );
+}
+
+/** The plain-English version of how accounts work, for people who haven't signed up. */
+function HowItWorks() {
+  const steps: [string, string][] = [
+    ["Sign in with a link", "Enter your email and click the link we send. No password to remember. The first link creates your account."],
+    ["Create an API key", "Make a key on this page and send it with each request. Keys never expire; revoke one any time."],
+    ["Pay only for more", "Free covers 500 requests a month. Paid plans bill monthly through Stripe and can be changed or cancelled whenever."],
+  ];
+  return (
+    <Band title="How accounts work">
+      <div className="howto-grid">
+        {steps.map(([title, body], i) => (
+          <div key={title} style={{ display: "flex", gap: 12 }}>
+            <span style={{ width: 26, height: 26, borderRadius: 999, background: "#e0f2fe", color: "#0369a1", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 2 }}>{title}</div>
+              <div style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.6 }}>{body}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: 13, color: "#6b7280", margin: "16px 0 0" }}>
+        Your account also keeps your saved searches. See the <Link to="/developers" style={{ color: "#0369a1" }}>API docs</Link> for endpoints and examples.
+      </p>
     </Band>
   );
 }
@@ -126,7 +212,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
   const goToStripe = async (which: string, event: string, get: () => Promise<{ url: string }>) => {
     setError(null);
     setRedirecting(which);
-    captureEvent(event);
+    captureEvent(event, { tier: which, source: "plans" });
     try {
       window.location.href = (await get()).url;
     } catch (err) {
@@ -186,8 +272,6 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
 
   return (
     <>
-      <SavedSearches searches={account.searches} notice={savedNotice} reload={reload} onError={setError} />
-
       <div className="page-band" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         <StatCard label="REQUESTS THIS MONTH" value={used.toLocaleString("en-NZ")} sub={`of ${limit.toLocaleString("en-NZ")} · resets ${fmtDate(resetsAt)}`}>
           <div style={{ height: 6, background: "#f3f4f6", borderRadius: 999, overflow: "hidden", marginTop: 10, minWidth: 180 }}>
@@ -278,46 +362,40 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
             </div>
           )}
           <form onSubmit={create} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input placeholder="Key name (optional)" value={keyName} maxLength={60} onChange={(e) => setKeyName(e.target.value)} style={input} />
+            <input placeholder="Key name (optional)" value={keyName} maxLength={60} onChange={(e) => setKeyName(e.target.value)} style={{ ...input, flex: "0 1 360px" }} />
             <button type="submit" style={primaryButton}>Create key</button>
           </form>
         </div>
       </Band>
 
-      <Band title="Plans">
+      <SavedSearches searches={account.searches} notice={savedNotice} reload={reload} onError={setError} />
+
+      <Band tone="grey" title={<span id="plans">Plans</span>}>
         {billing.status === "past_due" && (
           <p style={{ fontSize: 13, color: "#b91c1c", margin: "0 0 12px" }}>
             Your last payment failed. Update your card in Manage billing to keep your plan.
           </p>
         )}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
           {account.tiers.map((t) => {
             const current = t.id === account.tier.id;
             const busy = redirecting !== null;
-            const planButton = { width: "100%", padding: "11px 18px", fontSize: 13, borderRadius: 8 } as const;
-            const includes = [
-              `${t.monthlyRequests.toLocaleString("en-NZ")} requests a month`,
-              `Up to ${BURST_PER_SECOND} calls a second`,
-              "Every endpoint and filter",
-              t.priceNzd === 0 ? "No card needed" : "Cancel any time",
-            ];
+            const planButton = { padding: "7px 14px", fontSize: 12, borderRadius: 8 } as const;
             return (
-              <div key={t.id} style={{ ...panel, border: current ? "2px solid #0ea5e9" : panel.border, display: "flex", flexDirection: "column" }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{t.name}</div>
-                <div style={{ fontSize: 30, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.02em", lineHeight: 1.1, margin: "4px 0 12px" }}>
-                  NZ${t.priceNzd}
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "#6b7280" }}> / month</span>
+              <div key={t.id} style={{ ...panel, padding: "14px 16px", border: current ? "2px solid #0ea5e9" : panel.border, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{t.name}</span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", whiteSpace: "nowrap" }}>
+                    {t.priceNzd === 0 ? "Free" : `NZ$${t.priceNzd}`}
+                    {t.priceNzd > 0 && <span style={{ fontSize: 12, fontWeight: 500, color: "#6b7280" }}> /mo</span>}
+                  </span>
                 </div>
-                <ul style={{ margin: "0 0 16px", paddingLeft: 18, listStyle: "disc", fontSize: 13, color: "#374151", lineHeight: 1.7 }}>
-                  {includes.map((i) => <li key={i}>{i}</li>)}
-                </ul>
-                <div style={{ marginTop: "auto" }}>
+                <div style={{ fontSize: 12, color: "#6b7280" }}>{fmtRequests(t)} · {BURST_PER_SECOND} calls a second</div>
+                <div>
                   {current ? (
-                    <button style={{ ...secondaryButton, ...planButton, color: "#0369a1", borderColor: "#bae6fd", background: "#f0f9ff", fontWeight: 700, cursor: "default" }} disabled>
-                      Your current plan
-                    </button>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#0369a1" }}>Your current plan</span>
                   ) : !billing.enabled ? (
-                    <button style={{ ...secondaryButton, ...planButton, cursor: "default" }} disabled>Coming soon</button>
+                    <span style={{ fontSize: 12, color: "#6b7280" }}>Coming soon</span>
                   ) : billing.subscribed ? (
                     // Switching or cancelling an existing subscription happens in Stripe's portal.
                     <button style={{ ...secondaryButton, ...planButton, fontWeight: 600 }} disabled={busy} onClick={() => goToStripe(t.id, "billing_portal_opened", openBillingPortal)}>
@@ -446,9 +524,14 @@ function SavedSearches({ searches, notice, reload, onError }: {
 export default function Account() {
   // Read once: the save is taken out of storage when the dashboard saves it.
   const [pendingSave] = useState(hasPendingSave);
+  // A paid plan picked on the docs or pricing links (?plan=pro), before or after signing in.
+  const [urlPlan] = useState(() => paidPlan(new URLSearchParams(window.location.search).get("plan")));
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  /** A paid plan to send the browser to checkout for, once the account has loaded. */
+  const [checkoutPlan, setCheckoutPlan] = useState<TierId | null>(null);
 
   useEffect(() => {
     applySeo({
@@ -468,35 +551,81 @@ export default function Account() {
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
-    if (query.get("billing") === "success") {
+    const billingResult = query.get("billing");
+    if (billingResult === "success") {
       // Back from Stripe checkout. Pull the new plan now rather than waiting on the webhook.
       window.history.replaceState(null, "", "/account");
       captureEvent("checkout_completed");
+      setNotice("Payment done. Your new plan is active.");
       syncBilling().catch(() => {}).finally(reload);
       return;
     }
+    if (billingResult === "cancelled") {
+      window.history.replaceState(null, "", "/account");
+      captureEvent("checkout_cancelled");
+      setNotice("Checkout cancelled, nothing was charged. You can upgrade any time from Plans below.");
+      return reload();
+    }
     const token = query.get("token");
-    if (!token) return reload();
+    if (!token) {
+      // Signed in already and came from a "Choose Pro" link: straight to checkout.
+      if (urlPlan) setCheckoutPlan(urlPlan);
+      return reload();
+    }
     // Take the one-time token out of the address bar and history before using it.
     window.history.replaceState(null, "", "/account");
     verifySignInToken(token)
-      .then(() => captureEvent("signin_link_opened", { result: "ok" }))
+      .then(() => {
+        captureEvent("signin_link_opened", { result: "ok" });
+        // The plan picked at sign-up: from the link, or this browser if the link lost it.
+        const plan = urlPlan ?? takePendingPlan();
+        setPendingPlan(null);
+        if (plan) setCheckoutPlan(plan);
+      })
       .catch((err) => {
         captureEvent("signin_link_opened", { result: "rejected" });
         setError((err as Error).message);
       })
       .finally(reload);
-  }, [reload]);
+  }, [reload, urlPlan]);
+
+  // Signed in with a paid plan waiting: open Stripe checkout for it.
+  useEffect(() => {
+    if (!account || !checkoutPlan) return;
+    const tier = TIERS[checkoutPlan];
+    setCheckoutPlan(null);
+    if (window.location.search) window.history.replaceState(null, "", "/account");
+    if (account.tier.id === checkoutPlan) return setNotice(`You're already on ${tier.name}.`);
+    if (!account.billing.enabled) return setNotice(`Paid plans aren't open yet. You're on ${account.tier.name} for now.`);
+    if (account.billing.subscribed) {
+      return setNotice(`You already pay for ${account.tier.name}. Use "Switch to ${tier.name}" under Plans to change.`);
+    }
+    setNotice(`Taking you to secure checkout for ${tier.name}...`);
+    captureEvent("checkout_started", { tier: checkoutPlan, source: "signup_flow" });
+    startCheckout(checkoutPlan)
+      .then(({ url }) => { window.location.href = url; })
+      .catch((err) => {
+        setNotice(null);
+        setError((err as Error).message);
+      });
+  }, [account, checkoutPlan]);
 
   return (
     <PageShell
       source="account_page"
       subtitle="Your account"
       crumb="Account"
-      title="Your account"
-      intro="Your saved searches, API keys, this month's API usage and your plan."
+      title={account || loading ? "Your account" : "Get an API key"}
+      intro={
+        account || loading
+          ? "Your saved searches, API keys, this month's API usage and your plan."
+          : "Start free with 500 requests a month, or pick a paid plan and go straight to checkout."
+      }
       heroApi={{ to: "/developers", title: "Read the API docs", sub: "Endpoints and examples" }}
     >
+      {notice && (
+        <div className="page-band" style={{ padding: "10px 24px", background: "#f0f9ff", borderBottom: "1px solid #bae6fd", color: "#0369a1", fontSize: 13, fontWeight: 600 }}>{notice}</div>
+      )}
       {error && (
         <div className="page-band" style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
       )}
@@ -505,16 +634,10 @@ export default function Account() {
       ) : account ? (
         <Dashboard account={account} reload={reload} />
       ) : (
-        <SignIn pendingSave={pendingSave} />
-      )}
-      {!loading && !account && (
-        <Band title="What you get">
-          <p style={{ fontSize: 14, color: "#374151", margin: 0, maxWidth: 800 }}>
-            JSON access to all 5.9 million vehicles on the NZ Motor Vehicle Register: search by make, model, year, fuel,
-            region and more, refreshed every month from NZTA. See the <Link to="/developers" style={{ color: "#0369a1" }}>API docs</Link> for
-            endpoints and pricing.
-          </p>
-        </Band>
+        <>
+          <SignIn pendingSave={pendingSave} initialPlan={urlPlan ?? "free"} />
+          <HowItWorks />
+        </>
       )}
     </PageShell>
   );

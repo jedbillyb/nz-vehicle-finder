@@ -112,7 +112,7 @@ export function createBilling(store: AccountStore, opts: BillingOptions) {
       subscription_data: { metadata: { user_id: String(user.id) } },
       allow_promotion_codes: true,
       success_url: `${opts.publicUrl}/account?billing=success`,
-      cancel_url: `${opts.publicUrl}/account`,
+      cancel_url: `${opts.publicUrl}/account?billing=cancelled`,
     });
     res.json({ url: session.url });
   });

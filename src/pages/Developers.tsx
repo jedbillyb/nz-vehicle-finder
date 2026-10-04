@@ -1,16 +1,18 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
 import { BURST_PER_SECOND, TIERS, TIER_ORDER } from "../../shared/apiTiers";
 import { MAX_PAGE_SIZE, MIN_PAGE_SIZE, DEFAULT_PAGE_SIZE } from "../../shared/pagination";
-import { Band, PageShell } from "@/components/PageShell";
+import { PageShell } from "@/components/PageShell";
+import { captureEvent } from "@/lib/posthog";
 import { code } from "@/lib/pageStyles";
 import { CONTACT_EMAIL } from "../../shared/contact";
 
 /*
- * Laid out like the Stripe and Resend API references: each endpoint is one
- * block with a short description, a parameter table, then the request and
- * response directly under it.
+ * Laid out like the Stripe and Resend API references: a sticky menu on the
+ * left, and each section split in two, the explanation and parameters on the
+ * left with its request and response beside it on the right. Below 1100px the
+ * code drops under the text; below 900px the menu becomes a row of chips.
  */
 
 const BASE = "https://vehiclefinder.co.nz/api/v1";
@@ -62,15 +64,23 @@ function Pre({ title, children }: { title?: string; children: string }) {
   );
 }
 
-/** A band whose content sits in one readable column. */
-function DocBand({ title, tone, children }: { title?: ReactNode; tone?: "white" | "grey"; children: ReactNode }) {
+/** One section of the docs, with an anchor the menu links to. */
+function Section({ id, title, children }: { id: string; title?: ReactNode; children: ReactNode }) {
   return (
-    <Band tone={tone}>
-      <div className="doc-col">
-        {title && <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>{title}</h2>}
-        {children}
-      </div>
-    </Band>
+    <section id={id} className="doc-section">
+      {title && <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 0 14px", letterSpacing: "-0.01em" }}>{title}</h2>}
+      {children}
+    </section>
+  );
+}
+
+/** Text on the left, code (or a table) on the right. */
+function Split({ left, right }: { left: ReactNode; right: ReactNode }) {
+  return (
+    <div className="doc-split">
+      <div style={{ minWidth: 0 }}>{left}</div>
+      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>{right}</div>
+    </div>
   );
 }
 
@@ -98,32 +108,95 @@ function Table({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
 /** Parameter row: name, type, description. */
 type Param = [name: string, type: string, desc: ReactNode];
 
-function Endpoint({ path, summary, params, request, response, tone }: {
-  path: string; summary: ReactNode; params?: Param[]; request: string; response: string; tone?: "white" | "grey";
+function endpointId(path: string) {
+  return path.replace(/[^a-z]+/gi, "-").replace(/^-|-$/g, "");
+}
+
+function Endpoint({ path, summary, params, request, response }: {
+  path: string; summary: ReactNode; params?: Param[]; request: string; response: string;
 }) {
-  const id = path.replace(/[^a-z]+/gi, "-").replace(/^-|-$/g, "");
   return (
-    <DocBand tone={tone}>
-      <div id={id} className="doc-endpoint">
-        <div style={{ minWidth: 0 }}>
-          <h3 style={{ ...code, fontSize: 16, margin: "0 0 8px", display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ background: "#dcfce7", color: "#15803d", fontSize: 11, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>GET</span>
-            <span style={{ color: "#0f172a" }}>{path}</span>
-          </h3>
-          <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{summary}</p>
-          {params && (
-            <Table
-              head={["Parameter", "Type", "Description"]}
-              rows={params.map(([n, t, d]) => [<span style={{ whiteSpace: "nowrap" }}><C>{n}</C></span>, <span style={{ color: "#6b7280" }}>{t}</span>, d])}
-            />
-          )}
+    <Section id={endpointId(path)}>
+      <Split
+        left={
+          <>
+            <h2 style={{ ...code, fontSize: 18, margin: "0 0 10px", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ background: "#dcfce7", color: "#15803d", fontSize: 11, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>GET</span>
+              <span style={{ color: "#0f172a" }}>{path}</span>
+            </h2>
+            <p style={{ margin: "0 0 16px", fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{summary}</p>
+            {params ? (
+              <Table
+                head={["Parameter", "Type", "Description"]}
+                rows={params.map(([n, t, d]) => [<span style={{ whiteSpace: "nowrap" }}><C>{n}</C></span>, <span style={{ color: "#6b7280" }}>{t}</span>, d])}
+              />
+            ) : (
+              <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>No parameters.</p>
+            )}
+          </>
+        }
+        right={
+          <>
+            <Pre title="Request">{request}</Pre>
+            <Pre title="Response">{response}</Pre>
+          </>
+        }
+      />
+    </Section>
+  );
+}
+
+const ENDPOINTS = ["/vehicles", "/breakdown", "/values/{field}", "/makes/{make}/models", "/fleet"];
+
+/** The menu: groups of [anchor id, label]. */
+const NAV: { group: string; items: [string, ReactNode][] }[] = [
+  { group: "Getting started", items: [["quick-start", "Quick start"], ["authentication", "Authentication"]] },
+  { group: "Endpoints", items: ENDPOINTS.map((e) => [endpointId(e), <span style={{ ...code, fontSize: 12 }}>{e}</span>]) },
+  { group: "Reference", items: [["filters", "Filters"], ["limits", "Limits and errors"]] },
+  { group: "Plans", items: [["pricing", "Pricing"], ["custom", "Custom reports"]] },
+];
+
+/** Which section is on screen, so the menu can highlight it. */
+function useActiveSection(ids: string[]) {
+  const [active, setActive] = useState(ids[0]);
+  useEffect(() => {
+    const els = ids.map((id) => document.getElementById(id)).filter((e): e is HTMLElement => !!e);
+    const io = new IntersectionObserver(
+      (entries) => {
+        const hit = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (hit) setActive(hit.target.id);
+      },
+      // A section counts once its top passes just under the sticky header.
+      { rootMargin: "-120px 0px -60% 0px" },
+    );
+    els.forEach((e) => io.observe(e));
+    return () => io.disconnect();
+  }, [ids]);
+  return active;
+}
+
+const NAV_IDS = NAV.flatMap((g) => g.items.map(([id]) => id));
+
+function DocNav() {
+  const active = useActiveSection(NAV_IDS);
+  return (
+    <nav className="doc-nav" aria-label="API docs">
+      {NAV.map((g) => (
+        <div key={g.group} className="doc-nav-group">
+          <div className="doc-nav-heading">{g.group}</div>
+          {g.items.map(([id, label]) => (
+            <a
+              key={id}
+              href={`#${id}`}
+              className={id === active ? "doc-nav-link is-active" : "doc-nav-link"}
+              onClick={() => captureEvent("docs_nav_clicked", { section: id })}
+            >
+              {label}
+            </a>
+          ))}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
-          <Pre title="Request">{request}</Pre>
-          <Pre title="Response">{response}</Pre>
-        </div>
-      </div>
-    </DocBand>
+      ))}
+    </nav>
   );
 }
 
@@ -151,33 +224,51 @@ export default function Developers() {
       intro="Every vehicle on the NZ Motor Vehicle Register as JSON. Search it, or count it any way you like. Refreshed automatically each month from NZTA."
       heroApi={{ to: "/account", title: "Get an API key", sub: "500 free requests a month" }}
     >
-      <DocBand title="Quick start" tone="grey">
-        <div className="doc-endpoint">
-          <ol style={{ ...p, paddingLeft: 0, listStyle: "decimal inside" }}>
+      <div className="doc-layout">
+      <DocNav />
+      <div className="doc-main">
+      <Section id="quick-start" title="Quick start">
+        <Split
+          left={
+          <ol style={{ ...p, paddingLeft: 0, listStyle: "decimal inside", lineHeight: 2 }}>
             <li><Link to="/account" style={{ color: "#0369a1", fontWeight: 600 }}>Sign in</Link> with your email. No password, no card.</li>
             <li>Create a key on your account page.</li>
             <li>Send it as a Bearer token. That's it.</li>
           </ol>
-          <Pre title="Request">{`curl -G ${BASE}/vehicles \\
+          }
+          right={<Pre title="Request">{`curl -G ${BASE}/vehicles \\
   -H "Authorization: Bearer nzvf_your_key" \\
   -d MAKE=TOYOTA \\
-  -d MODEL=AQUA`}</Pre>
-        </div>
-      </DocBand>
+  -d MODEL=AQUA`}</Pre>}
+        />
+      </Section>
 
-      <DocBand title="Authentication">
-        <p style={p}>
-          Send your key in the <C>Authorization: Bearer</C> header (or <C>X-API-Key</C>). Keep it on your server: anyone with
-          the key can spend your quota. Lost a key? Revoke it and make a new one on your <Link to="/account" style={{ color: "#0369a1" }}>account page</Link>.
-        </p>
-        <p style={{ ...p, margin: 0 }}>
-          Base URL: <C>{BASE}</C>. Every response is <C>{"{ data, source }"}</C>, where <C>source</C> holds the snapshot date
-          and the NZTA credit line. The data is CC BY 4.0: if you publish it, credit NZTA.
-        </p>
-      </DocBand>
+      <Section id="authentication" title="Authentication">
+        <Split
+          left={
+            <>
+              <p style={p}>
+                Send your key in the <C>Authorization: Bearer</C> header (or <C>X-API-Key</C>). Keep it on your server: anyone with
+                the key can spend your quota. Lost a key? Revoke it and make a new one on your <Link to="/account" style={{ color: "#0369a1" }}>account page</Link>.
+              </p>
+              <p style={{ ...p, margin: 0 }}>
+                Every response is <C>{"{ data, source }"}</C>, where <C>source</C> holds the snapshot date
+                and the NZTA credit line. The data is CC BY 4.0: if you publish it, credit NZTA.
+              </p>
+            </>
+          }
+          right={
+            <>
+              <Pre title="Base URL">{BASE}</Pre>
+              <Pre title="Headers">{`Authorization: Bearer nzvf_your_key
+# or
+X-API-Key: nzvf_your_key`}</Pre>
+            </>
+          }
+        />
+      </Section>
 
       <Endpoint
-        tone="grey"
         path="/vehicles"
         summary="Search the register. Returns one page of matching vehicles and the total count."
         params={[
@@ -233,7 +324,6 @@ export default function Developers() {
       />
 
       <Endpoint
-        tone="grey"
         path="/values/{field}"
         summary="The distinct values of one field, commonest first. Handy for building dropdowns."
         params={[
@@ -265,7 +355,6 @@ export default function Developers() {
       />
 
       <Endpoint
-        tone="grey"
         path="/fleet"
         summary="Fleet-wide totals: fuel types, top makes, body types, import status and vehicles per region."
         request={`curl ${BASE}/fleet \\
@@ -282,71 +371,90 @@ export default function Developers() {
 }`}
       />
 
-      <DocBand title={<span id="filters">Filters</span>}>
-        <p style={p}>Any endpoint above takes these as query parameters. Matching ignores case.</p>
-        <div style={{ marginBottom: 16 }}>
-          <Table
-            head={["Write", "Matches"]}
-            rows={[
-              [<C>MAKE=TOYOTA</C>, "Exactly TOYOTA"],
-              [<C>MAKE=TOYOTA,NISSAN</C>, <>Either one. Write a literal comma as <C>\,</C></>],
-              [<C>TRANSMISSION_TYPE=~MANUAL</C>, "Anything containing MANUAL"],
-              [<C>VEHICLE_YEAR_MIN=2015</C>, "2015 or newer (number fields only, also _MAX)"],
-            ]}
-          />
-        </div>
-        <Table
-          head={["Kind", "Fields"]}
-          rows={[
-            ["Text", <span style={{ ...code, lineHeight: 1.8 }}>{TEXT_FIELDS.join(", ")}</span>],
-            ["Number", <span style={{ ...code, lineHeight: 1.8 }}>{NUMBER_FIELDS.join(", ")}</span>],
-          ]}
+      <Section id="filters" title="Filters">
+        <Split
+          left={
+            <>
+              <p style={p}>Every endpoint takes these as query parameters. Matching ignores case.</p>
+              <Table
+                head={["Write", "Matches"]}
+                rows={[
+                  [<C>MAKE=TOYOTA</C>, "Exactly TOYOTA"],
+                  [<C>MAKE=TOYOTA,NISSAN</C>, <>Either one. Write a literal comma as <C>\,</C></>],
+                  [<C>TRANSMISSION_TYPE=~MANUAL</C>, "Anything containing MANUAL"],
+                  [<C>VEHICLE_YEAR_MIN=2015</C>, "2015 or newer (number fields only, also _MAX)"],
+                ]}
+              />
+            </>
+          }
+          right={
+            <Table
+              head={["Kind", "Fields"]}
+              rows={[
+                ["Text", <span style={{ ...code, lineHeight: 1.8 }}>{TEXT_FIELDS.join(", ")}</span>],
+                ["Number", <span style={{ ...code, lineHeight: 1.8 }}>{NUMBER_FIELDS.join(", ")}</span>],
+              ]}
+            />
+          }
         />
-      </DocBand>
+      </Section>
 
-      <DocBand title="Limits and errors" tone="grey">
-        <p style={p}>
-          Each call uses one request from your monthly quota, which resets on the 1st (UTC). One key can make
-          up to {BURST_PER_SECOND} calls a second. Every response has <C>X-RateLimit-Remaining</C> and <C>X-RateLimit-Reset</C> headers.
-        </p>
-        <div>
-          <Table
-            head={["Status", "Meaning"]}
-            rows={[
-              [<C>400</C>, "A parameter is wrong, e.g. an unknown field. The error says which."],
-              [<C>401</C>, "Missing, unknown or revoked key."],
-              [<C>404</C>, "Unknown endpoint."],
-              [<C>429</C>, `Monthly quota used up, or over ${BURST_PER_SECOND} calls a second. Throttled calls are not counted.`],
-              [<C>503</C>, "Restarting after the monthly data refresh. Retry in a few seconds."],
-            ]}
-          />
-        </div>
-      </DocBand>
+      <Section id="limits" title="Limits and errors">
+        <Split
+          left={
+            <p style={p}>
+              Each call uses one request from your monthly quota, which resets on the 1st (UTC). One key can make
+              up to {BURST_PER_SECOND} calls a second. Every response has <C>X-RateLimit-Remaining</C> and <C>X-RateLimit-Reset</C> headers.
+            </p>
+          }
+          right={
+            <Table
+              head={["Status", "Meaning"]}
+              rows={[
+                [<C>400</C>, "A parameter is wrong, e.g. an unknown field. The error says which."],
+                [<C>401</C>, "Missing, unknown or revoked key."],
+                [<C>404</C>, "Unknown endpoint."],
+                [<C>429</C>, `Monthly quota used up, or over ${BURST_PER_SECOND} calls a second. Throttled calls are not counted.`],
+                [<C>503</C>, "Restarting after the monthly data refresh. Retry in a few seconds."],
+              ]}
+            />
+          }
+        />
+      </Section>
 
-      <DocBand title="Pricing">
+      <Section id="pricing" title="Pricing">
         <div className="doc-pricing">
           {TIER_ORDER.map((id) => TIERS[id]).map((t) => (
-            <div key={t.id} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: "18px 20px", background: "#ffffff" }}>
+            <Link
+              key={t.id}
+              to={t.priceNzd === 0 ? "/account" : `/account?plan=${t.id}`}
+              className="doc-plan"
+              onClick={() => captureEvent("plan_selected", { plan: t.id, source: "docs_pricing" })}
+            >
               <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7280" }}>{t.name}</div>
               <div style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", margin: "4px 0" }}>
                 {t.priceNzd === 0 ? "Free" : `NZ$${t.priceNzd}`}
                 {t.priceNzd > 0 && <span style={{ fontSize: 13, fontWeight: 500, color: "#6b7280" }}> / month</span>}
               </div>
               <div style={{ fontSize: 13, color: "#374151" }}>{t.monthlyRequests.toLocaleString("en-NZ")} requests a month</div>
-            </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#0369a1", marginTop: 12 }}>
+                {t.priceNzd === 0 ? "Start free" : `Choose ${t.name}`} <span aria-hidden>→</span>
+              </div>
+            </Link>
           ))}
-          <div style={{ border: "1px solid #bae6fd", borderRadius: 10, padding: "18px 20px", background: "#f0f9ff" }}>
+          <a href="#custom" className="doc-plan" style={{ borderColor: "#bae6fd", background: "#f0f9ff" }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#0369a1" }}>Custom</div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", margin: "4px 0" }}>Quote</div>
             <div style={{ fontSize: 13, color: "#374151" }}>Bulk extracts and one-off breakdowns</div>
-          </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#0369a1", marginTop: 12 }}>See options <span aria-hidden>↓</span></div>
+          </a>
         </div>
         <p style={{ ...p, margin: "14px 0 0" }}>
-          <Link to="/account" style={{ color: "#0369a1", fontWeight: 600 }}>Start free</Link>, upgrade any time. Card payments by Stripe, cancel whenever.
+Pick a plan and you go straight from sign-in to checkout. Card payments by Stripe, change or cancel whenever.
         </p>
-      </DocBand>
+      </Section>
 
-      <DocBand title="Custom reports and data" tone="grey">
+      <Section id="custom" title="Custom reports and data">
         <p style={p}>
           Don't want to write code? Tell us what you need and we'll pull it for you, as a PDF report, a spreadsheet or both.
           Faster than a data request to NZTA, and you only pay for what you ask for.
@@ -365,7 +473,9 @@ export default function Developers() {
         <a href={CONTACT} style={{ display: "inline-block", background: "#0ea5e9", color: "#ffffff", fontWeight: 700, fontSize: 14, padding: "10px 18px", borderRadius: 8, textDecoration: "none" }}>
           Ask for a quote
         </a>
-      </DocBand>
+      </Section>
+      </div>
+      </div>
     </PageShell>
   );
 }

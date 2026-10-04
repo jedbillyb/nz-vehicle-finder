@@ -149,7 +149,7 @@ VITE_POSTHOG_HOST=https://us.i.posthog.com
 
 `npm run server` loads `.env.production` and then `.env`, so the API server picks up the same key (or set `POSTHOG_API_KEY` / `POSTHOG_HOST`) and both sides report to one project.
 
-Tracked in the browser: page views, searches (with active filters), zero-result and failed searches, filter and suggestion use, sorting and paging, CSV exports, shares, saved searches (added, opened, renamed, removed), feedback, account page visits, API key create/copy/rename/revoke, checkout and billing portal clicks, sign-in and sign-out, and 404s with the broken path.
+Tracked in the browser: page views, searches (with active filters), zero-result and failed searches, filter and suggestion use, sorting and paging, CSV exports, shares, saved searches (added, opened, renamed, removed), feedback, account page visits, API key create/copy/rename/revoke, plan picks (`plan_selected`), checkout started/completed/cancelled and billing portal clicks, docs menu clicks, sign-in and sign-out, and 404s with the broken path.
 
 Tracked on the server: sign-in links sent and rejected, new accounts, sign-ins, every paid `/api/v1` call (endpoint, status, duration, plan, usage so far), API calls rejected for a bad key, burst or quota, and plan changes from Stripe.
 
@@ -213,6 +213,12 @@ apps have to use the paid API. Limits are in `server/rateLimit.ts`:
 Plans are Stripe subscriptions in NZD. The account page's **Upgrade** button opens Stripe
 Checkout, and **Manage billing** opens Stripe's customer portal, where customers switch plan,
 update their card, see invoices and cancel (cancelling takes effect at the end of the period).
+
+New customers can pay straight away: the pricing cards on `/developers` link to
+`/account?plan=pro` (or `starter`), where the plan is pre-picked beside the email box. The plan
+rides along in the emailed sign-in link (`/account?token=...&plan=pro`) and in localStorage, so
+opening the link on any device signs in and goes straight to Checkout. Cancelling Checkout
+returns to `/account?billing=cancelled`, which says nothing was charged.
 
 Stripe decides who is on which plan. Every webhook event, and the account page after
 checkout, re-reads the customer's subscriptions from Stripe and sets the tier from whatever is

@@ -1,4 +1,4 @@
-import type { Tier } from "../../shared/apiTiers";
+import { TIERS, type Tier, type TierId } from "../../shared/apiTiers";
 
 /**
  * Account calls go to a relative /api path, never API_BASE: the session is an
@@ -47,8 +47,9 @@ export interface Account {
   billing: { enabled: boolean; subscribed: boolean; status: string | null };
 }
 
-export const requestSignInLink = (email: string) =>
-  call<{ ok: true }>("/api/auth/request-link", { method: "POST", body: JSON.stringify({ email }) });
+/** `plan` is a paid plan picked before signing up; the emailed link carries it to checkout. */
+export const requestSignInLink = (email: string, plan?: TierId) =>
+  call<{ ok: true }>("/api/auth/request-link", { method: "POST", body: JSON.stringify({ email, plan }) });
 
 export const verifySignInToken = (token: string) =>
   call<{ ok: true }>("/api/auth/verify", { method: "POST", body: JSON.stringify({ token }) });
@@ -121,4 +122,32 @@ export function takePendingSave(): string | null {
 
 export function hasPendingSave(): boolean {
   try { return !!localStorage.getItem(PENDING_SAVE_KEY); } catch { return false; }
+}
+
+/** A plan id from a URL or storage, if it names a paid plan. */
+export function paidPlan(id: string | null | undefined): TierId | null {
+  return id && Object.prototype.hasOwnProperty.call(TIERS, id) && id !== "free" ? (id as TierId) : null;
+}
+
+/**
+ * A paid plan picked before signing in. Kept in this browser as well as in the
+ * emailed link, so checkout follows sign-in either way.
+ */
+const PENDING_PLAN_KEY = "nzvf.pendingPlan";
+
+export function setPendingPlan(plan: TierId | null) {
+  try {
+    if (plan && plan !== "free") localStorage.setItem(PENDING_PLAN_KEY, plan);
+    else localStorage.removeItem(PENDING_PLAN_KEY);
+  } catch { /* storage blocked: the link still carries the plan */ }
+}
+
+export function takePendingPlan(): TierId | null {
+  try {
+    const plan = localStorage.getItem(PENDING_PLAN_KEY);
+    localStorage.removeItem(PENDING_PLAN_KEY);
+    return paidPlan(plan);
+  } catch {
+    return null;
+  }
 }

@@ -378,14 +378,17 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
       return res.status(429).json({ error: "Too many sign-in attempts. Wait a minute and try again." });
     }
     const raw = store.createLoginToken(email);
+    // A paid plan picked before signing up rides along in the link, so the
+    // account page can go straight to checkout even on another device.
+    const plan = typeof req.body?.plan === "string" && Object.prototype.hasOwnProperty.call(TIERS, req.body.plan) && req.body.plan !== "free" ? req.body.plan : null;
     try {
-      await opts.sendLoginEmail(email, `${opts.publicUrl}/account?token=${raw}`);
+      await opts.sendLoginEmail(email, `${opts.publicUrl}/account?token=${raw}${plan ? `&plan=${plan}` : ""}`);
     } catch (err) {
       console.error("Login email failed:", (err as Error).message);
       track("signin_link_failed", "server", { reason: "email_send" });
       return res.status(502).json({ error: "Could not send the sign-in email. Try again shortly." });
     }
-    track("signin_link_sent", "server");
+    track("signin_link_sent", "server", { plan: plan ?? "free" });
     res.json({ ok: true });
   });
 

@@ -267,24 +267,118 @@
   }
 }
 
-/* ── API docs: one readable column, code under the text it explains ── */
-.doc-col {
-  max-width: 860px;
-  margin: 0 auto;
+/* ── Account sign-up: plan picker beside the email box ── */
+.signup-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
 }
-.doc-endpoint {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.howto-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+@media (max-width: 899px) {
+  .signup-grid, .howto-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+}
+
+/* ── API docs: sticky menu on the left, text beside its code ── */
+.doc-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 48px;
+  padding: 0 24px;
+  background: #ffffff;
+}
+.doc-nav {
+  position: sticky;
+  top: 100px; /* under the sticky site header */
+  align-self: start;
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+  padding: 28px 0;
+}
+.doc-nav-group { margin-bottom: 18px; }
+.doc-nav-heading {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+.doc-nav-link {
+  display: block;
+  font-size: 13px;
+  color: #4b5563;
+  text-decoration: none;
+  padding: 5px 10px;
+  margin-left: -10px;
+  border-radius: 6px;
+  border-left: 2px solid transparent;
+}
+.doc-nav-link:hover { background: #f3f4f6; color: #0f172a; }
+.doc-nav-link.is-active { background: #f0f9ff; color: #0369a1; font-weight: 600; }
+.doc-main { min-width: 0; }
+.doc-section {
+  padding: 32px 0;
+  border-bottom: 1px solid #e5e7eb;
+  scroll-margin-top: 90px;
+}
+.doc-section:last-child { border-bottom: none; }
+.doc-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+@media (max-width: 1099px) {
+  .doc-split { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+}
+/* Phones and small tablets: the menu becomes a row of chips over the docs */
+@media (max-width: 899px) {
+  .doc-layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .doc-nav {
+    position: static;
+    max-height: none;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 14px 0;
+    border-bottom: 1px solid #e5e7eb;
+    scrollbar-width: none;
+  }
+  .doc-nav-group { display: contents; }
+  .doc-nav-heading { display: none; }
+  .doc-nav-link {
+    flex: 0 0 auto;
+    margin: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    padding: 5px 12px;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 767px) {
+  .doc-layout { padding: 0 16px; }
+  .doc-section { padding: 24px 0; }
 }
 .doc-offers {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 12px;
 }
-@media (max-width: 600px) {
-  .doc-offers { grid-template-columns: 1fr; }
+.doc-plan {
+  display: block;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 18px 20px;
+  background: #ffffff;
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
+.doc-plan:hover { border-color: #0ea5e9; box-shadow: 0 2px 8px rgba(14, 165, 233, 0.12); }
 .doc-pricing {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
