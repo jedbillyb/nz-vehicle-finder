@@ -22,7 +22,7 @@ export default function Contact() {
         <h2 className="error-page__title">Hi, I&apos;m Jed</h2>
         <p className="error-page__intro">
           I built NZ Vehicle Finder and I run it on my own. If you have questions about the site, the data, the API or
-          billing, or want a custom report, feel free to email me and I&apos;ll answer within a day or two.
+          billing, or want a custom report, feel free to contact me below and I&apos;ll answer within a day or two.
         </p>
         <a
           className="contact-email"
