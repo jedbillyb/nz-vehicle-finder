@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { Search, RotateCcw, Download, Share2, LoaderCircle, ChevronDown } from "lucide-react";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { POPULAR_MAKES } from "@/lib/popularMakes";
+import { LinkTiles } from "@/components/LinkTiles";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -747,7 +748,7 @@ export default function Index() {
                 ["Ford vehicles", "?MAKE=FORD"],
                 ["BMW vehicles", "?MAKE=BMW"],
                 ["Electric vehicles", "?MOTIVE_POWER=ELECTRIC"],
-                ["Vehicles in Auckland", "?TLA=AUCKLAND+CITY"],
+                ["Vehicles in Auckland", "?TLA=AUCKLAND"],
                 ["Vehicles in Wellington", "?TLA=WELLINGTON+CITY"],
                 ["Utes in NZ", "?BODY_TYPE=UTILITY"],
                 ["Japanese imports", "?ORIGINAL_COUNTRY=JAPAN"],
@@ -761,16 +762,16 @@ export default function Index() {
             </div>
 
             <h3 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Browse by Make</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8, marginBottom: 24 }}>
-              {POPULAR_MAKES.map((m) => (
-                <Link key={m.slug} to={`/stats/${m.slug}`}
-                  onClick={() => captureEvent("popular_make_clicked", { make: m.upper, source: "home" })}
-                  style={{ fontSize: 12, color: "#111827", textDecoration: "none", padding: "8px 10px", border: "1px solid #e5e7eb", borderRadius: 8, background: "#ffffff", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}
-                >
-                  <span style={{ fontWeight: 600 }}>{m.name}</span>
-                  <span style={{ fontSize: 10, color: "#0ea5e9" }} aria-hidden>→</span>
-                </Link>
-              ))}
+            <div style={{ marginBottom: 24 }}>
+              <LinkTiles
+                items={POPULAR_MAKES.map((m) => ({
+                  key: m.slug,
+                  to: `/stats/${m.slug}`,
+                  label: m.name,
+                  count: m.count,
+                  onClick: () => captureEvent("popular_make_clicked", { make: m.upper, source: "home" }),
+                }))}
+              />
             </div>
 
             <h3 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Frequently Asked Questions</h3>

@@ -413,3 +413,63 @@
     grid-column: auto;
   }
 }
+
+/* Link tiles (LinkTiles.tsx): even-height grid of make/model/region links. */
+.link-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(170px, 100%), 1fr));
+  gap: 8px;
+}
+.link-tile {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12px;
+  text-decoration: none;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+.link-tiles--wide { grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr)); }
+.link-tiles--grey .link-tile { background: #f9fafb; }
+.link-tile:hover,
+.link-tile:focus-visible { background: #eff6ff; border-color: #bfdbfe; }
+.link-tile__label {
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.link-tile__count {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 420px) {
+  .link-tiles:not(.link-tiles--wide) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Error pages (NotFound.tsx, public/403.html keeps its own copy): one centred column. */
+.error-page { min-height: 100vh; display: flex; flex-direction: column; background: #ffffff; color: #111827; font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+.error-page__main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 64px 24px; }
+.error-page__code { font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #0ea5e9; margin-bottom: 10px; }
+.error-page__title { font-size: 48px; font-weight: 800; color: #0f172a; letter-spacing: -0.03em; line-height: 1.1; margin: 0 0 12px; }
+.error-page__intro { font-size: 16px; color: #374151; line-height: 1.6; margin: 0 0 32px; max-width: 560px; }
+.error-page__intro code { font-size: 14px; background: #f3f4f6; padding: 1px 6px; border-radius: 4px; word-break: break-all; }
+.error-page__links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; width: 100%; max-width: 760px; text-align: left; }
+.error-page__links a { display: block; text-decoration: none; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; transition: background-color 0.12s, border-color 0.12s; }
+.error-page__links a:hover, .error-page__links a:focus-visible { background: #eff6ff; border-color: #bfdbfe; }
+.error-page__links strong { display: block; font-size: 14px; font-weight: 700; color: #0369a1; }
+.error-page__links small { display: block; font-size: 12px; color: #6b7280; margin-top: 2px; }
+@media (max-width: 640px) {
+  .error-page__main { padding: 40px 16px; justify-content: flex-start; }
+  .error-page__title { font-size: 34px; }
+  .error-page__links { grid-template-columns: 1fr; }
+}

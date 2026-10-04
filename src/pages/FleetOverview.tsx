@@ -7,6 +7,7 @@ import { makeToSlug, titleCaseMake } from "@/lib/slugs";
 import { tlaToSlug, titleCaseRegion } from "@/lib/slugs";
 import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { LoadingDots } from "@/components/LoadingDots";
+import { LinkTiles } from "@/components/LinkTiles";
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -208,25 +209,17 @@ export default function FleetOverview() {
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>
               Top makes by registrations
             </h2>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {data.topMakes
+            <LinkTiles
+              items={data.topMakes
                 .filter((m) => !["TRAILER", "HOMEBUILT", "CARAVAN"].includes(m.value))
-                .map((m) => (
-                  <Link
-                    key={m.value}
-                    to={`/stats/${makeToSlug(m.value)}`}
-                    onClick={() => captureEvent("fleet_overview_make_clicked", { make: m.value })}
-                    style={{ fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: 999, border: "1px solid #e5e7eb", background: "#ffffff", color: "#0f172a", textDecoration: "none" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "#bfdbfe"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
-                  >
-                    {titleCaseMake(m.value)}
-                    <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400, marginLeft: 6 }}>
-                      {m.count.toLocaleString("en-NZ")}
-                    </span>
-                  </Link>
-                ))}
-            </div>
+                .map((m) => ({
+                  key: m.value,
+                  to: `/stats/${makeToSlug(m.value)}`,
+                  label: titleCaseMake(m.value),
+                  count: m.count,
+                  onClick: () => captureEvent("fleet_overview_make_clicked", { make: m.value }),
+                }))}
+            />
           </section>
         )}
 
@@ -236,23 +229,17 @@ export default function FleetOverview() {
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>
               Browse by region
             </h2>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {data.regions.map((r) => (
-                <Link
-                  key={r.value}
-                  to={`/region/${tlaToSlug(r.value)}`}
-                  onClick={() => captureEvent("fleet_overview_region_clicked", { region: r.value })}
-                  style={{ fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: 999, border: "1px solid #e5e7eb", background: "#f9fafb", color: "#0f172a", textDecoration: "none" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "#bfdbfe"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
-                >
-                  {titleCaseRegion(r.value)}
-                  <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400, marginLeft: 6 }}>
-                    {r.count.toLocaleString("en-NZ")}
-                  </span>
-                </Link>
-              ))}
-            </div>
+            <LinkTiles
+              tone="grey"
+              wide
+              items={data.regions.map((r) => ({
+                key: r.value,
+                to: `/region/${tlaToSlug(r.value)}`,
+                label: titleCaseRegion(r.value),
+                count: r.count,
+                onClick: () => captureEvent("fleet_overview_region_clicked", { region: r.value }),
+              }))}
+            />
           </section>
         )}
 

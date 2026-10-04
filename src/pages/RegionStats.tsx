@@ -16,6 +16,7 @@ import { getRegionBlurb } from "@/lib/regionContent";
 import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { resultColumns } from "@/lib/resultColumns";
 import { LoadingDots } from "@/components/LoadingDots";
+import { LinkTiles } from "@/components/LinkTiles";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -361,23 +362,16 @@ export default function RegionStats() {
               <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>
                 Other regions
               </h2>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {otherRegions.map((r) => (
-                  <Link
-                    key={r.value}
-                    to={`/region/${tlaToSlug(r.value)}`}
-                    onClick={() => captureEvent("related_region_clicked", { from: tlaUpper, to: r.value })}
-                    style={{ fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: 999, border: "1px solid #e5e7eb", background: "#f9fafb", color: "#0f172a", textDecoration: "none" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "#bfdbfe"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
-                  >
-                    {titleCaseRegion(r.value)}
-                    <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400, marginLeft: 6 }}>
-                      {r.count.toLocaleString("en-NZ")}
-                    </span>
-                  </Link>
-                ))}
-              </div>
+              <LinkTiles
+                wide
+                items={otherRegions.map((r) => ({
+                  key: r.value,
+                  to: `/region/${tlaToSlug(r.value)}`,
+                  label: titleCaseRegion(r.value),
+                  count: r.count,
+                  onClick: () => captureEvent("related_region_clicked", { from: tlaUpper, to: r.value }),
+                }))}
+              />
             </div>
           </section>
         )}

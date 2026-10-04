@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { applySeo } from "@/lib/seo";
 import { captureEvent } from "@/lib/posthog";
-import { Band, PageShell } from "@/components/PageShell";
+import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 
 const LINKS = [
   { to: "/", label: "Search the register", sub: "Filter 5.9 million vehicles by make, model, colour and more" },
@@ -28,29 +28,25 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <PageShell
-      source="not_found"
-      subtitle="Page not found"
-      crumb="Not found"
-      title="Page not found"
-      intro={<>There's nothing at <code style={{ fontSize: 14, background: "#f3f4f6", padding: "1px 6px", borderRadius: 4, wordBreak: "break-all" }}>{location.pathname}</code>. It may have moved, or the link has a typo.</>}
-    >
-      <Band tone="grey" title="Try one of these">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(240px, 100%), 1fr))", gap: 12 }}>
+    <div className="error-page">
+      <SiteHeader source="not_found" subtitle="Page not found" />
+      <main className="error-page__main">
+        <div className="error-page__code">404</div>
+        <h2 className="error-page__title">Page not found</h2>
+        <p className="error-page__intro">
+          There's nothing at <code>{location.pathname}</code>. It may have moved, or the link has a typo.
+        </p>
+        <div className="error-page__links">
           {LINKS.map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
-              onClick={() => captureEvent("not_found_link_clicked", { to: l.to, path: location.pathname })}
-              style={{ display: "block", textDecoration: "none", background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 16px" }}
-            >
-              <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#0369a1" }}>{l.label} →</span>
-              <span style={{ display: "block", fontSize: 12, color: "#6b7280", marginTop: 2 }}>{l.sub}</span>
+            <Link key={l.to} to={l.to} onClick={() => captureEvent("not_found_link_clicked", { to: l.to, path: location.pathname })}>
+              <strong>{l.label} →</strong>
+              <small>{l.sub}</small>
             </Link>
           ))}
         </div>
-      </Band>
-    </PageShell>
+      </main>
+      <SiteFooter source="not_found" />
+    </div>
   );
 };
 

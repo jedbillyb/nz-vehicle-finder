@@ -16,6 +16,7 @@ import { modelToSlug, slugToMakeUpper, titleCaseModel, titleCaseMake } from "@/l
 import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { resultColumns } from "@/lib/resultColumns";
 import { LoadingDots } from "@/components/LoadingDots";
+import { LinkTiles } from "@/components/LinkTiles";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -388,23 +389,15 @@ export default function MakeStats() {
               <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>
                 Top {makeDisplay} models
               </h2>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {topModels.map((m) => (
-                  <Link
-                    key={m.model}
-                    to={`/stats/${make}/${modelToSlug(m.model)}`}
-                    onClick={() => captureEvent("top_model_clicked", { make: makeUpper, model: m.model })}
-                    style={{ fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: 999, border: "1px solid #e5e7eb", background: "#f9fafb", color: "#0f172a", textDecoration: "none" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "#bfdbfe"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
-                  >
-                    {titleCaseModel(m.model)}
-                    <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400, marginLeft: 6 }}>
-                      {m.count.toLocaleString("en-NZ")}
-                    </span>
-                  </Link>
-                ))}
-              </div>
+              <LinkTiles
+                items={topModels.map((m) => ({
+                  key: m.model,
+                  to: `/stats/${make}/${modelToSlug(m.model)}`,
+                  label: titleCaseModel(m.model),
+                  count: m.count,
+                  onClick: () => captureEvent("top_model_clicked", { make: makeUpper, model: m.model }),
+                }))}
+              />
             </div>
           </section>
         )}
