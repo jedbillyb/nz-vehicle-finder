@@ -350,34 +350,38 @@ export function SearchField({
       </div>
 
       {showSuggestions && (
-        <div ref={listRef} tabIndex={-1} onMouseDown={e => e.preventDefault()} className="absolute z-50 top-full left-0 right-0 mt-1 max-h-72 overflow-auto scroll-pb-12 rounded-md border border-border bg-popover shadow-lg">
-          {suggestions.map((s, i) => {
-            const isSelected = selectedSet.has(s.toUpperCase());
-            return (
-              <button
-                key={s}
-                type="button"
-                // Rows are picked with the mouse or the arrow keys; leaving them
-                // out of the tab order lets Tab go straight to the next field.
-                tabIndex={-1}
-                className={cn(
-                  "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm font-mono hover:bg-accent hover:text-accent-foreground",
-                  isSelected && "bg-secondary/60 font-semibold",
-                  i === highlightedIndex && "bg-accent text-accent-foreground"
-                )}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  toggleValue(s);
-                }}
-              >
-                <Check
-                  size={12}
-                  className={cn("shrink-0 text-primary", !isSelected && "invisible")}
-                />
-                <span className="truncate">{s}</span>
-              </button>
-            );
-          })}
+        <div onMouseDown={e => e.preventDefault()} className="absolute z-50 top-full left-0 right-0 mt-1 flex flex-col overflow-hidden rounded-md border border-border bg-popover shadow-lg">
+          {/* Only the rows scroll, so the scrollbar stops above the footer note.
+              overscroll-none stops the list rubber-banding at either end. */}
+          <div ref={listRef} tabIndex={-1} className="max-h-64 overflow-y-auto overscroll-none">
+            {suggestions.map((s, i) => {
+              const isSelected = selectedSet.has(s.toUpperCase());
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  // Rows are picked with the mouse or the arrow keys; leaving them
+                  // out of the tab order lets Tab go straight to the next field.
+                  tabIndex={-1}
+                  className={cn(
+                    "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm font-mono hover:bg-accent hover:text-accent-foreground",
+                    isSelected && "bg-secondary/60 font-semibold",
+                    i === highlightedIndex && "bg-accent text-accent-foreground"
+                  )}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    toggleValue(s);
+                  }}
+                >
+                  <Check
+                    size={12}
+                    className={cn("shrink-0 text-primary", !isSelected && "invisible")}
+                  />
+                  <span className="truncate">{s}</span>
+                </button>
+              );
+            })}
+          </div>
 
           {suggestions.length === 0 && (
             <div className="px-3 py-2 text-[11px] font-mono leading-relaxed text-muted-foreground">
@@ -392,7 +396,7 @@ export function SearchField({
           {/* Every selectable value is listed, so say so when the list had to be
               cut - otherwise a truncated list reads as "that is all there is". */}
           {suggestions.length >= SUGGESTION_LIMIT && (
-            <div className="sticky bottom-0 border-t border-border bg-popover px-3 py-1.5 text-[10px] font-mono text-muted-foreground">
+            <div className="shrink-0 border-t border-border bg-popover px-3 py-1.5 text-[10px] font-mono text-muted-foreground">
               First {SUGGESTION_LIMIT} of many - type to narrow.
             </div>
           )}
