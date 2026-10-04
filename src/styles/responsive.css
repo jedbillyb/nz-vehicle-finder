@@ -237,15 +237,23 @@
   }
 }
 
-/* ── Centre page content on wide screens ────────────────────── */
-/* Bands stay full-bleed (their colours run edge to edge); only the content
-   inside is held to a 1440px column, by growing the side padding. */
+/* ── Full-width page content ───────────────────────────────── */
+/* Every section runs the full width of the page on one 24px gutter, and the
+   results table's first and last columns sit on that same gutter. */
 @media (min-width: 768px) {
   .stats-hero,
   .page-band,
   .content-col {
-    padding-left: max(24px, calc((100% - 1440px) / 2)) !important;
-    padding-right: max(24px, calc((100% - 1440px) / 2)) !important;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
+  .results-table th:first-child,
+  .results-table td:first-child {
+    padding-left: 24px !important;
+  }
+  .results-table th:last-child,
+  .results-table td:last-child {
+    padding-right: 24px !important;
   }
 }
 @media (max-width: 767px) {

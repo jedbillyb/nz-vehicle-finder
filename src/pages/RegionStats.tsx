@@ -302,7 +302,7 @@ export default function RegionStats() {
               )}
             </div>
 
-            <div className="content-col" style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
+            <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
               <table className="results-table" style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
                 <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 10 }}>
                   <tr>
