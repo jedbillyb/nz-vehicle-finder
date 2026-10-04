@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "server": "tsx --env-file .env server/index.ts",
+    "server": "tsx --env-file-if-exists .env.production --env-file .env server/index.ts",
     "test:watch": "vitest"
   },
   "dependencies": {

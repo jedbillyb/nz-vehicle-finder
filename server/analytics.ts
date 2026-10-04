@@ -1,7 +1,8 @@
 /**
  * Server-side PostHog events: the things the browser never sees, like paid API
  * calls, sign-ups and Stripe plan changes. Uses the same project key as the
- * site (the server starts with --env-file .env, which holds VITE_POSTHOG_API_KEY).
+ * site: `npm run server` loads .env.production (where the build reads
+ * VITE_POSTHOG_API_KEY from) and then .env, which wins on any clash.
  *
  * People are identified as `user_<id>`, the same id the account page merges
  * the browser's anonymous id into, so site visits and API use line up.

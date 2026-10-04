@@ -147,7 +147,7 @@ VITE_POSTHOG_API_KEY=phc_...
 VITE_POSTHOG_HOST=https://us.i.posthog.com
 ```
 
-The API server reads the same key from `.env` (or `POSTHOG_API_KEY` / `POSTHOG_HOST`), so both sides report to one project.
+`npm run server` loads `.env.production` and then `.env`, so the API server picks up the same key (or set `POSTHOG_API_KEY` / `POSTHOG_HOST`) and both sides report to one project.
 
 Tracked in the browser: page views, searches (with active filters), zero-result and failed searches, filter and suggestion use, sorting and paging, CSV exports, copy-link clicks, saved searches (added, opened, renamed, removed), feedback, account page visits, API key create/copy/rename/revoke, checkout and billing portal clicks, sign-in and sign-out, and 404s with the broken path.
 
