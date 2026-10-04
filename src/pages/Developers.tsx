@@ -114,7 +114,7 @@ function Endpoint({ path, summary, params, request, response, tone }: {
           {params && (
             <Table
               head={["Parameter", "Type", "Description"]}
-              rows={params.map(([n, t, d]) => [<C>{n}</C>, <span style={{ color: "#6b7280" }}>{t}</span>, d])}
+              rows={params.map(([n, t, d]) => [<span style={{ whiteSpace: "nowrap" }}><C>{n}</C></span>, <span style={{ color: "#6b7280" }}>{t}</span>, d])}
             />
           )}
         </div>

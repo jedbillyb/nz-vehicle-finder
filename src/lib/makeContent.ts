@@ -1,3 +1,5 @@
+import { titleCaseMake } from "@/lib/slugs";
+
 // Hand-written blurbs for top makes. Used on /stats/:make pages to give
 // each page unique editorial content for SEO. Keys are the uppercase MAKE
 // value as stored in the Motor Vehicle Register.
@@ -134,15 +136,7 @@ export const MAKE_CONTENT: Record<string, MakeBlurb> = {
 export function getMakeBlurb(makeUpper: string): MakeBlurb {
   return (
     MAKE_CONTENT[makeUpper] ?? {
-      blurb: `${formatMake(makeUpper)} vehicles are registered with the New Zealand Motor Vehicle Register. Browse the full list below to see registration counts, model breakdowns and regional distribution.`,
+      blurb: `${titleCaseMake(makeUpper)} vehicles are registered with the New Zealand Motor Vehicle Register. Browse the full list below to see registration counts, model breakdowns and regional distribution.`,
     }
   );
-}
-
-function formatMake(upper: string): string {
-  return upper
-    .toLowerCase()
-    .split(" ")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 }

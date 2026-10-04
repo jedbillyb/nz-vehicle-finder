@@ -23,6 +23,25 @@ export function titleCaseModel(model: string): string {
     .join(" ");
 }
 
+// Makes written as acronyms. Short words with no vowel (BMW, GMC, KTM, BYD...)
+// are caught by the rule below; these are the ones that have a vowel.
+const ACRONYM_MAKES = new Set(["MG", "MAN", "DAF", "DS", "MV", "ISO", "AMC", "JAC", "UD", "FAW", "SAIC", "CFMOTO", "AJS", "BSA", "TVS", "GAZ", "SEAT"]);
+
+/** "MERCEDES-BENZ" -> "Mercedes-Benz", "BMW" -> "BMW", "LAND ROVER" -> "Land Rover". */
+export function titleCaseMake(make: string): string {
+  return make
+    .split(" ")
+    .map((word) => {
+      const up = word.toUpperCase();
+      if (ACRONYM_MAKES.has(up) || (up.length <= 4 && !/[AEIOUY]/.test(up))) return up;
+      return word
+        .split("-")
+        .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+        .join("-");
+    })
+    .join(" ");
+}
+
 // Maps URL slug -> exact MAKE value stored in the NZ Motor Vehicle Register.
 // Only needed for makes whose names contain spaces (since slug.toUpperCase()
 // would produce "LAND-ROVER" instead of "LAND ROVER").

@@ -11,9 +11,10 @@ import {
 import { applySeo } from "@/lib/seo";
 import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
-import { tlaToSlug, slugToTla, titleCaseRegion } from "@/lib/slugs";
+import { tlaToSlug, slugToTla, titleCaseRegion, titleCaseMake } from "@/lib/slugs";
 import { getRegionBlurb } from "@/lib/regionContent";
 import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { resultColumns } from "@/lib/resultColumns";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -28,18 +29,6 @@ function useIsMobile() {
 const VehicleDetail = lazy(() =>
   import("@/components/VehicleDetail").then((m) => ({ default: m.VehicleDetail }))
 );
-
-const resultColumns: { key: keyof Vehicle; label: string }[] = [
-  { key: "MAKE", label: "Make" },
-  { key: "MODEL", label: "Model" },
-  { key: "VEHICLE_YEAR", label: "Year" },
-  { key: "BASIC_COLOUR", label: "Colour" },
-  { key: "BODY_TYPE", label: "Body" },
-  { key: "MOTIVE_POWER", label: "Fuel" },
-  { key: "TRANSMISSION_TYPE", label: "Trans" },
-  { key: "TLA", label: "Region" },
-  { key: "VIN11", label: "VIN11" },
-];
 
 type SortConfig = { key: keyof Vehicle; dir: "asc" | "desc" } | null;
 
@@ -141,7 +130,7 @@ export default function RegionStats() {
         : `${tlaDisplay} vehicle statistics | NZ Vehicle Finder`;
     const description =
       total !== null
-        ? `${totalText} vehicles are registered in ${tlaDisplay}, New Zealand.${top.make ? ` Most popular make is ${top.make.value.charAt(0) + top.make.value.slice(1).toLowerCase()}.` : ""} View full breakdowns from the Motor Vehicle Register.`
+        ? `${totalText} vehicles are registered in ${tlaDisplay}, New Zealand.${top.make ? ` Most popular make is ${titleCaseMake(top.make.value)}.` : ""} View full breakdowns from the Motor Vehicle Register.`
         : `Browse vehicles registered in ${tlaDisplay}, New Zealand. View counts, breakdowns and full listings from the Motor Vehicle Register.`;
 
     const jsonLd: object[] = [
@@ -294,7 +283,8 @@ export default function RegionStats() {
           <HeroAside source="region_stats_page" />
         </div>
 
-        <ResultStats data={breakdown} loading={breakdownLoading} />
+        {/* Skeleton from the first paint, not only once the totals are back. */}
+        <ResultStats data={breakdown} loading={breakdownLoading || (loading && total === null)} />
 
         {total !== null && (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#f3f4f6" }}>
@@ -313,14 +303,14 @@ export default function RegionStats() {
             </div>
 
             <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
-              <table className="results-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
+              <table className="results-table" style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
                 <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 10 }}>
                   <tr>
                     {resultColumns.map((col) => (
                       <th
                         key={col.key}
                         onClick={() => handleSort(col.key)}
-                        style={{ padding: "8px 16px", textAlign: "left", fontSize: 9, letterSpacing: "0.2em", color: sort?.key === col.key ? "#0ea5e9" : "#6b7280", cursor: "pointer", borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap", fontWeight: 700, userSelect: "none", overflow: "hidden", textOverflow: "ellipsis", width: `${100 / resultColumns.length}%` }}
+                        style={{ padding: "8px 16px", textAlign: "left", fontSize: 9, letterSpacing: "0.2em", color: sort?.key === col.key ? "#0ea5e9" : "#6b7280", cursor: "pointer", borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap", fontWeight: 700, userSelect: "none", overflow: "hidden", textOverflow: "ellipsis", width: col.width }}
                       >
                         {col.label}
                         {sort?.key === col.key && <span style={{ marginLeft: 4, color: "#0ea5e9" }}>{sort.dir === "asc" ? "↑" : "↓"}</span>}

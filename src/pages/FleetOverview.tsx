@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { fetchFleetOverview, type FleetOverview } from "@/lib/vehicleApi";
 import { applySeo } from "@/lib/seo";
 import { captureEvent } from "@/lib/posthog";
-import { makeToSlug } from "@/lib/slugs";
+import { makeToSlug, titleCaseMake } from "@/lib/slugs";
 import { tlaToSlug, titleCaseRegion } from "@/lib/slugs";
 import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 
@@ -150,9 +150,9 @@ export default function FleetOverview() {
           <HeroAside source="fleet_overview" />
         </div>
 
-        {/* Stat cards */}
+        {/* Stat cards: columns are set in responsive.css (.fleet-stats) so no card is left alone on a row. */}
         {data && (
-          <div className="page-band" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
+          <div className="page-band fleet-stats" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "grid", gap: 12 }}>
             <StatCard
               label="TOTAL REGISTERED"
               value={data.total.toLocaleString("en-NZ")}
@@ -170,7 +170,7 @@ export default function FleetOverview() {
             />
             <StatCard
               label="TOP MAKE"
-              value={topMake ? topMake.value.charAt(0) + topMake.value.slice(1).toLowerCase() : "-"}
+              value={topMake ? titleCaseMake(topMake.value) : "-"}
               sub={topMake ? `${topMake.count.toLocaleString("en-NZ")} registered` : undefined}
             />
             <StatCard
@@ -219,7 +219,7 @@ export default function FleetOverview() {
                     onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "#bfdbfe"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
                   >
-                    {m.value.charAt(0) + m.value.slice(1).toLowerCase()}
+                    {titleCaseMake(m.value)}
                     <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400, marginLeft: 6 }}>
                       {m.count.toLocaleString("en-NZ")}
                     </span>

@@ -23,6 +23,7 @@ import { exportToCsv } from "@/lib/csvExport";
 import { applySeo } from "@/lib/seo";
 import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
+import { resultColumns } from "@/lib/resultColumns";
 import { toast } from "sonner";
 import { Search, RotateCcw, Download, Link2, LoaderCircle, ChevronDown } from "lucide-react";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
@@ -67,17 +68,6 @@ const advancedFilterKeySet = new Set([
 ]);
 
 /** Widths are shares of the table, sized to what each column usually holds. */
-const resultColumns: { key: keyof Vehicle; label: string; width: string }[] = [
-  { key: "MAKE", label: "Make", width: "11%" },
-  { key: "MODEL", label: "Model", width: "12%" },
-  { key: "VEHICLE_YEAR", label: "Year", width: "6%" },
-  { key: "BASIC_COLOUR", label: "Colour", width: "8%" },
-  { key: "BODY_TYPE", label: "Body", width: "13%" },
-  { key: "MOTIVE_POWER", label: "Fuel", width: "9%" },
-  { key: "TRANSMISSION_TYPE", label: "Transmission", width: "14%" },
-  { key: "TLA", label: "Region", width: "16%" },
-  { key: "VIN11", label: "VIN11", width: "11%" },
-];
 
 type SortConfig = { key: keyof Vehicle; dir: "asc" | "desc" } | null;
 
@@ -668,7 +658,7 @@ export default function Index() {
           </div>
 
           <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
-            <table className="results-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
+            <table className="results-table" style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
               <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 10 }}>
                 <tr>
                   {resultColumns.map((col) => (
@@ -725,9 +715,16 @@ export default function Index() {
       {total === null && (
         <div className="empty-state" style={{ padding: "60px 24px", maxWidth: 800, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ marginBottom: 16, display: "flex", justifyContent: "center" }}><Search size={36} color="#94a3b8" /></div>
-            <h2 style={{ fontSize: 14, color: "#374151", letterSpacing: 0, margin: "0 0 8px", fontWeight: 500 }}>Use the filters above to search</h2>
-            <p style={{ fontSize: 12, color: "#6b7280", letterSpacing: 0, margin: 0 }}>Set at least one filter, then click Run Search</p>
+            {/* A first search (e.g. opened from a link) has no total yet, so say it's running rather than asking for filters. */}
+            <div style={{ marginBottom: 16, display: "flex", justifyContent: "center" }}>
+              {loading ? <LoaderCircle size={36} color="#0ea5e9" className="animate-spin" /> : <Search size={36} color="#94a3b8" />}
+            </div>
+            <h2 style={{ fontSize: 14, color: "#374151", letterSpacing: 0, margin: "0 0 8px", fontWeight: 500 }}>
+              {loading ? "Searching the register..." : "Use the filters above to search"}
+            </h2>
+            <p style={{ fontSize: 12, color: "#6b7280", letterSpacing: 0, margin: 0 }}>
+              {loading ? "Broad searches can take a few seconds" : "Set at least one filter, then click Run Search"}
+            </p>
           </div>
           <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 40, color: "#374151", fontSize: 13, lineHeight: 1.8 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Search the NZ Motor Vehicle Register</h2>

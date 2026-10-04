@@ -364,7 +364,8 @@ export function SearchField({
           aria-expanded={showSuggestions}
           aria-label={label}
           className="h-6 w-0 min-w-[2ch] flex-1 bg-transparent px-1.5 text-sm font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
-          placeholder={terms.length > 0 ? "" : `Any ${label.toLowerCase()}...`}
+          // Just "Any": the label names the field, and longer text clips mid-word in narrow columns.
+          placeholder={terms.length > 0 ? "" : "Any"}
         />
       </div>
 

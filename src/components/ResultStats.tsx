@@ -87,13 +87,13 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
                   </h3>
                   {items.map((d) => (
                     <div key={d.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                      <div style={{ width: 110, fontSize: 10, color: "#4b5563", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={d.value}>
+                      <div style={{ flex: "0 0 45%", maxWidth: 170, fontSize: 10, color: "#4b5563", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={d.value}>
                         {d.value}
                       </div>
                       <div style={{ flex: 1, height: 8, background: "#f3f4f6", position: "relative", borderRadius: 999, overflow: "hidden" }}>
                         <div style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
                       </div>
-                      <div style={{ fontSize: 9, color: "#6b7280", minWidth: 45, textAlign: "right" }}>
+                      <div style={{ fontSize: 9, color: "#6b7280", minWidth: 45, textAlign: "right", whiteSpace: "nowrap" }}>
                         {d.count.toLocaleString('en-NZ')} ({((d.count / total) * 100).toFixed(1)}%)
                       </div>
                     </div>
