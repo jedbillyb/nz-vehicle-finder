@@ -14,6 +14,7 @@ import { Vehicle } from "@/lib/mockData";
 import { modelToSlug, slugToMakeUpper, slugToModel, titleCaseModel, titleCaseMake } from "@/lib/slugs";
 import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { resultColumns } from "@/lib/resultColumns";
+import { LoadingDots } from "@/components/LoadingDots";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -289,7 +290,7 @@ export default function ModelStats() {
               <span style={{ color: "#111827" }}>{modelDisplay}</span>
             </nav>
             <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-              {total !== null ? total.toLocaleString("en-NZ") : "..."} {makeDisplay} {modelDisplay} registered in NZ
+              {total !== null ? total.toLocaleString("en-NZ") : <LoadingDots />} {makeDisplay} {modelDisplay} registered in NZ
             </h2>
             <p style={{ fontSize: 16, color: "#374151", margin: 0, letterSpacing: "0.01em", maxWidth: 800 }}>
               Breakdown and full listing of all {makeDisplay} {modelDisplay} vehicles on the New Zealand Motor Vehicle Register.
