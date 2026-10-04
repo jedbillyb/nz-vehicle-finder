@@ -63,9 +63,9 @@ export function PageShell({
 }
 
 /** A full-width section, alternating white and grey like the fleet page. */
-export function Band({ tone = "white", title, children }: { tone?: "white" | "grey"; title?: ReactNode; children: ReactNode }) {
+export function Band({ tone = "white", title, id, children }: { tone?: "white" | "grey"; title?: ReactNode; id?: string; children: ReactNode }) {
   return (
-    <section className="page-band" style={{ padding: "24px 24px 32px", background: tone === "grey" ? "#f9fafb" : "#ffffff", borderBottom: "1px solid #e5e7eb" }}>
+    <section id={id} className="page-band" style={{ scrollMarginTop: 16, padding: "24px 24px 32px", background: tone === "grey" ? "#f9fafb" : "#ffffff", borderBottom: "1px solid #e5e7eb" }}>
       {title && <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>{title}</h2>}
       {children}
     </section>

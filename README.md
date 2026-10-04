@@ -233,6 +233,15 @@ sync from Stripe overwrites it):
 node -e 'new (require("better-sqlite3"))("database/accounts.db").prepare("UPDATE users SET tier=? WHERE email=?").run("starter","them@example.com")'
 ```
 
+## Saved searches
+
+Signed-in users can star a search and get back to it from the search page or `/account`.
+Searches are stored per account in `database/accounts.db` (`saved_searches`), as the page's
+query string in one canonical form (`shared/savedSearch.ts`), so the same filters always
+match whatever order they were set in. Up to 50 per account. Routes, all session-cookie
+authenticated: `GET/POST /api/account/searches`, `PATCH/DELETE /api/account/searches/:id`.
+Saving while signed out keeps the search in the browser and saves it straight after sign-in.
+
 ## Deployment
 
 Every push to `main` deploys through GitHub Actions (`.github/workflows/deploy.yml`). It SSHes

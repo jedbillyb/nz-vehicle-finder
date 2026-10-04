@@ -4,6 +4,7 @@ import { SearchField } from "@/components/SearchField";
 import { RangeField } from "@/components/RangeField";
 import { Pagination } from "@/components/Pagination";
 import { ResultStats } from "@/components/ResultStats";
+import { SaveSearchButton, SavedSearchLinks } from "@/components/SaveSearchButton";
 import {
   API_BASE,
   checkHealth,
@@ -17,6 +18,7 @@ import {
 } from "@/lib/vehicleApi";
 import { clampPageSize, DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "../../shared/pagination";
 import { hasTerms } from "../../shared/filterTerms";
+import { canonicalQuery } from "../../shared/savedSearch";
 import { exportToCsv } from "@/lib/csvExport";
 import { applySeo } from "@/lib/seo";
 import { captureEvent, summarizeFilters } from "@/lib/posthog";
@@ -589,6 +591,12 @@ export default function Index() {
                     </button>
                   )}
                   {total !== null && (
+                    <SaveSearchButton
+                      query={canonicalQuery(filtersToParams(filters))}
+                      style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", borderRadius: 999, fontSize: 11, fontFamily: "inherit", letterSpacing: "0.02em", whiteSpace: "nowrap" }}
+                    />
+                  )}
+                  {total !== null && (
                     <button onClick={handleCopyLink}
                       style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: copiedLink ? "#dcfce7" : "transparent", color: copiedLink ? "#15803d" : "#4b5563", border: copiedLink ? "1px solid #22c55e" : "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.02em", whiteSpace: "nowrap" }}
                       onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
@@ -727,6 +735,7 @@ export default function Index() {
             <p style={{ marginBottom: 12 }}>Common uses include checking how many vehicles of a specific make and model are registered in New Zealand (fleet search), researching a used car before buying, or finding registration statistics from the motor vehicle register by region.</p>
             <p style={{ marginBottom: 24 }}>The data is sourced directly from Waka Kotahi NZ Transport Agency's publicly available Motor Vehicle Register dataset, which covers all vehicles currently registered in New Zealand. This comprehensive NZ vehicle register index includes passenger vehicles, motorcycles, trucks, trailers, and more.</p>
 
+            <SavedSearchLinks />
             <h3 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Popular Searches</h3>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
               {[
@@ -762,6 +771,8 @@ export default function Index() {
                 <strong style={{ color: "#111827" }}>{q}</strong> {a}
               </div>
             ))}
+            {/* Same rule as the one above this section, so the API card reads as its own block. */}
+            <div style={{ borderTop: "1px solid #e5e7eb", marginTop: 32 }} />
             <div style={{ background: "#ffffff", border: "2px solid #0ea5e9", borderRadius: 8, padding: "18px 20px", marginTop: 32, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
               <div style={{ flex: "1 1 320px" }}>
                 <div style={{ fontSize: 9, color: "#0369a1", letterSpacing: "0.18em", fontWeight: 700, marginBottom: 6 }}>DEVELOPER API</div>

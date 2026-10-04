@@ -11,6 +11,9 @@ import express, { type Request, type Response, type NextFunction } from "express
 import { clientIp } from "./rateLimit.js";
 import { isValidEmail } from "../shared/email.js";
 import { BURST_PER_SECOND, MAX_KEYS_PER_ACCOUNT, TIERS, TIER_ORDER, tierFor, type Tier } from "../shared/apiTiers.js";
+import {
+  MAX_SAVED_QUERY_LENGTH, MAX_SAVED_SEARCHES, MAX_SAVED_SEARCH_NAME, canonicalQuery, describeSearch,
+} from "../shared/savedSearch.js";
 
 const LOGIN_TOKEN_TTL_MS = 15 * 60 * 1000;
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -30,6 +33,14 @@ export interface ApiKeyInfo {
   prefix: string;
   created_at: string;
   last_used_at: string | null;
+}
+
+export interface SavedSearch {
+  id: number;
+  name: string;
+  /** Canonical query string, without the leading "?" - see shared/savedSearch.ts */
+  query: string;
+  created_at: string;
 }
 
 export type UsageCheck =
@@ -95,6 +106,14 @@ export class AccountStore {
         month TEXT NOT NULL,
         count INTEGER NOT NULL DEFAULT 0,
         PRIMARY KEY (user_id, month)
+      );
+      CREATE TABLE IF NOT EXISTS saved_searches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        name TEXT NOT NULL,
+        query TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE (user_id, query)
       );
     `);
     // Columns added after the first release; ALTER only what is missing.
@@ -202,6 +221,42 @@ export class AccountStore {
     return this.db.prepare(
       "UPDATE api_keys SET revoked_at = ? WHERE id = ? AND user_id = ? AND revoked_at IS NULL"
     ).run(now.toISOString(), keyId, userId).changes > 0;
+  }
+
+  listSearches(userId: number): SavedSearch[] {
+    return this.db.prepare(
+      "SELECT id, name, query, created_at FROM saved_searches WHERE user_id = ? ORDER BY id DESC"
+    ).all(userId) as SavedSearch[];
+  }
+
+  /**
+   * Saves a search, or returns the existing one if these exact filters are
+   * already saved. "full" when the account is at the limit; "empty" when the
+   * query sets no filter at all.
+   */
+  saveSearch(userId: number, rawQuery: string, rawName: string | null, now = new Date()): SavedSearch | "full" | "empty" {
+    const query = canonicalQuery(rawQuery);
+    if (!query) return "empty";
+    const existing = this.db.prepare(
+      "SELECT id, name, query, created_at FROM saved_searches WHERE user_id = ? AND query = ?"
+    ).get(userId, query) as SavedSearch | undefined;
+    if (existing) return existing;
+    const count = (this.db.prepare("SELECT COUNT(*) AS n FROM saved_searches WHERE user_id = ?").get(userId) as { n: number }).n;
+    if (count >= MAX_SAVED_SEARCHES) return "full";
+    const name = rawName?.trim().slice(0, MAX_SAVED_SEARCH_NAME) || describeSearch(query);
+    const result = this.db.prepare(
+      "INSERT INTO saved_searches (user_id, name, query, created_at) VALUES (?, ?, ?, ?)"
+    ).run(userId, name, query, now.toISOString());
+    return { id: Number(result.lastInsertRowid), name, query, created_at: now.toISOString() };
+  }
+
+  renameSearch(userId: number, id: number, name: string): boolean {
+    return this.db.prepare("UPDATE saved_searches SET name = ? WHERE id = ? AND user_id = ?")
+      .run(name.trim().slice(0, MAX_SAVED_SEARCH_NAME), id, userId).changes > 0;
+  }
+
+  deleteSearch(userId: number, id: number): boolean {
+    return this.db.prepare("DELETE FROM saved_searches WHERE id = ? AND user_id = ?").run(id, userId).changes > 0;
   }
 
   usageFor(userId: number, now = new Date()): number {
@@ -362,6 +417,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
       tiers: TIER_ORDER.map((id) => TIERS[id]),
       usage: { used: store.usageFor(user.id, now), limit: tier.monthlyRequests, resetsAt: nextMonthStart(now) },
       keys: store.listKeys(user.id),
+      searches: store.listSearches(user.id),
       billing: {
         enabled: opts.billingEnabled,
         subscribed: !!store.billingFor(user.id).subscriptionId,
@@ -394,6 +450,44 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     if (!user) return res.status(401).json({ error: "Not signed in" });
     const ok = store.revokeKey(user.id, Number(req.params.id));
     if (!ok) return res.status(404).json({ error: "Key not found" });
+    res.json({ ok: true });
+  });
+
+  // --- Saved searches ---
+
+  router.get("/account/searches", (req, res) => {
+    const user = sessionUser(req);
+    if (!user) return res.status(401).json({ error: "Not signed in" });
+    res.json({ searches: store.listSearches(user.id) });
+  });
+
+  router.post("/account/searches", (req, res) => {
+    const user = sessionUser(req);
+    if (!user) return res.status(401).json({ error: "Not signed in" });
+    const query = typeof req.body?.query === "string" ? req.body.query : "";
+    if (query.length > MAX_SAVED_QUERY_LENGTH) return res.status(400).json({ error: "That search is too long to save" });
+    const name = typeof req.body?.name === "string" ? req.body.name : null;
+    const saved = store.saveSearch(user.id, query, name);
+    if (saved === "empty") return res.status(400).json({ error: "Set at least one filter before saving a search" });
+    if (saved === "full") {
+      return res.status(400).json({ error: `You can save up to ${MAX_SAVED_SEARCHES} searches. Delete one first.` });
+    }
+    res.json(saved);
+  });
+
+  router.patch("/account/searches/:id", (req, res) => {
+    const user = sessionUser(req);
+    if (!user) return res.status(401).json({ error: "Not signed in" });
+    const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    if (!name) return res.status(400).json({ error: "Give the search a name" });
+    if (!store.renameSearch(user.id, Number(req.params.id), name)) return res.status(404).json({ error: "Search not found" });
+    res.json({ ok: true });
+  });
+
+  router.delete("/account/searches/:id", (req, res) => {
+    const user = sessionUser(req);
+    if (!user) return res.status(401).json({ error: "Not signed in" });
+    if (!store.deleteSearch(user.id, Number(req.params.id))) return res.status(404).json({ error: "Search not found" });
     res.json({ ok: true });
   });
 

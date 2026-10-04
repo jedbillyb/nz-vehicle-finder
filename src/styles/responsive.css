@@ -98,6 +98,11 @@
   }
   .action-buttons-secondary {
     gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+  /* Up to four secondary buttons: two per row reads better than four squeezed. */
+  .action-buttons-secondary > * {
+    flex: 1 1 calc(50% - 4px) !important;
   }
   .action-buttons-primary > button,
   .action-buttons-secondary > button {

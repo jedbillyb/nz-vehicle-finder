@@ -27,12 +27,21 @@ export interface ApiKeyInfo {
   last_used_at: string | null;
 }
 
+export interface SavedSearch {
+  id: number;
+  name: string;
+  /** Canonical query string without "?", ready to append to "/?" */
+  query: string;
+  created_at: string;
+}
+
 export interface Account {
   email: string;
   tier: Tier;
   tiers: Tier[];
   usage: { used: number; limit: number; resetsAt: string };
   keys: ApiKeyInfo[];
+  searches: SavedSearch[];
   billing: { enabled: boolean; subscribed: boolean; status: string | null };
 }
 
@@ -69,3 +78,45 @@ export const startCheckout = (tier: string) =>
 export const openBillingPortal = () => call<{ url: string }>("/api/billing/portal", { method: "POST" });
 
 export const syncBilling = () => call<{ ok: true }>("/api/billing/sync", { method: "POST" });
+
+/** Resolves to null when nobody is signed in. */
+export async function fetchSavedSearches(): Promise<SavedSearch[] | null> {
+  try {
+    return (await call<{ searches: SavedSearch[] }>("/api/account/searches")).searches;
+  } catch (err) {
+    if ((err as { status?: number }).status === 401) return null;
+    throw err;
+  }
+}
+
+export const saveSearch = (query: string, name?: string) =>
+  call<SavedSearch>("/api/account/searches", { method: "POST", body: JSON.stringify({ query, name }) });
+
+export const renameSavedSearch = (id: number, name: string) =>
+  call<{ ok: true }>(`/api/account/searches/${id}`, { method: "PATCH", body: JSON.stringify({ name }) });
+
+export const deleteSavedSearch = (id: number) => call<{ ok: true }>(`/api/account/searches/${id}`, { method: "DELETE" });
+
+/**
+ * A search someone tried to save while signed out. It waits in this browser
+ * and is saved as soon as they finish signing in on the account page.
+ */
+const PENDING_SAVE_KEY = "nzvf.pendingSavedSearch";
+
+export function setPendingSave(query: string) {
+  try { localStorage.setItem(PENDING_SAVE_KEY, query); } catch { /* storage blocked: they can save again after signing in */ }
+}
+
+export function takePendingSave(): string | null {
+  try {
+    const query = localStorage.getItem(PENDING_SAVE_KEY);
+    localStorage.removeItem(PENDING_SAVE_KEY);
+    return query;
+  } catch {
+    return null;
+  }
+}
+
+export function hasPendingSave(): boolean {
+  try { return !!localStorage.getItem(PENDING_SAVE_KEY); } catch { return false; }
+}
