@@ -149,13 +149,13 @@ VITE_POSTHOG_HOST=https://us.i.posthog.com
 
 `npm run server` loads `.env.production` and then `.env`, so the API server picks up the same key (or set `POSTHOG_API_KEY` / `POSTHOG_HOST`) and both sides report to one project.
 
-Tracked in the browser: page views, searches (with active filters), zero-result and failed searches, filter and suggestion use, sorting and paging, CSV exports, copy-link clicks, saved searches (added, opened, renamed, removed), feedback, account page visits, API key create/copy/rename/revoke, checkout and billing portal clicks, sign-in and sign-out, and 404s with the broken path.
+Tracked in the browser: page views, searches (with active filters), zero-result and failed searches, filter and suggestion use, sorting and paging, CSV exports, shares, saved searches (added, opened, renamed, removed), feedback, account page visits, API key create/copy/rename/revoke, checkout and billing portal clicks, sign-in and sign-out, and 404s with the broken path.
 
 Tracked on the server: sign-in links sent and rejected, new accounts, sign-ins, every paid `/api/v1` call (endpoint, status, duration, plan, usage so far), API calls rejected for a bad key, burst or quota, and plan changes from Stripe.
 
 In production `VITE_POSTHOG_HOST` is `https://vehiclefinder.co.nz/ph`: nginx proxies `/ph/` to `us.i.posthog.com` (passing the visitor's IP), so ad blockers do not drop browser events. The API server always talks to PostHog directly.
 
-Where visitors come from: UTM tags on the landing URL (`utm_source`, `utm_medium`, `utm_campaign`, ...) are recorded as `$utm_*` on every event in that visit, and the first ones seen as `$initial_utm_*` on the person. Copy link and the Share button on the fleet and stats pages add `utm_source=copy_link` / `share_button` with `utm_medium=share`, so shared links stay attributable even when Messenger or WhatsApp strip the referrer. To track a link you post yourself, add tags, e.g. `https://vehiclefinder.co.nz/?utm_source=reddit&utm_medium=social&utm_campaign=nz-cars-post`.
+Where visitors come from: UTM tags on the landing URL (`utm_source`, `utm_medium`, `utm_campaign`, ...) are recorded as `$utm_*` on every event in that visit, and the first ones seen as `$initial_utm_*` on the person. The Share buttons (search results, fleet and stats pages; share sheet on phones, copy elsewhere) add `utm_source=share_button` with `utm_medium=share` and `utm_campaign` naming the page (`search`, `stats_page`, ...), so shared links stay attributable even when Messenger or WhatsApp strip the referrer. To track a link you post yourself, add tags, e.g. `https://vehiclefinder.co.nz/?utm_source=reddit&utm_medium=social&utm_campaign=nz-cars-post`.
 
 The browser client is hand-rolled (no posthog-js), so it sends what web analytics needs itself: a UUIDv7 `$session_id` (new after 30 idle minutes or 24 hours, shared by tabs), `$window_id`, `$host`, device and screen size, and `$pageleave` with time on page and scroll depth.
 

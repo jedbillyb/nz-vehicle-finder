@@ -21,11 +21,12 @@ import { hasTerms } from "../../shared/filterTerms";
 import { canonicalQuery } from "../../shared/savedSearch";
 import { exportToCsv } from "@/lib/csvExport";
 import { applySeo } from "@/lib/seo";
-import { captureEvent, summarizeFilters, shareUrl } from "@/lib/posthog";
+import { captureEvent, summarizeFilters } from "@/lib/posthog";
+import { sharePage } from "@/lib/share";
 import { Vehicle } from "@/lib/mockData";
 import { resultColumns } from "@/lib/resultColumns";
 import { toast } from "sonner";
-import { Search, RotateCcw, Download, Link2, LoaderCircle, ChevronDown } from "lucide-react";
+import { Search, RotateCcw, Download, Share2, LoaderCircle, ChevronDown } from "lucide-react";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 
 function useIsMobile() {
@@ -366,18 +367,22 @@ export default function Index() {
   };
 
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl("copy_link", "search"));
-      setCopiedLink(true);
-      captureEvent("copy_link_clicked", {
+  // Share sheet on phones, copy elsewhere; the link keeps the filters and carries UTM tags.
+  const handleShare = async () => {
+    const result = await sharePage("search");
+    if (result === "native" || result === "copy") {
+      captureEvent("share_clicked", {
+        method: result,
+        source: "search",
         ...summarizeFilters(filters as Record<string, string | undefined>),
         result_count: total ?? 0,
       });
-      toast("Search link copied", { description: "You can paste this URL to share the current filters." });
+    }
+    if (result === "copy") {
+      setCopiedLink(true);
+      toast("Search link copied", { description: "Paste it anywhere to share these filters." });
       setTimeout(() => setCopiedLink(false), 1500);
-    } catch (err) {
-      console.error(err);
+    } else if (result === "failed") {
       toast.error("Could not copy link", { description: "Your browser blocked clipboard access." });
     }
   };
@@ -588,13 +593,13 @@ export default function Index() {
                     />
                   )}
                   {total !== null && (
-                    <button onClick={handleCopyLink}
+                    <button onClick={handleShare}
                       style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: copiedLink ? "#dcfce7" : "transparent", color: copiedLink ? "#15803d" : "#4b5563", border: copiedLink ? "1px solid #22c55e" : "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.02em", whiteSpace: "nowrap" }}
                       onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
                       onMouseLeave={(e) => (e.currentTarget.style.borderColor = copiedLink ? "#22c55e" : "#d1d5db")}
                     >
-                      <Link2 size={11} />
-                      {copiedLink ? "Copied!" : "Copy link"}
+                      <Share2 size={11} />
+                      {copiedLink ? "Copied!" : "Share"}
                     </button>
                   )}
                   {total !== null && (
@@ -762,7 +767,7 @@ export default function Index() {
               ["Can I search by region?", "Yes - use the Registered Region field to filter by Territorial Local Authority (TLA)."],
               ["Can I export results?", "Yes - after running a search, use the Export CSV button to download your results."],
               ["Is there an API?", "Yes - the NZ Vehicle Register API gives you the same data as JSON for your own apps and spreadsheets. The free plan includes 500 requests a month; see vehiclefinder.co.nz/developers."],
-              ["Can I share a search?", "Yes - use the Copy Link button to get a shareable URL with your current filters applied."],
+              ["Can I share a search?", "Yes - use the Share button to send a link with your current filters applied (or copy it, on a computer)."],
               ["How many vehicles are in the register?", "The register currently contains 5.9 million vehicle records covering all registered vehicles in New Zealand."],
             ].map(([q, a]) => (
               <div key={q} style={{ marginBottom: 12 }}>

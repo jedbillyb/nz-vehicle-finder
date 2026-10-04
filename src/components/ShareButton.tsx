@@ -1,34 +1,21 @@
 import { useState } from "react";
 import { Check, Share2 } from "lucide-react";
 import { toast } from "sonner";
-import { captureEvent, shareUrl } from "@/lib/posthog";
+import { captureEvent } from "@/lib/posthog";
+import { sharePage } from "@/lib/share";
 
-/**
- * Shares this page with UTM tags baked in (utm_source=share_button), so visits
- * from the shared link are attributed even when Messenger, WhatsApp and the like
- * strip the referrer. Phones get the native share sheet; elsewhere it copies.
- */
+/** "Share this page" for the hero of the fleet and stats pages; see sharePage. */
 export function ShareButton({ source, style }: { source: string; style?: React.CSSProperties }) {
   const [copied, setCopied] = useState(false);
 
   const share = async () => {
-    const url = shareUrl("share_button", source);
-    if (navigator.share && window.matchMedia("(pointer: coarse)").matches) {
-      try {
-        await navigator.share({ title: document.title, url });
-        captureEvent("share_clicked", { method: "native", source });
-      } catch {
-        // Closing the share sheet throws; nothing was shared.
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      captureEvent("share_clicked", { method: "copy", source });
+    const result = await sharePage(source);
+    if (result === "native" || result === "copy") captureEvent("share_clicked", { method: result, source });
+    if (result === "copy") {
       setCopied(true);
       toast("Link copied", { description: "Paste it anywhere to share this page." });
       setTimeout(() => setCopied(false), 1500);
-    } catch {
+    } else if (result === "failed") {
       toast("Couldn't copy the link", { description: "Copy it from the address bar instead." });
     }
   };
