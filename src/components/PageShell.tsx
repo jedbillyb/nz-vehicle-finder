@@ -13,6 +13,7 @@ export function PageShell({
   title,
   intro,
   heroApi,
+  aside = true,
   source,
   children,
 }: {
@@ -22,6 +23,8 @@ export function PageShell({
   intro?: ReactNode;
   /** Where the hero's API box points; see HeroAside. */
   heroApi?: { to: string; title: string; sub: string };
+  /** False drops the API and Sponsor buttons beside the heading. */
+  aside?: boolean;
   /** Analytics source tag for the footer links. */
   source: string;
   children: ReactNode;
@@ -52,7 +55,7 @@ export function PageShell({
             </h2>
             {intro && <p style={{ fontSize: 16, color: "#374151", margin: 0, maxWidth: 800 }}>{intro}</p>}
           </div>
-          <HeroAside source={source} api={heroApi} />
+          {aside && <HeroAside source={source} api={heroApi} />}
         </div>
 
         {children}

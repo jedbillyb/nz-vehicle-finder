@@ -321,6 +321,7 @@
 .doc-nav-link:hover { background: #f3f4f6; color: #0f172a; }
 .doc-nav-link.is-active { background: #f0f9ff; color: #0369a1; font-weight: 600; }
 .doc-main { min-width: 0; }
+.doc-layout--plain { display: block; }
 .doc-section {
   padding: 32px 0;
   border-bottom: 1px solid #e5e7eb;
@@ -472,4 +473,52 @@
   .error-page__main { padding: 40px 16px; justify-content: flex-start; }
   .error-page__title { font-size: 34px; }
   .error-page__links { grid-template-columns: 1fr; }
+}
+
+/* ── Account page (docs layout): who's signed in, and the usage meter ── */
+.acct-who {
+  padding: 0 0 16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.acct-who__email { font-size: 13px; font-weight: 600; color: #0f172a; overflow-wrap: anywhere; }
+.acct-who__plan { font-size: 12px; color: #6b7280; margin: 2px 0 10px; }
+.acct-who__signout {
+  width: 100%;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.acct-who__signout:hover { background: #f3f4f6; color: #0f172a; }
+.acct-usage { border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px 20px; background: #ffffff; }
+.acct-usage__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; }
+.acct-usage__num { font-size: 28px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+.acct-usage__of { font-size: 14px; color: #4b5563; }
+.acct-usage__reset { font-size: 12px; color: #6b7280; }
+.acct-usage__bar { height: 8px; background: #f3f4f6; border-radius: 999px; overflow: hidden; margin: 12px 0 14px; }
+.acct-usage__bar > div { height: 100%; border-radius: 999px; }
+.acct-usage__facts { display: flex; flex-wrap: wrap; gap: 6px 24px; font-size: 13px; color: #4b5563; }
+.acct-usage__facts strong { color: #0f172a; }
+.acct-plan { cursor: default; }
+@media (max-width: 899px) {
+  /* The menu is a row of chips here; put the signed-in panel on its own line above them. */
+  .doc-nav:has(.acct-who) { flex-wrap: wrap; }
+  .acct-who {
+    flex: 1 0 100%;
+    display: flex;
+    align-items: center;
+    gap: 4px 12px;
+    flex-wrap: wrap;
+    padding: 0 0 12px;
+    margin: 0 0 4px;
+  }
+  .acct-who .doc-nav-heading { display: none; }
+  .acct-who__plan { margin: 0; }
+  .acct-who__signout { width: auto; margin-left: auto; }
 }

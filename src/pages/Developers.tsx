@@ -1,9 +1,10 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
 import { BURST_PER_SECOND, TIERS, TIER_ORDER } from "../../shared/apiTiers";
 import { MAX_PAGE_SIZE, MIN_PAGE_SIZE, DEFAULT_PAGE_SIZE } from "../../shared/pagination";
 import { PageShell } from "@/components/PageShell";
+import { DocLayout, DocSection as Section, Split, type DocNavGroup } from "@/components/DocLayout";
 import { captureEvent } from "@/lib/posthog";
 import { code } from "@/lib/pageStyles";
 import { CONTACT_EMAIL } from "../../shared/contact";
@@ -60,26 +61,6 @@ function Pre({ title, children }: { title?: string; children: string }) {
     <div style={{ borderRadius: 8, overflow: "hidden", background: "#0f172a", minWidth: 0 }}>
       {title && <div style={{ fontSize: 11, color: "#94a3b8", padding: "8px 14px", borderBottom: "1px solid #1e293b", fontWeight: 600 }}>{title}</div>}
       <pre style={{ ...code, color: "#e2e8f0", padding: "12px 14px", overflowX: "auto", margin: 0, lineHeight: 1.6 }}>{children}</pre>
-    </div>
-  );
-}
-
-/** One section of the docs, with an anchor the menu links to. */
-function Section({ id, title, children }: { id: string; title?: ReactNode; children: ReactNode }) {
-  return (
-    <section id={id} className="doc-section">
-      {title && <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 0 14px", letterSpacing: "-0.01em" }}>{title}</h2>}
-      {children}
-    </section>
-  );
-}
-
-/** Text on the left, code (or a table) on the right. */
-function Split({ left, right }: { left: ReactNode; right: ReactNode }) {
-  return (
-    <div className="doc-split">
-      <div style={{ minWidth: 0 }}>{left}</div>
-      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>{right}</div>
     </div>
   );
 }
@@ -149,56 +130,12 @@ function Endpoint({ path, summary, params, request, response }: {
 const ENDPOINTS = ["/vehicles", "/breakdown", "/values/{field}", "/makes/{make}/models", "/fleet"];
 
 /** The menu: groups of [anchor id, label]. */
-const NAV: { group: string; items: [string, ReactNode][] }[] = [
+const NAV: DocNavGroup[] = [
   { group: "Getting started", items: [["quick-start", "Quick start"], ["authentication", "Authentication"]] },
   { group: "Endpoints", items: ENDPOINTS.map((e) => [endpointId(e), <span style={{ ...code, fontSize: 12 }}>{e}</span>]) },
   { group: "Reference", items: [["filters", "Filters"], ["limits", "Limits and errors"]] },
   { group: "Plans", items: [["pricing", "Pricing"], ["custom", "Custom reports"]] },
 ];
-
-/** Which section is on screen, so the menu can highlight it. */
-function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState(ids[0]);
-  useEffect(() => {
-    const els = ids.map((id) => document.getElementById(id)).filter((e): e is HTMLElement => !!e);
-    const io = new IntersectionObserver(
-      (entries) => {
-        const hit = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        if (hit) setActive(hit.target.id);
-      },
-      // A section counts once its top passes just under the sticky header.
-      { rootMargin: "-120px 0px -60% 0px" },
-    );
-    els.forEach((e) => io.observe(e));
-    return () => io.disconnect();
-  }, [ids]);
-  return active;
-}
-
-const NAV_IDS = NAV.flatMap((g) => g.items.map(([id]) => id));
-
-function DocNav() {
-  const active = useActiveSection(NAV_IDS);
-  return (
-    <nav className="doc-nav" aria-label="API docs">
-      {NAV.map((g) => (
-        <div key={g.group} className="doc-nav-group">
-          <div className="doc-nav-heading">{g.group}</div>
-          {g.items.map(([id, label]) => (
-            <a
-              key={id}
-              href={`#${id}`}
-              className={id === active ? "doc-nav-link is-active" : "doc-nav-link"}
-              onClick={() => captureEvent("docs_nav_clicked", { section: id })}
-            >
-              {label}
-            </a>
-          ))}
-        </div>
-      ))}
-    </nav>
-  );
-}
 
 const anyFilter: Param = ["any filter", "string", <>Narrow the vehicles counted. See <a href="#filters" style={{ color: "#0369a1" }}>Filters</a>.</>];
 
@@ -224,9 +161,7 @@ export default function Developers() {
       intro="Every vehicle on the NZ Motor Vehicle Register as JSON. Search it, or count it any way you like. Refreshed automatically each month from NZTA."
       heroApi={{ to: "/account", title: "Get an API key", sub: "500 free requests a month" }}
     >
-      <div className="doc-layout">
-      <DocNav />
-      <div className="doc-main">
+      <DocLayout label="API docs" groups={NAV} onNav={(id) => captureEvent("docs_nav_clicked", { section: id })}>
       <Section id="quick-start" title="Quick start">
         <Split
           left={
@@ -474,8 +409,7 @@ Pick a plan and you go straight from sign-in to checkout. Card payments by Strip
           Ask for a quote
         </a>
       </Section>
-      </div>
-      </div>
+      </DocLayout>
     </PageShell>
   );
 }

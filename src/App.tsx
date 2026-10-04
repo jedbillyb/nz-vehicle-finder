@@ -21,7 +21,8 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
+      {/* Top centre, so notifications never sit on the Feedback button (bottom right). */}
+      <Sonner position="top-center" />
       <BrowserRouter>
         <ScrollToTop />
         <AnalyticsTracker />

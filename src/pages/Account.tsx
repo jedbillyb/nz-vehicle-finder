@@ -7,11 +7,13 @@ import {
   revokeApiKey, saveSearch, setPendingPlan, signOut, startCheckout, syncBilling, takePendingPlan, takePendingSave, verifySignInToken,
   type Account as AccountData, type SavedSearch,
 } from "@/lib/account";
-import { Band, PageShell, StatCard } from "@/components/PageShell";
+import { PageShell } from "@/components/PageShell";
+import { DocLayout, DocSection, Split, type DocNavGroup } from "@/components/DocLayout";
 import { code, input, label, primaryButton, secondaryButton } from "@/lib/pageStyles";
 import { BURST_PER_SECOND, TIERS, TIER_ORDER, type Tier, type TierId } from "../../shared/apiTiers";
 import { MAX_SAVED_SEARCH_NAME, MAX_SAVED_SEARCHES } from "../../shared/savedSearch";
 import { Star } from "lucide-react";
+import { toast } from "sonner";
 
 const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" }) : "Never";
@@ -72,7 +74,7 @@ function SignIn({ pendingSave, initialPlan }: { pendingSave: boolean; initialPla
   };
 
   return (
-    <Band tone="grey" title="Create an account or sign in">
+    <DocSection id="sign-in" title="Create an account or sign in">
       {pendingSave && state !== "sent" && (
         <div style={{ ...panel, marginBottom: 12, background: "#fffbeb", borderColor: "#fcd34d", fontSize: 14, color: "#92400e", display: "flex", gap: 8, alignItems: "center" }}>
           <Star size={14} fill="#f59e0b" color="#f59e0b" style={{ flexShrink: 0 }} />
@@ -101,7 +103,7 @@ function SignIn({ pendingSave, initialPlan }: { pendingSave: boolean; initialPla
           </p>
         </div>
 
-        <div style={panel}>
+        <div>
           <div style={{ ...label, marginBottom: 8 }}>2. Your email</div>
           {state === "sent" ? (
             <p style={{ margin: 0, fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
@@ -137,7 +139,7 @@ function SignIn({ pendingSave, initialPlan }: { pendingSave: boolean; initialPla
           )}
         </div>
       </div>
-    </Band>
+    </DocSection>
   );
 }
 
@@ -149,7 +151,7 @@ function HowItWorks() {
     ["Pay only for more", "Free covers 500 requests a month. Paid plans bill monthly through Stripe and can be changed or cancelled whenever."],
   ];
   return (
-    <Band title="How accounts work">
+    <DocSection id="how-it-works" title="How accounts work">
       <div className="howto-grid">
         {steps.map(([title, body], i) => (
           <div key={title} style={{ display: "flex", gap: 12 }}>
@@ -164,10 +166,13 @@ function HowItWorks() {
       <p style={{ fontSize: 13, color: "#6b7280", margin: "16px 0 0" }}>
         Your account also keeps your saved searches. See the <Link to="/developers" style={{ color: "#0369a1" }}>API docs</Link> for endpoints and examples.
       </p>
-    </Band>
+    </DocSection>
   );
 }
 
+const DASHBOARD_NAV: DocNavGroup[] = [
+  { group: "Your account", items: [["overview", "Overview"], ["api-keys", "API keys"], ["saved-searches", "Saved searches"], ["plans", "Plan and billing"]] },
+];
 function Dashboard({ account, reload }: { account: AccountData; reload: () => void }) {
   // Once per visit: tie this browser to the account, then record what the account looks like.
   useEffect(() => {
@@ -186,7 +191,8 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
   const [keyName, setKeyName] = useState("");
   const [newKey, setNewKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Errors pop up at the top of the screen, so they're seen wherever the page is scrolled to.
+  const setError = useCallback((message: string | null) => { if (message) toast.error(message); }, []);
   /** Which Stripe button was clicked (a tier id, or "portal"), while the browser is sent there. */
   const [redirecting, setRedirecting] = useState<string | null>(null);
 
@@ -202,7 +208,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
         reload();
       })
       .catch((err) => setError((err as Error).message));
-  }, [reload]);
+  }, [reload, setError]);
 
   const { used, limit, resetsAt } = account.usage;
   const { billing } = account;
@@ -270,131 +276,151 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
     setCopied(true);
   };
 
+  const signOutNow = async () => {
+    captureEvent("signed_out");
+    await signOut();
+    resetUser();
+    reload();
+  };
+
+  const p = { fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 12px" } as const;
+
   return (
-    <>
-      <div className="page-band" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
-        <StatCard label="REQUESTS THIS MONTH" value={used.toLocaleString("en-NZ")} sub={`of ${limit.toLocaleString("en-NZ")} · resets ${fmtDate(resetsAt)}`}>
-          <div style={{ height: 6, background: "#f3f4f6", borderRadius: 999, overflow: "hidden", marginTop: 10, minWidth: 180 }}>
-            <div style={{ height: "100%", width: `${pct}%`, background: pct >= 90 ? "#ef4444" : "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
-          </div>
-        </StatCard>
-        <StatCard
-          label="PLAN"
-          value={account.tier.name}
-          sub={account.tier.priceNzd === 0 ? "No card on file" : `NZ$${account.tier.priceNzd} / month`}
-        />
-        <StatCard label="API KEYS" value={account.keys.length} sub="active" />
-        <StatCard label="SIGNED IN AS" value={<span style={{ fontSize: 15, fontWeight: 700, overflowWrap: "anywhere" }}>{account.email}</span>}>
-          <button
-            style={{ ...secondaryButton, marginTop: 10, padding: "4px 12px", fontSize: 11 }}
-            onClick={async () => {
-              captureEvent("signed_out");
-              await signOut();
-              resetUser();
-              reload();
-            }}
-          >
-            Sign out
-          </button>
-        </StatCard>
-      </div>
-
-      {error && (
-        <div className="page-band" style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
-      )}
-
-      <Band tone="grey" title="API keys">
-        {newKey && (
-          <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, padding: 14, marginBottom: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#166534", marginBottom: 8 }}>
-              Copy your new key now. You won't be able to see it again.
-            </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <code style={{ ...code, background: "#ffffff", padding: "6px 8px", borderRadius: 4, border: "1px solid #d1d5db", overflowWrap: "anywhere", flex: 1, minWidth: 0 }}>
-                {newKey}
-              </code>
-              <button style={secondaryButton} onClick={copy}>{copied ? "Copied" : "Copy"}</button>
-            </div>
-          </div>
-        )}
-        <div>
-          {account.keys.length === 0 ? (
-            <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 14px" }}>No keys yet. Create one to start calling the API.</p>
-          ) : (
-            <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 14 }}>
-              {account.keys.map((k, i) => (
-                <div key={k.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderTop: i ? "1px solid #f3f4f6" : "none", flexWrap: "wrap" }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {editing?.id === k.id ? (
-                      <form onSubmit={saveName} style={{ display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
-                        <input
-                          autoFocus
-                          aria-label="Key name"
-                          value={editing.name}
-                          maxLength={60}
-                          onChange={(e) => setEditing({ id: k.id, name: e.target.value })}
-                          onKeyDown={(e) => e.key === "Escape" && setEditing(null)}
-                          style={{ ...input, padding: "4px 8px", fontSize: 13 }}
-                        />
-                        <button type="submit" style={{ ...primaryButton, padding: "4px 12px", fontSize: 12 }}>Save</button>
-                        <button type="button" style={{ ...secondaryButton, padding: "4px 12px", fontSize: 12 }} onClick={() => setEditing(null)}>Cancel</button>
-                      </form>
-                    ) : (
-                      <div style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
-                        {k.name || "Unnamed key"}
-                        <button
-                          onClick={() => setEditing({ id: k.id, name: k.name ?? "" })}
-                          style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 12, color: "#0369a1", fontWeight: 500 }}
-                        >
-                          Rename
-                        </button>
-                      </div>
-                    )}
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>
-                      <span style={code}>{k.prefix}…</span> · created {fmtDate(k.created_at)} · last used {fmtDate(k.last_used_at)}
-                    </div>
-                  </div>
-                  <button style={{ ...secondaryButton, color: "#b91c1c", borderColor: "#fecaca" }} onClick={() => revoke(k.id)}>
-                    Revoke
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          <form onSubmit={create} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input placeholder="Key name (optional)" value={keyName} maxLength={60} onChange={(e) => setKeyName(e.target.value)} style={{ ...input, flex: "0 1 360px" }} />
-            <button type="submit" style={primaryButton}>Create key</button>
-          </form>
+    <DocLayout
+      label="Your account"
+      groups={DASHBOARD_NAV}
+      onNav={(id) => captureEvent("account_nav_clicked", { section: id })}
+      navTop={
+        <div className="acct-who">
+          <div className="doc-nav-heading">Signed in as</div>
+          <div className="acct-who__email">{account.email}</div>
+          <div className="acct-who__plan">{account.tier.name} plan</div>
+          <button type="button" className="acct-who__signout" onClick={signOutNow}>Sign out</button>
         </div>
-      </Band>
+      }
+    >
+      <DocSection id="overview" title="Overview">
+        <div className="acct-usage">
+          <div className="acct-usage__top">
+            <div>
+              <span className="acct-usage__num">{used.toLocaleString("en-NZ")}</span>
+              <span className="acct-usage__of"> of {limit.toLocaleString("en-NZ")} requests used this month</span>
+            </div>
+            <span className="acct-usage__reset">Resets {fmtDate(resetsAt)}</span>
+          </div>
+          <div className="acct-usage__bar">
+            <div style={{ width: `${pct}%`, background: pct >= 90 ? "#ef4444" : "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
+          </div>
+          <div className="acct-usage__facts">
+            <span><strong>{account.tier.name}</strong> plan{account.tier.priceNzd > 0 && `, NZ$${account.tier.priceNzd} a month`}</span>
+            <span><strong>{account.keys.length}</strong> API {account.keys.length === 1 ? "key" : "keys"}</span>
+            <span><strong>{account.searches.length}</strong> saved {account.searches.length === 1 ? "search" : "searches"}</span>
+          </div>
+        </div>
+        <p style={{ ...p, margin: "14px 0 0" }}>
+          New to the API? The <Link to="/developers" style={{ color: "#0369a1", fontWeight: 600 }}>API docs</Link> have a quick start and every endpoint.
+        </p>
+      </DocSection>
+
+      <DocSection id="api-keys" title="API keys">
+        <Split
+          left={
+            <>
+              <p style={p}>
+                Send a key with every request as a Bearer token. Keys never expire. If one leaks, revoke it and make another.
+              </p>
+              <form onSubmit={create} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input placeholder="Key name (optional)" value={keyName} maxLength={60} onChange={(e) => setKeyName(e.target.value)} style={{ ...input, flex: "1 1 200px" }} />
+                <button type="submit" style={primaryButton}>Create key</button>
+              </form>
+            </>
+          }
+          right={
+            <>
+              {newKey && (
+                <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, padding: 14 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#166534", marginBottom: 8 }}>
+                    Copy your new key now. You won't be able to see it again.
+                  </div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <code style={{ ...code, background: "#ffffff", padding: "6px 8px", borderRadius: 4, border: "1px solid #d1d5db", overflowWrap: "anywhere", flex: 1, minWidth: 0 }}>
+                      {newKey}
+                    </code>
+                    <button style={secondaryButton} onClick={copy}>{copied ? "Copied" : "Copy"}</button>
+                  </div>
+                </div>
+              )}
+              {account.keys.length === 0 ? (
+                <p style={{ ...p, color: "#6b7280", margin: 0 }}>No keys yet. Create one to start calling the API.</p>
+              ) : (
+                <div style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}>
+                  {account.keys.map((k, i) => (
+                    <div key={k.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderTop: i ? "1px solid #f3f4f6" : "none", flexWrap: "wrap" }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {editing?.id === k.id ? (
+                          <form onSubmit={saveName} style={{ display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
+                            <input
+                              autoFocus
+                              aria-label="Key name"
+                              value={editing.name}
+                              maxLength={60}
+                              onChange={(e) => setEditing({ id: k.id, name: e.target.value })}
+                              onKeyDown={(e) => e.key === "Escape" && setEditing(null)}
+                              style={{ ...input, padding: "4px 8px", fontSize: 13 }}
+                            />
+                            <button type="submit" style={{ ...primaryButton, padding: "4px 12px", fontSize: 12 }}>Save</button>
+                            <button type="button" style={{ ...secondaryButton, padding: "4px 12px", fontSize: 12 }} onClick={() => setEditing(null)}>Cancel</button>
+                          </form>
+                        ) : (
+                          <div style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+                            {k.name || "Unnamed key"}
+                            <button
+                              onClick={() => setEditing({ id: k.id, name: k.name ?? "" })}
+                              style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 12, color: "#0369a1", fontWeight: 500 }}
+                            >
+                              Rename
+                            </button>
+                          </div>
+                        )}
+                        <div style={{ fontSize: 11, color: "#6b7280" }}>
+                          <span style={code}>{k.prefix}…</span> · created {fmtDate(k.created_at)} · last used {fmtDate(k.last_used_at)}
+                        </div>
+                      </div>
+                      <button style={{ ...secondaryButton, padding: "6px 14px", fontSize: 12, color: "#b91c1c", borderColor: "#fecaca" }} onClick={() => revoke(k.id)}>
+                        Revoke
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          }
+        />
+      </DocSection>
 
       <SavedSearches searches={account.searches} notice={savedNotice} reload={reload} onError={setError} />
 
-      <Band tone="grey" title={<span id="plans">Plans</span>}>
+      <DocSection id="plans" title="Plan and billing">
         {billing.status === "past_due" && (
           <p style={{ fontSize: 13, color: "#b91c1c", margin: "0 0 12px" }}>
             Your last payment failed. Update your card in Manage billing to keep your plan.
           </p>
         )}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+        <div className="doc-pricing">
           {account.tiers.map((t) => {
             const current = t.id === account.tier.id;
             const busy = redirecting !== null;
             const planButton = { padding: "7px 14px", fontSize: 12, borderRadius: 8 } as const;
             return (
-              <div key={t.id} style={{ ...panel, padding: "14px 16px", border: current ? "2px solid #0ea5e9" : panel.border, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{t.name}</span>
-                  <span style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", whiteSpace: "nowrap" }}>
-                    {t.priceNzd === 0 ? "Free" : `NZ$${t.priceNzd}`}
-                    {t.priceNzd > 0 && <span style={{ fontSize: 12, fontWeight: 500, color: "#6b7280" }}> /mo</span>}
-                  </span>
+              <div key={t.id} className="doc-plan acct-plan" style={current ? { borderColor: "#0ea5e9", background: "#f0f9ff" } : undefined}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: current ? "#0369a1" : "#6b7280" }}>{t.name}{current && " · your plan"}</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", margin: "4px 0" }}>
+                  {t.priceNzd === 0 ? "Free" : `NZ$${t.priceNzd}`}
+                  {t.priceNzd > 0 && <span style={{ fontSize: 13, fontWeight: 500, color: "#6b7280" }}> / month</span>}
                 </div>
-                <div style={{ fontSize: 12, color: "#6b7280" }}>{fmtRequests(t)} · {BURST_PER_SECOND} calls a second</div>
-                <div>
-                  {current ? (
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#0369a1" }}>Your current plan</span>
-                  ) : !billing.enabled ? (
+                <div style={{ fontSize: 13, color: "#374151" }}>{fmtRequests(t)}</div>
+                <div style={{ marginTop: 12 }}>
+                  {current ? null : !billing.enabled ? (
                     <span style={{ fontSize: 12, color: "#6b7280" }}>Coming soon</span>
                   ) : billing.subscribed ? (
                     // Switching or cancelling an existing subscription happens in Stripe's portal.
@@ -417,10 +443,10 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
           </button>
         )}
         <p style={{ fontSize: 12, color: "#6b7280", margin: "14px 0 0" }}>
-          Payments are handled by Stripe. Cancel any time; your plan runs to the end of the month you paid for.
+          Every plan allows {BURST_PER_SECOND} calls a second. Payments are handled by Stripe. Cancel any time; your plan runs to the end of the month you paid for.
         </p>
-      </Band>
-    </>
+      </DocSection>
+    </DocLayout>
   );
 }
 
@@ -456,7 +482,7 @@ function SavedSearches({ searches, notice, reload, onError }: {
   };
 
   return (
-    <Band id="saved-searches" title="Saved searches">
+    <DocSection id="saved-searches" title="Saved searches">
       {notice && (
         <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: "#166534" }}>
           Saved "{notice}".
@@ -517,7 +543,7 @@ function SavedSearches({ searches, notice, reload, onError }: {
           </p>
         </>
       )}
-    </Band>
+    </DocSection>
   );
 }
 
@@ -618,10 +644,10 @@ export default function Account() {
       title={account || loading ? "Your account" : "Get an API key"}
       intro={
         account || loading
-          ? "Your saved searches, API keys, this month's API usage and your plan."
+          ? "Your API usage, keys, saved searches and plan."
           : "Start free with 500 requests a month, or pick a paid plan and go straight to checkout."
       }
-      heroApi={{ to: "/developers", title: "Read the API docs", sub: "Endpoints and examples" }}
+      aside={false}
     >
       {notice && (
         <div className="page-band" style={{ padding: "10px 24px", background: "#f0f9ff", borderBottom: "1px solid #bae6fd", color: "#0369a1", fontSize: 13, fontWeight: 600 }}>{notice}</div>
@@ -630,14 +656,15 @@ export default function Account() {
         <div className="page-band" style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
       )}
       {loading ? (
-        <Band tone="grey"><p style={{ color: "#6b7280", margin: 0, fontSize: 13 }}>Loading...</p></Band>
+        <div className="page-band" style={{ padding: "24px", color: "#6b7280", fontSize: 13 }}>Loading...</div>
       ) : account ? (
         <Dashboard account={account} reload={reload} />
       ) : (
-        <>
+        // Two short sections need no menu; same section styling as the docs, full width.
+        <div className="doc-layout doc-layout--plain">
           <SignIn pendingSave={pendingSave} initialPlan={urlPlan ?? "free"} />
           <HowItWorks />
-        </>
+        </div>
       )}
     </PageShell>
   );
