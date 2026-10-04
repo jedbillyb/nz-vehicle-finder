@@ -21,8 +21,8 @@ export default function Contact() {
         <div className="error-page__code">CONTACT</div>
         <h2 className="error-page__title">Hi, I&apos;m Jed</h2>
         <p className="error-page__intro">
-          I built NZ Vehicle Finder and I run it on my own. Questions about the site, the data, the API, billing or a
-          custom report all come straight to me, and I usually reply within a day or two.
+          I built NZ Vehicle Finder and I run it on my own. If you have questions about the site, the data, the API or
+          billing, or want a custom report, feel free to email me and I&apos;ll answer within a day or two.
         </p>
         <a
           className="contact-email"
