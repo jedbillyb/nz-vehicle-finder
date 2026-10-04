@@ -10,6 +10,7 @@ import Stripe from "stripe";
 import express, { type Request, type Response } from "express";
 import { TIERS, TIER_ORDER, type TierId } from "../shared/apiTiers.js";
 import type { AccountStore, User } from "./accounts.js";
+import { analyticsId, track } from "./analytics.js";
 
 export const WEBHOOK_EVENTS = [
   "checkout.session.completed",
@@ -78,7 +79,10 @@ export function createBilling(store: AccountStore, opts: BillingOptions) {
       subscriptionId: subscription?.id ?? null,
       subscriptionStatus: subscription?.status ?? null,
     });
-    if (user.tier !== tier) console.log(`Account ${user.id} moved from ${user.tier} to ${tier}`);
+    if (user.tier !== tier) {
+      console.log(`Account ${user.id} moved from ${user.tier} to ${tier}`);
+      track("plan_changed", analyticsId(user.id), { from: user.tier, to: tier, status: subscription?.status ?? null, $set: { tier } });
+    }
   }
 
   async function customerFor(user: User): Promise<string> {

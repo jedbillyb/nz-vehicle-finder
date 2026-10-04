@@ -147,7 +147,13 @@ VITE_POSTHOG_API_KEY=phc_...
 VITE_POSTHOG_HOST=https://us.i.posthog.com
 ```
 
-Tracked events: page views, searches (with active filters), zero-result queries, CSV exports, and copy-link clicks.
+The API server reads the same key from `.env` (or `POSTHOG_API_KEY` / `POSTHOG_HOST`), so both sides report to one project.
+
+Tracked in the browser: page views, searches (with active filters), zero-result and failed searches, filter and suggestion use, sorting and paging, CSV exports, copy-link clicks, saved searches (added, opened, renamed, removed), feedback, account page visits, API key create/copy/rename/revoke, checkout and billing portal clicks, sign-in and sign-out, and 404s with the broken path.
+
+Tracked on the server: sign-in links sent and rejected, new accounts, sign-ins, every paid `/api/v1` call (endpoint, status, duration, plan, usage so far), API calls rejected for a bad key, burst or quota, and plan changes from Stripe.
+
+Signed-in people are identified as `user_<id>` (no email is sent), so a person's site visits and API calls show up together.
 
 ## Paid API
 

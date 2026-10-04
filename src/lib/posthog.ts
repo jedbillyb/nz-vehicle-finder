@@ -62,6 +62,33 @@ export function captureEvent(event: string, properties: Properties = {}) {
   });
 }
 
+/**
+ * Link this browser to a signed-in account. PostHog merges the anonymous id's
+ * history into `id` (the server's `user_<id>`, which also tags API calls), and
+ * later events from this browser use `id` directly.
+ */
+export function identifyUser(id: string, properties: Properties = {}) {
+  if (!isEnabled()) return;
+  const anon = getDistinctId();
+  if (anon === id) return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, id);
+  } catch {
+    return; // Without storage every event is anonymous anyway.
+  }
+  // Sent as the new id, naming the anonymous id to merge in.
+  captureEvent("$identify", { $anon_distinct_id: anon, $set: properties });
+}
+
+/** After sign-out, start a fresh anonymous id so the next person on this browser is not merged in. */
+export function resetUser() {
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Nothing stored, nothing to reset.
+  }
+}
+
 export function summarizeFilters(filters: Record<string, string | undefined>) {
   const active = Object.entries(filters).reduce<Record<string, string>>((acc, [key, value]) => {
     const next = value?.trim();

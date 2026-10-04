@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
-import { captureEvent } from "@/lib/posthog";
+import { captureEvent, identifyUser, resetUser } from "@/lib/posthog";
 import {
   createApiKey, deleteSavedSearch, fetchAccount, hasPendingSave, openBillingPortal, renameApiKey, renameSavedSearch, requestSignInLink,
   revokeApiKey, saveSearch, signOut, startCheckout, syncBilling, takePendingSave, verifySignInToken, type Account as AccountData,
@@ -83,6 +83,20 @@ function SignIn({ pendingSave }: { pendingSave: boolean }) {
 }
 
 function Dashboard({ account, reload }: { account: AccountData; reload: () => void }) {
+  // Once per visit: tie this browser to the account, then record what the account looks like.
+  useEffect(() => {
+    identifyUser(account.analyticsId, { tier: account.tier.id });
+    captureEvent("account_viewed", {
+      tier: account.tier.id,
+      api_keys: account.keys.length,
+      saved_searches: account.searches.length,
+      requests_used: account.usage.used,
+      requests_limit: account.usage.limit,
+      usage_pct: Math.round((account.usage.used / account.usage.limit) * 100),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per mount, not on every reload
+  }, []);
+
   const [keyName, setKeyName] = useState("");
   const [newKey, setNewKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -143,6 +157,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
     setError(null);
     try {
       await renameApiKey(editing.id, editing.name);
+      captureEvent("api_key_renamed");
       setEditing(null);
       reload();
     } catch (err) {
@@ -155,6 +170,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
     setError(null);
     try {
       await revokeApiKey(id);
+      captureEvent("api_key_revoked", { keys_left: account.keys.length - 1 });
       reload();
     } catch (err) {
       setError((err as Error).message);
@@ -164,6 +180,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
   const copy = async () => {
     if (!newKey) return;
     await navigator.clipboard.writeText(newKey);
+    captureEvent("api_key_copied");
     setCopied(true);
   };
 
@@ -187,7 +204,9 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
           <button
             style={{ ...secondaryButton, marginTop: 10, padding: "4px 12px", fontSize: 11 }}
             onClick={async () => {
+              captureEvent("signed_out");
               await signOut();
+              resetUser();
               reload();
             }}
           >
@@ -340,6 +359,7 @@ function SavedSearches({ searches, notice, reload, onError }: {
     if (!editing) return;
     try {
       await renameSavedSearch(editing.id, editing.name);
+      captureEvent("saved_search_renamed", { source: "account_page" });
       setEditing(null);
       reload();
     } catch (err) {
@@ -460,7 +480,11 @@ export default function Account() {
     // Take the one-time token out of the address bar and history before using it.
     window.history.replaceState(null, "", "/account");
     verifySignInToken(token)
-      .catch((err) => setError((err as Error).message))
+      .then(() => captureEvent("signin_link_opened", { result: "ok" }))
+      .catch((err) => {
+        captureEvent("signin_link_opened", { result: "rejected" });
+        setError((err as Error).message);
+      })
       .finally(reload);
   }, [reload]);
 

@@ -37,6 +37,8 @@ export interface SavedSearch {
 
 export interface Account {
   email: string;
+  /** PostHog distinct id for this account (`user_<id>`), shared with the server's API events. */
+  analyticsId: string;
   tier: Tier;
   tiers: Tier[];
   usage: { used: number; limit: number; resetsAt: string };

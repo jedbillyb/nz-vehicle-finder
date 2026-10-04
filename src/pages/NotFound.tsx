@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { applySeo } from "@/lib/seo";
+import { captureEvent } from "@/lib/posthog";
 import { Band, PageShell } from "@/components/PageShell";
 
 const LINKS = [
@@ -11,6 +12,11 @@ const LINKS = [
 
 const NotFound = () => {
   const location = useLocation();
+
+  // Broken links show up in PostHog with where they came from.
+  useEffect(() => {
+    captureEvent("page_not_found", { path: location.pathname, search: location.search });
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     applySeo({
@@ -35,6 +41,7 @@ const NotFound = () => {
             <Link
               key={l.to}
               to={l.to}
+              onClick={() => captureEvent("not_found_link_clicked", { to: l.to, path: location.pathname })}
               style={{ display: "block", textDecoration: "none", background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 16px" }}
             >
               <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#0369a1" }}>{l.label} →</span>

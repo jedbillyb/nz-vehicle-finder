@@ -11,6 +11,7 @@ import express, { type Request, type Response, type NextFunction } from "express
 import { clientIp } from "./rateLimit.js";
 import { isValidEmail } from "../shared/email.js";
 import { BURST_PER_SECOND, MAX_KEYS_PER_ACCOUNT, TIERS, TIER_ORDER, tierFor, type Tier } from "../shared/apiTiers.js";
+import { analyticsId, track } from "./analytics.js";
 import {
   MAX_SAVED_QUERY_LENGTH, MAX_SAVED_SEARCHES, MAX_SAVED_SEARCH_NAME, canonicalQuery, describeSearch,
 } from "../shared/savedSearch.js";
@@ -157,7 +158,7 @@ export class AccountStore {
   }
 
   /** Spend a login token: one use only. Creates the account on first sign-in. */
-  redeemLoginToken(raw: string, now = Date.now()): { user: User; session: string } | null {
+  redeemLoginToken(raw: string, now = Date.now()): { user: User; session: string; created: boolean } | null {
     return this.db.transaction(() => {
       const hash = sha256(raw);
       const row = this.db.prepare("SELECT email, expires_at FROM login_tokens WHERE token_hash = ?").get(hash) as
@@ -166,15 +167,15 @@ export class AccountStore {
       this.db.prepare("DELETE FROM login_tokens WHERE token_hash = ?").run(hash);
       if (row.expires_at < now) return null;
 
-      this.db.prepare("INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)")
-        .run(row.email, new Date(now).toISOString());
+      const created = this.db.prepare("INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)")
+        .run(row.email, new Date(now).toISOString()).changes > 0;
       const user = this.db.prepare("SELECT id, email, tier, created_at FROM users WHERE email = ?").get(row.email) as User;
 
       const session = token();
       this.db.prepare("DELETE FROM sessions WHERE expires_at < ?").run(now);
       this.db.prepare("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)")
         .run(sha256(session), user.id, now + SESSION_TTL_MS);
-      return { user, session };
+      return { user, session, created };
     })();
   }
 
@@ -381,15 +382,23 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
       await opts.sendLoginEmail(email, `${opts.publicUrl}/account?token=${raw}`);
     } catch (err) {
       console.error("Login email failed:", (err as Error).message);
+      track("signin_link_failed", "server", { reason: "email_send" });
       return res.status(502).json({ error: "Could not send the sign-in email. Try again shortly." });
     }
+    track("signin_link_sent", "server");
     res.json({ ok: true });
   });
 
   router.post("/auth/verify", (req, res) => {
     const raw = typeof req.body?.token === "string" ? req.body.token : "";
     const result = raw ? store.redeemLoginToken(raw) : null;
-    if (!result) return res.status(400).json({ error: "This sign-in link has expired or was already used." });
+    if (!result) {
+      track("signin_link_rejected", "server");
+      return res.status(400).json({ error: "This sign-in link has expired or was already used." });
+    }
+    const id = analyticsId(result.user.id);
+    if (result.created) track("account_created", id, { $set_once: { signed_up_at: result.user.created_at } });
+    track("signed_in", id, { new_account: result.created, $set: { tier: result.user.tier } });
     res.cookie(SESSION_COOKIE, result.session, {
       httpOnly: true,
       secure: true,
@@ -413,6 +422,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     const now = new Date();
     res.json({
       email: user.email,
+      analyticsId: analyticsId(user.id),
       tier,
       tiers: TIER_ORDER.map((id) => TIERS[id]),
       usage: { used: store.usageFor(user.id, now), limit: tier.monthlyRequests, resetsAt: nextMonthStart(now) },
@@ -495,18 +505,31 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   function requireApiKey(req: Request, res: Response, next: NextFunction) {
     const key = apiKeyFrom(req);
     if (key && !burst(key)) {
+      track("api_v1_rejected", "server", { reason: "burst", endpoint: req.path });
       return res.status(429).json({ error: `Slow down: at most ${BURST_PER_SECOND} requests per second.` });
     }
     const check = store.useKey(key);
     if (check.tier) res.setHeader("X-RateLimit-Limit", String(check.tier.monthlyRequests));
     if (check.resetsAt) res.setHeader("X-RateLimit-Reset", check.resetsAt);
     if (check.ok === false) {
+      track("api_v1_rejected", "server", { reason: check.status === 429 ? "quota" : "bad_key", endpoint: req.path, tier: check.tier?.id });
       if (check.status === 429) res.setHeader("X-RateLimit-Remaining", "0");
       return res.status(check.status).json({ error: check.error });
     }
     res.setHeader("X-RateLimit-Remaining", String(Math.max(check.tier.monthlyRequests - check.used, 0)));
     // Shared handlers apply the free-site caps unless this is set.
     res.locals.apiUser = check.user;
+    const started = Date.now();
+    res.on("finish", () =>
+      track("api_v1_request", analyticsId(check.user.id), {
+        endpoint: req.path,
+        status: res.statusCode,
+        duration_ms: Date.now() - started,
+        tier: check.tier.id,
+        used_this_month: check.used,
+        monthly_limit: check.tier.monthlyRequests,
+      }),
+    );
     next();
   }
 
