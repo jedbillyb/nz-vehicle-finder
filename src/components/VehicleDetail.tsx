@@ -53,7 +53,7 @@ export function VehicleDetail({ vehicle, onClose }: VehicleDetailProps) {
   const entries = Object.entries(fieldLabels);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4" onClick={onClose}>
       <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col p-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-4 border-b border-border mb-4">
           <div>
