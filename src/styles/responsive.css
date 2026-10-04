@@ -14,6 +14,16 @@
   }
 }
 
+/* The long register line only fits beside the nav on wide screens. */
+@media (max-width: 1023px) {
+  .header-topbar {
+    justify-content: flex-end !important;
+  }
+  .header-topbar-subtitle {
+    display: none;
+  }
+}
+
 /* ── Site nav strip — phones only, stands in for the top bar ── */
 .site-nav-mobile {
   display: flex !important;

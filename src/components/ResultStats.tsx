@@ -45,9 +45,10 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
         padding: isInline ? "0" : "16px 24px",
         background: isInline ? "transparent" : "#ffffff",
         display: "grid",
+        // 280px keeps the bar visible beside a long label and the count.
         gridTemplateColumns: isInline
-          ? "repeat(auto-fill, minmax(200px, 1fr))"
-          : "repeat(auto-fit, minmax(200px, 1fr))",
+          ? "repeat(auto-fill, minmax(min(280px, 100%), 1fr))"
+          : "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
         gap: isInline ? 20 : 20,
         borderTop: !isInline && expanded && !hideHeader ? "1px solid #e5e7eb" : "none",
         width: "100%",

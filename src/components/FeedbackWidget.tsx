@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { captureEvent } from "@/lib/posthog";
 import { API_BASE } from "@/lib/vehicleApi";
 import { isValidEmail } from "../../shared/email";
+import { OPEN_FEEDBACK_EVENT } from "@/lib/feedback";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -60,6 +61,16 @@ export function FeedbackWidget() {
     captureEvent("feedback_widget_opened", { page_path: pagePath });
   };
 
+  // The footer's FEEDBACK link opens the panel from anywhere (see lib/feedback).
+  useEffect(() => {
+    const onOpen = () => {
+      setOpen(true);
+      captureEvent("feedback_widget_opened", { page_path: window.location.pathname, trigger: "footer" });
+    };
+    window.addEventListener(OPEN_FEEDBACK_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_FEEDBACK_EVENT, onOpen);
+  }, []);
+
   const handleClose = () => {
     captureEvent("feedback_dismissed", { page_path: pagePath, rating_selected: rating > 0 });
     setMounted(false);
@@ -114,9 +125,6 @@ export function FeedbackWidget() {
 
   const displayRating = hovered || rating;
 
-  // Position trigger: desktop bottom-right; mobile docked into the footer area (above breakdown sheet ~60px)
-  const btnBottom = isMobile ? 76 : 24;
-  const btnRight = isMobile ? 12 : 24;
 
   return (
     <>
@@ -132,72 +140,50 @@ export function FeedbackWidget() {
         }
       `}</style>
 
-      <button
-        onClick={handleOpen}
-        aria-label="Give feedback"
-        style={
-          isMobile
-            ? {
-                position: "static",
-                display: "flex",
-                width: "100%",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: 8,
-                padding: "14px 16px",
-                marginTop: 8,
-                background: "#0f172a",
-                color: "#e2e8f0",
-                border: "none",
-                borderTop: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 0,
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: "0.12em",
-                cursor: "pointer",
-                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-                textTransform: "uppercase",
-                WebkitTapHighlightColor: "transparent",
-              }
-            : {
-                position: "fixed",
-                bottom: 24,
-                right: 24,
-                zIndex: 35,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "8px 14px",
-                background: "rgba(15, 23, 42, 0.82)",
-                color: "#e2e8f0",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: 999,
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: "0.1em",
-                cursor: "pointer",
-                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                boxShadow: "0 4px 16px rgba(15,23,42,0.22)",
-                transition: "background 0.15s ease, color 0.15s ease, transform 0.15s ease",
-                textTransform: "uppercase",
-              }
-        }
-        onMouseEnter={(e) => {
-          if (isMobile) return;
-          (e.currentTarget as HTMLButtonElement).style.background = "rgba(15,23,42,0.96)";
-          (e.currentTarget as HTMLButtonElement).style.color = "#ffffff";
-        }}
-        onMouseLeave={(e) => {
-          if (isMobile) return;
-          (e.currentTarget as HTMLButtonElement).style.background = "rgba(15,23,42,0.82)";
-          (e.currentTarget as HTMLButtonElement).style.color = "#e2e8f0";
-        }}
-      >
-        <MessageSquare size={isMobile ? 13 : 11} />
-        Feedback
-      </button>
+      {/* Phones get a FEEDBACK link in the footer instead (see SiteFooter). */}
+      {!isMobile && (
+        <button
+          onClick={handleOpen}
+          aria-label="Give feedback"
+          style={
+            {
+              position: "fixed",
+              bottom: 24,
+              right: 24,
+              zIndex: 35,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              background: "rgba(15, 23, 42, 0.82)",
+              color: "#e2e8f0",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 999,
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: "0.1em",
+              cursor: "pointer",
+              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              boxShadow: "0 4px 16px rgba(15,23,42,0.22)",
+              transition: "background 0.15s ease, color 0.15s ease, transform 0.15s ease",
+              textTransform: "uppercase",
+            }
+          }
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "rgba(15,23,42,0.96)";
+            (e.currentTarget as HTMLButtonElement).style.color = "#ffffff";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "rgba(15,23,42,0.82)";
+            (e.currentTarget as HTMLButtonElement).style.color = "#e2e8f0";
+          }}
+        >
+          <MessageSquare size={11} />
+          Feedback
+        </button>
+      )}
 
       {open && (
         <>

@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 import { captureEvent } from "@/lib/posthog";
 import { APP_VERSION } from "@/lib/version";
 import { useFleetOverview } from "@/lib/useFleetOverview";
+import { openFeedback } from "@/lib/feedback";
 
 const NAV_ITEMS = [
   { to: "/", label: "SEARCH", end: true },
@@ -25,6 +26,7 @@ function NavLinks({ location, gap }: { location: string; gap: number }) {
             fontWeight: 700,
             letterSpacing: "0.12em",
             color: "#ffffff",
+            whiteSpace: "nowrap",
             textDecoration: isActive ? "underline" : "none",
             textUnderlineOffset: 3,
             opacity: isActive ? 1 : 0.85,
@@ -186,6 +188,14 @@ export function SiteFooter({ source, eventProps }: { source: string; eventProps?
         <Link to="/account" onClick={() => track("account_link_clicked")} style={{ color: "#0369a1", textDecoration: "none", fontWeight: 700 }}>
           ACCOUNT
         </Link>
+        {sep}
+        <button
+          type="button"
+          onClick={openFeedback}
+          style={{ background: "none", border: "none", padding: 0, font: "inherit", letterSpacing: "inherit", color: "#0369a1", fontWeight: 700, cursor: "pointer" }}
+        >
+          FEEDBACK
+        </button>
         {sep}
         <a href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer" onClick={() => track("sponsor_link_clicked")} style={{ color: "#ef4444", textDecoration: "none", fontWeight: 700 }}>
           SPONSOR THIS PROJECT
