@@ -60,7 +60,13 @@ export function VehicleDetail({ vehicle, onClose }: VehicleDetailProps) {
             <h2 className="text-lg font-bold text-foreground font-mono">
               {vehicle.VEHICLE_YEAR} {vehicle.MAKE} {vehicle.MODEL}
             </h2>
-            <p className="text-xs text-muted-foreground font-mono">VIN: {vehicle.VIN11}</p>
+            <p className="text-xs text-muted-foreground font-mono">
+              {vehicle.VIN11
+                ? `VIN (first 11): ${vehicle.VIN11}`
+                : vehicle.CHASSIS7
+                  ? `No VIN on record (older vehicle) · Chassis: ${vehicle.CHASSIS7}`
+                  : "No VIN on record"}
+            </p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -71,10 +77,16 @@ export function VehicleDetail({ vehicle, onClose }: VehicleDetailProps) {
             {entries.map(([key, label]) => {
               const val = vehicle[key as keyof Vehicle];
               if (!val) return null;
+              // The register stores unknown measurements (power, mass, size...) as 0.
+              const notRecorded = String(val).trim() === "0";
               return (
                 <div key={key} className="flex flex-col gap-0.5">
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">{label}</span>
-                  <span className="text-sm font-mono text-foreground">{val}</span>
+                  {notRecorded ? (
+                    <span className="text-sm font-mono text-muted-foreground">Not recorded</span>
+                  ) : (
+                    <span className="text-sm font-mono text-foreground">{val}</span>
+                  )}
                 </div>
               );
             })}
