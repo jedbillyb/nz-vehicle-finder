@@ -44,6 +44,7 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
 
   const content = (
     <div
+      className={isInline ? undefined : "content-col"}
       style={{
         padding: isInline ? "0" : "16px 24px",
         background: isInline ? "transparent" : "#ffffff",
@@ -130,6 +131,7 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
       `}</style>
       <div style={{ borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
         <button
+          className="content-col"
           onClick={() => {
             const next = !expanded;
             setExpanded(next);

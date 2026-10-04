@@ -115,7 +115,7 @@ export function SiteHeader({
             (shown !== null && (
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{shown.toLocaleString("en-NZ")}</div>
-                <div className="header-count-label" style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>{countLabel}</div>
+                <div className="header-count-label" style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>{shown === 1 ? countLabel.replace("VEHICLES", "VEHICLE") : countLabel}</div>
               </div>
             ))}
         </div>

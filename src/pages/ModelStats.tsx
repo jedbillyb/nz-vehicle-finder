@@ -140,7 +140,7 @@ export default function ModelStats() {
         : `${makeDisplay} ${modelDisplay} statistics in New Zealand | NZ Vehicle Finder`;
     const description =
       total !== null
-        ? `${totalText} ${makeDisplay} ${modelDisplay} vehicles are registered in New Zealand.${top.colour ? ` Most common colour is ${top.colour.value.toLowerCase()}.` : ""} View full breakdowns and listings from the Motor Vehicle Register.`
+        ? `${totalText} ${makeDisplay} ${modelDisplay} ${total === 1 ? "vehicle is" : "vehicles are"} registered in New Zealand.${top.colour && total > 1 ? ` Most common colour is ${top.colour.value.toLowerCase()}.` : ""} View full breakdowns and listings from the Motor Vehicle Register.`
         : `Browse ${makeDisplay} ${modelDisplay} vehicles registered in New Zealand. View counts, breakdowns and full listings from the Motor Vehicle Register.`;
 
     const jsonLd: object[] = [
@@ -260,7 +260,7 @@ export default function ModelStats() {
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        background: "#f3f4f6",
+        background: "#ffffff",
         fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         color: "#111827",
       }}
@@ -293,9 +293,11 @@ export default function ModelStats() {
             </h2>
             <p style={{ fontSize: 16, color: "#374151", margin: 0, letterSpacing: "0.01em", maxWidth: 800 }}>
               Breakdown and full listing of all {makeDisplay} {modelDisplay} vehicles on the New Zealand Motor Vehicle Register.
-              {top.fuel && top.colour && (
+              {top.fuel && top.colour && (total === 1 ? (
+                <> It is {top.fuel.value.toLowerCase()} powered and {top.colour.value.toLowerCase()}.</>
+              ) : (
                 <> Most are {top.fuel.value.toLowerCase()} powered, most common colour is {top.colour.value.toLowerCase()}.</>
-              )}
+              ))}
             </p>
             <Link
               to={`/?MAKE=${encodeURIComponent(makeUpper)}&MODEL=${encodeURIComponent(modelUpper)}`}
@@ -312,8 +314,8 @@ export default function ModelStats() {
         <ResultStats data={breakdown} loading={breakdownLoading || (loading && total === null)} />
 
         {total !== null && (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#f3f4f6" }}>
-            <div className="results-bar" style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#ffffff" }}>
+            <div className="results-bar content-col" style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h2 style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", margin: 0, fontWeight: 400 }}>
                 SHOWING <span style={{ color: "#111827" }}>{displayResults.length.toLocaleString("en-NZ")}</span> OF{" "}
                 <span style={{ color: "#0f766e" }}>{total.toLocaleString("en-NZ")}</span> RECORDS
@@ -327,7 +329,7 @@ export default function ModelStats() {
               )}
             </div>
 
-            <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
+            <div className="content-col" style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
               <table className="results-table" style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
                 <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 10 }}>
                   <tr>
@@ -389,13 +391,13 @@ export default function ModelStats() {
               </table>
             </div>
 
-            <Pagination page={page} pages={pages} onPageChange={handlePageChange} />
+            <Pagination page={page} pages={pages} onPageChange={handlePageChange} className="content-col" />
           </div>
         )}
 
         {otherModels.length > 0 && (
           <section className="page-band" style={{ padding: "24px 24px 32px", background: "#ffffff", borderTop: "1px solid #e5e7eb" }}>
-            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+            <div>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>
                 Other {makeDisplay} models
               </h2>

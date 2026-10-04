@@ -4,9 +4,10 @@ interface PaginationProps {
   page: number;
   pages: number;
   onPageChange: (page: number) => void;
+  className?: string;
 }
 
-export function Pagination({ page, pages, onPageChange }: PaginationProps) {
+export function Pagination({ page, pages, onPageChange, className }: PaginationProps) {
   if (pages <= 1) return null;
 
   const getVisiblePages = () => {
@@ -32,6 +33,7 @@ export function Pagination({ page, pages, onPageChange }: PaginationProps) {
 
   return (
     <div
+      className={className}
       style={{
         display: "flex",
         alignItems: "center",

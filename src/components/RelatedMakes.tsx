@@ -15,7 +15,7 @@ export function RelatedMakes({ currentUpper }: { currentUpper: string }) {
         borderTop: "1px solid #e5e7eb",
       }}
     >
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+      <div>
         <h2
           id="related-makes-heading"
           style={{

@@ -32,7 +32,7 @@ export function PageShell({
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        background: "#f3f4f6",
+        background: "#ffffff",
         fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         color: "#111827",
       }}
