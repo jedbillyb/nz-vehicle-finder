@@ -35,6 +35,9 @@ function SkeletonBar({ width }: { width: number }) {
 
 export function ResultStats({ data, loading, isInline = false, hideHeader = false }: ResultStatsProps) {
   const [expanded, setExpanded] = useState(true);
+  // A field with one value (e.g. Make when the search is for one make) is just
+  // a single 100% bar, so leave it out.
+  data = Object.fromEntries(Object.entries(data).filter(([, items]) => items.length > 1));
   const hasData = Object.keys(data).length > 0;
 
   if (!hasData && !loading) return null;
@@ -45,10 +48,9 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
         padding: isInline ? "0" : "16px 24px",
         background: isInline ? "transparent" : "#ffffff",
         display: "grid",
-        // 280px keeps the bar visible beside a long label and the count.
-        gridTemplateColumns: isInline
-          ? "repeat(auto-fill, minmax(min(280px, 100%), 1fr))"
-          : "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
+        // 280px keeps the bar visible beside a long label and the count. auto-fit
+        // (not auto-fill) drops unused tracks so the groups stretch to fill wide screens.
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
         gap: isInline ? 20 : 20,
         borderTop: !isInline && expanded && !hideHeader ? "1px solid #e5e7eb" : "none",
         width: "100%",

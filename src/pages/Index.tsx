@@ -465,7 +465,8 @@ export default function Index() {
         {/* Filter panel */}
         <div className="filters-panel" style={{ padding: "20px 24px", background: "#ffffff" }}>
           {/* Primary Filters */}
-          <div className="main-filters-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px" }}>
+          {/* Column counts live in responsive.css (.filters-grid): 2, 4 or 6, so the 12 fields fill whole rows. */}
+          <div className="main-filters-grid filters-grid" style={{ display: "grid", gap: "12px 16px" }}>
             {primaryFilterFields.map((f) => (
               <SearchField
                 key={f.key}
@@ -507,7 +508,7 @@ export default function Index() {
 
             {showAdvanced && (
               <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, marginTop: 12 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px 16px" }}>
+                <div className="filters-grid" style={{ display: "grid", gap: "12px 16px" }}>
                   {advancedFilterFields.map((f) => (
                     <SearchField
                       key={f.key}

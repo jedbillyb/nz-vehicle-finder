@@ -56,6 +56,21 @@
   }
 }
 
+/* ── Filter grids: 2, 4 or 6 columns (12 main fields = whole rows) ── */
+.filters-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 768px) {
+  .filters-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1200px) {
+  .filters-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
 /* ── Filter panel padding ───────────────────────────────────── */
 .filters-panel {
   padding: 16px !important;
