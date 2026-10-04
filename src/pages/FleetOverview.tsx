@@ -6,6 +6,7 @@ import { captureEvent } from "@/lib/posthog";
 import { makeToSlug, titleCaseMake } from "@/lib/slugs";
 import { tlaToSlug, titleCaseRegion } from "@/lib/slugs";
 import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { LoadingDots } from "@/components/LoadingDots";
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -141,7 +142,7 @@ export default function FleetOverview() {
               <span style={{ color: "#111827" }}>NZ Fleet Overview</span>
             </nav>
             <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-              {loading ? "..." : data?.total.toLocaleString("en-NZ")} vehicles on the NZ register
+              {loading ? <LoadingDots /> : data?.total.toLocaleString("en-NZ")} vehicles on the NZ register
             </h2>
             <p style={{ fontSize: 16, color: "#374151", margin: 0, maxWidth: 800 }}>
               Fleet-wide statistics from the New Zealand Motor Vehicle Register. Fuel types, top makes, body styles, import status and regional breakdowns across every registered vehicle in the country.

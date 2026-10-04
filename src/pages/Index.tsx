@@ -29,7 +29,6 @@ import { toast } from "sonner";
 import { Search, RotateCcw, Download, Share2, LoaderCircle, ChevronDown } from "lucide-react";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { POPULAR_MAKES } from "@/lib/popularMakes";
-import { LoadingDots } from "@/components/LoadingDots";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
