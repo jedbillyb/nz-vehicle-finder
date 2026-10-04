@@ -157,6 +157,8 @@ In production `VITE_POSTHOG_HOST` is `https://vehiclefinder.co.nz/ph`: nginx pro
 
 Where visitors come from: UTM tags on the landing URL (`utm_source`, `utm_medium`, `utm_campaign`, ...) are recorded as `$utm_*` on every event in that visit, and the first ones seen as `$initial_utm_*` on the person. Copy link and the Share button on the fleet and stats pages add `utm_source=copy_link` / `share_button` with `utm_medium=share`, so shared links stay attributable even when Messenger or WhatsApp strip the referrer. To track a link you post yourself, add tags, e.g. `https://vehiclefinder.co.nz/?utm_source=reddit&utm_medium=social&utm_campaign=nz-cars-post`.
 
+The browser client is hand-rolled (no posthog-js), so it sends what web analytics needs itself: a UUIDv7 `$session_id` (new after 30 idle minutes or 24 hours, shared by tabs), `$window_id`, `$host`, device and screen size, and `$pageleave` with time on page and scroll depth.
+
 Signed-in people are identified as `user_<id>` (no email is sent), so a person's site visits and API calls show up together.
 
 ## Paid API

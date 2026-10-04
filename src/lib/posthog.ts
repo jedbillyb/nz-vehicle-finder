@@ -28,6 +28,71 @@ function getDistinctId() {
   }
 }
 
+/** UUIDv7: 48-bit millisecond timestamp, then random bits. Web analytics needs session ids in this form. */
+export function uuidv7(now = Date.now()): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let ts = now;
+  for (let i = 5; i >= 0; i--) {
+    bytes[i] = ts % 256;
+    ts = Math.floor(ts / 256);
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x70; // version 7
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // RFC 4122 variant
+  const hex = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+const SESSION_KEY = "nzvf_posthog_session";
+const WINDOW_KEY = "nzvf_posthog_window";
+const SESSION_IDLE_MS = 30 * 60 * 1000;
+const SESSION_MAX_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The visit this event belongs to, as posthog-js does it: shared by all tabs,
+ * a new one after 30 minutes without events or 24 hours in total.
+ */
+export function sessionId(now = Date.now()): string {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(SESSION_KEY) || "null") as { id: string; start: number; last: number } | null;
+    const fresh = !stored || now - stored.last > SESSION_IDLE_MS || now - stored.start > SESSION_MAX_MS;
+    const next = fresh ? { id: uuidv7(now), start: now, last: now } : { ...stored, last: now };
+    window.localStorage.setItem(SESSION_KEY, JSON.stringify(next));
+    return next.id;
+  } catch {
+    return fallbackSession;
+  }
+}
+const fallbackSession = typeof crypto !== "undefined" && "getRandomValues" in crypto ? uuidv7() : "";
+
+/** One id per browser tab, so PostHog can tell tabs within a session apart. */
+function windowId(): string {
+  try {
+    const existing = window.sessionStorage.getItem(WINDOW_KEY);
+    if (existing) return existing;
+    const next = uuidv7();
+    window.sessionStorage.setItem(WINDOW_KEY, next);
+    return next;
+  } catch {
+    return fallbackSession;
+  }
+}
+
+/** Device facts posthog-js would send; web analytics breaks traffic down by these. */
+function deviceProperties(): Properties {
+  const ua = navigator.userAgent;
+  const tablet = /iPad|Tablet|PlayBook|Silk/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua));
+  const mobile = !tablet && /Mobi|iPhone|iPod|Android/i.test(ua);
+  return {
+    $device_type: tablet ? "Tablet" : mobile ? "Mobile" : "Desktop",
+    $raw_user_agent: ua,
+    $screen_width: window.screen?.width,
+    $screen_height: window.screen?.height,
+    $viewport_width: window.innerWidth,
+    $viewport_height: window.innerHeight,
+  };
+}
+
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 const ATTRIBUTION_KEY = "nzvf_attribution";
 
@@ -100,12 +165,18 @@ export function captureEvent(event: string, properties: Properties = {}) {
     distinct_id: getDistinctId(),
     properties: {
       ...attribution,
-      ...properties,
+      ...deviceProperties(),
       $current_url: window.location.href,
+      $host: window.location.host,
       $pathname: window.location.pathname,
       $referrer: document.referrer || undefined,
       $referring_domain: referrerDomain,
+      $session_id: sessionId(),
+      $window_id: windowId(),
+      $lib: "nzvf-web",
       $set_once: initialAttribution(),
+      // Last, so a caller can describe a page it is leaving ($pageleave).
+      ...properties,
     },
   };
 
