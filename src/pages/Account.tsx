@@ -8,12 +8,13 @@ import {
   type Account as AccountData, type SavedSearch,
 } from "@/lib/account";
 import { PageShell } from "@/components/PageShell";
-import { DocLayout, DocSection, Split, type DocNavGroup } from "@/components/DocLayout";
+import { DocSection, Split } from "@/components/DocLayout";
 import { code, input, label, primaryButton, secondaryButton } from "@/lib/pageStyles";
 import { BURST_PER_SECOND, TIERS, TIER_ORDER, type Tier, type TierId } from "../../shared/apiTiers";
 import { MAX_SAVED_SEARCH_NAME, MAX_SAVED_SEARCHES } from "../../shared/savedSearch";
 import { Star } from "lucide-react";
 import { toast } from "sonner";
+import { LoadingDots } from "@/components/LoadingDots";
 
 const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" }) : "Never";
@@ -170,9 +171,29 @@ function HowItWorks() {
   );
 }
 
-const DASHBOARD_NAV: DocNavGroup[] = [
-  { group: "Your account", items: [["overview", "Overview"], ["api-keys", "API keys"], ["saved-searches", "Saved searches"], ["plans", "Plan and billing"]] },
-];
+/** Top right of the heading when signed in: who you are, and the way out. */
+function SignedInAs({ account, reload }: { account: AccountData; reload: () => void }) {
+  return (
+    <div className="acct-who">
+      <div className="acct-who__label">Signed in as</div>
+      <div className="acct-who__email">{account.email}</div>
+      <div className="acct-who__plan">{account.tier.name} plan</div>
+      <button
+        type="button"
+        className="acct-who__signout"
+        onClick={async () => {
+          captureEvent("signed_out");
+          await signOut();
+          resetUser();
+          reload();
+        }}
+      >
+        Sign out
+      </button>
+    </div>
+  );
+}
+
 function Dashboard({ account, reload }: { account: AccountData; reload: () => void }) {
   // Once per visit: tie this browser to the account, then record what the account looks like.
   useEffect(() => {
@@ -276,29 +297,10 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
     setCopied(true);
   };
 
-  const signOutNow = async () => {
-    captureEvent("signed_out");
-    await signOut();
-    resetUser();
-    reload();
-  };
-
   const p = { fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 12px" } as const;
 
   return (
-    <DocLayout
-      label="Your account"
-      groups={DASHBOARD_NAV}
-      onNav={(id) => captureEvent("account_nav_clicked", { section: id })}
-      navTop={
-        <div className="acct-who">
-          <div className="doc-nav-heading">Signed in as</div>
-          <div className="acct-who__email">{account.email}</div>
-          <div className="acct-who__plan">{account.tier.name} plan</div>
-          <button type="button" className="acct-who__signout" onClick={signOutNow}>Sign out</button>
-        </div>
-      }
-    >
+    <div className="fade-in doc-layout doc-layout--plain">
       <DocSection id="overview" title="Overview">
         <div className="acct-usage">
           <div className="acct-usage__top">
@@ -406,22 +408,26 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
             Your last payment failed. Update your card in Manage billing to keep your plan.
           </p>
         )}
-        <div className="doc-pricing">
+        <div className="acct-plans">
           {account.tiers.map((t) => {
             const current = t.id === account.tier.id;
             const busy = redirecting !== null;
-            const planButton = { padding: "7px 14px", fontSize: 12, borderRadius: 8 } as const;
+            const planButton = { padding: "4px 12px", fontSize: 12, borderRadius: 999 } as const;
             return (
-              <div key={t.id} className="doc-plan acct-plan" style={current ? { borderColor: "#0ea5e9", background: "#f0f9ff" } : undefined}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: current ? "#0369a1" : "#6b7280" }}>{t.name}{current && " · your plan"}</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", margin: "4px 0" }}>
-                  {t.priceNzd === 0 ? "Free" : `NZ$${t.priceNzd}`}
-                  {t.priceNzd > 0 && <span style={{ fontSize: 13, fontWeight: 500, color: "#6b7280" }}> / month</span>}
+              <div key={t.id} className={current ? "acct-plan is-current" : "acct-plan"}>
+                <div className="acct-plan__row">
+                  <span className="acct-plan__name">{t.name}</span>
+                  <span className="acct-plan__price">
+                    {t.priceNzd === 0 ? "Free" : `NZ$${t.priceNzd}`}
+                    {t.priceNzd > 0 && <span> /mo</span>}
+                  </span>
                 </div>
-                <div style={{ fontSize: 13, color: "#374151" }}>{fmtRequests(t)}</div>
-                <div style={{ marginTop: 12 }}>
-                  {current ? null : !billing.enabled ? (
-                    <span style={{ fontSize: 12, color: "#6b7280" }}>Coming soon</span>
+                <div className="acct-plan__row">
+                  <span className="acct-plan__reqs">{fmtRequests(t)}</span>
+                  {current ? (
+                    <span className="acct-plan__current">Current plan</span>
+                  ) : !billing.enabled ? (
+                    <span className="acct-plan__reqs">Coming soon</span>
                   ) : billing.subscribed ? (
                     // Switching or cancelling an existing subscription happens in Stripe's portal.
                     <button style={{ ...secondaryButton, ...planButton, fontWeight: 600 }} disabled={busy} onClick={() => goToStripe(t.id, "billing_portal_opened", openBillingPortal)}>
@@ -429,7 +435,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
                     </button>
                   ) : t.priceNzd > 0 ? (
                     <button style={{ ...primaryButton, ...planButton, opacity: busy && redirecting !== t.id ? 0.5 : 1 }} disabled={busy} onClick={() => goToStripe(t.id, "checkout_started", () => startCheckout(t.id))}>
-                      {redirecting === t.id ? "Opening Stripe..." : `Upgrade to ${t.name}`}
+                      {redirecting === t.id ? "Opening Stripe..." : "Upgrade"}
                     </button>
                   ) : null}
                 </div>
@@ -446,7 +452,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
           Every plan allows {BURST_PER_SECOND} calls a second. Payments are handled by Stripe. Cancel any time; your plan runs to the end of the month you paid for.
         </p>
       </DocSection>
-    </DocLayout>
+    </div>
   );
 }
 
@@ -647,7 +653,7 @@ export default function Account() {
           ? "Your API usage, keys, saved searches and plan."
           : "Start free with 500 requests a month, or pick a paid plan and go straight to checkout."
       }
-      aside={false}
+      aside={account ? <SignedInAs account={account} reload={reload} /> : false}
     >
       {notice && (
         <div className="page-band" style={{ padding: "10px 24px", background: "#f0f9ff", borderBottom: "1px solid #bae6fd", color: "#0369a1", fontSize: 13, fontWeight: 600 }}>{notice}</div>
@@ -656,12 +662,12 @@ export default function Account() {
         <div className="page-band" style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
       )}
       {loading ? (
-        <div className="page-band" style={{ padding: "24px", color: "#6b7280", fontSize: 13 }}>Loading...</div>
+        <div className="page-band" style={{ padding: "24px", color: "#0ea5e9", fontSize: 22 }}><LoadingDots /></div>
       ) : account ? (
         <Dashboard account={account} reload={reload} />
       ) : (
         // Two short sections need no menu; same section styling as the docs, full width.
-        <div className="doc-layout doc-layout--plain">
+        <div className="fade-in doc-layout doc-layout--plain">
           <SignIn pendingSave={pendingSave} initialPlan={urlPlan ?? "free"} />
           <HowItWorks />
         </div>

@@ -17,6 +17,8 @@ import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { resultColumns } from "@/lib/resultColumns";
 import { LoadingDots } from "@/components/LoadingDots";
 import { LinkTiles } from "@/components/LinkTiles";
+import { NumberSlot, Reserve } from "@/components/NumberSlot";
+import { POPULAR_MAKES } from "@/lib/popularMakes";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -38,6 +40,8 @@ export default function MakeStats() {
   const { make } = useParams<{ make: string }>();
   const makeUpper = slugToMakeUpper(make || "");
   const makeDisplay = titleCaseMake(makeUpper);
+  // Rough size of the count, so the loading slot in the heading is about the right width.
+  const estimate = (POPULAR_MAKES.find((m) => m.upper === makeUpper)?.count ?? 10_000).toLocaleString("en-NZ");
 
   const [results, setResults] = useState<Vehicle[]>([]);
   const [total, setTotal] = useState<number | null>(null);
@@ -257,7 +261,7 @@ export default function MakeStats() {
         display: "flex",
         flexDirection: "column",
         background: "#ffffff",
-        fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "'Inter', 'Inter Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         color: "#111827",
       }}
     >
@@ -275,15 +279,20 @@ export default function MakeStats() {
               <span style={{ color: "#111827" }}>{makeDisplay}</span>
             </nav>
             <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-              {total !== null ? total.toLocaleString('en-NZ') : <LoadingDots />} {makeDisplay} {total === 1 ? "vehicle" : "vehicles"} registered in NZ
+              <NumberSlot value={total} placeholder={estimate} /> {makeDisplay} {total === 1 ? "vehicle" : "vehicles"} registered in NZ
             </h2>
             <p style={{ fontSize: 16, color: "#374151", margin: 0, letterSpacing: "0.01em", maxWidth: 800 }}>
               Breakdown and full listing of all {makeDisplay} vehicles on the New Zealand Motor Vehicle Register.
             </p>
               {blurb.blurb && (
                 <p style={{ fontSize: 12, color: "#6b7280", margin: "8px 0 0", lineHeight: 1.7, maxWidth: 800 }}>
-                  {total !== null && <>{total.toLocaleString('en-NZ')} {makeDisplay} {total === 1 ? "vehicle is" : "vehicles are"} registered on the NZ Motor Vehicle Register{total > 1 && top.bodyType && top.fuel ? ` - most are ${top.bodyType.value.toLowerCase()} body types running on ${top.fuel.value.toLowerCase()}` : ""}. </>}
-                  {top.colour && total !== 1 && <>Most common colour is {top.colour.value.toLowerCase()}. </>}
+                  <Reserve
+                    ready={total !== null && !breakdownLoading}
+                    standIn={`0,000,000 ${makeDisplay} vehicles are registered on the NZ Motor Vehicle Register - most are station wagon body types running on petrol. Most common colour is silver. `}
+                  >
+                    {total !== null && <>{total.toLocaleString('en-NZ')} {makeDisplay} {total === 1 ? "vehicle is" : "vehicles are"} registered on the NZ Motor Vehicle Register{total > 1 && top.bodyType && top.fuel ? ` - most are ${top.bodyType.value.toLowerCase()} body types running on ${top.fuel.value.toLowerCase()}` : ""}. </>}
+                    {top.colour && total !== 1 && <>Most common colour is {top.colour.value.toLowerCase()}. </>}
+                  </Reserve>
                   {blurb.blurb}
                 </p>
               )}
@@ -333,11 +342,11 @@ export default function MakeStats() {
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="rows-in">
                   {loading && results.length === 0 ? (
                     <tr>
                       <td colSpan={resultColumns.length} style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 11, letterSpacing: "0.1em" }}>
-                        LOADING...
+                        <span style={{ fontSize: 22, color: "#0ea5e9" }}><LoadingDots /></span>
                       </td>
                     </tr>
                   ) : sortedResults.length === 0 ? (

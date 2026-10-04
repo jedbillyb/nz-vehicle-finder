@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,6 +7,17 @@
 html,
 body {
   overscroll-behavior: none;
+}
+
+/* Arial (or a metric twin) scaled to Inter's size, shown until Inter loads. Text keeps
+   the same line lengths when Inter swaps in, so headings don't rewrap and jump. */
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial"), local("ArialMT"), local("Liberation Sans"), local("Helvetica"), local("Arimo"), local("Nimbus Sans"), local("Nimbus Sans Regular");
+  size-adjust: 107.1%;
+  ascent-override: 90.4%;
+  descent-override: 22.5%;
+  line-gap-override: 0%;
 }
 
 @layer base {
@@ -99,7 +109,7 @@ body {
 
   body {
     @apply bg-background text-foreground font-sans;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', 'Inter Fallback', sans-serif;
   }
 
   code, .font-mono {
@@ -113,4 +123,35 @@ body {
 .loading-dots > span:nth-child(2) { animation-delay: 0.15s; }
 .loading-dots > span:nth-child(3) { animation-delay: 0.3s; }
 @keyframes loading-dot { 0%, 80%, 100% { transform: translateY(0); opacity: 0.35; } 40% { transform: translateY(-0.35em); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .loading-dots > span { animation: none; } }
+/* Content fades up as it arrives, so loaded data eases in instead of popping. */
+@keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bar-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.fade-in { animation: fade-up 0.35s ease-out both; }
+.bar-grow { transform-origin: left center; animation: bar-grow 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+/* Table rows only fade (transforms on rows are patchy); the first dozen cascade in. */
+.rows-in > tr { animation: fade 0.3s ease-out both; }
+.rows-in > tr:nth-child(2) { animation-delay: 20ms; }
+.rows-in > tr:nth-child(3) { animation-delay: 40ms; }
+.rows-in > tr:nth-child(4) { animation-delay: 60ms; }
+.rows-in > tr:nth-child(5) { animation-delay: 80ms; }
+.rows-in > tr:nth-child(6) { animation-delay: 100ms; }
+.rows-in > tr:nth-child(7) { animation-delay: 120ms; }
+.rows-in > tr:nth-child(8) { animation-delay: 140ms; }
+.rows-in > tr:nth-child(9) { animation-delay: 160ms; }
+.rows-in > tr:nth-child(10) { animation-delay: 180ms; }
+.rows-in > tr:nth-child(n + 11) { animation-delay: 200ms; }
+/* Placeholder lines for a sentence still loading: the text is there for its size, but hidden. */
+@keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.text-skeleton {
+  color: transparent;
+  background: #eef0f3;
+  border-radius: 4px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  user-select: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-dots > span, .fade-in, .bar-grow, .rows-in > tr, .text-skeleton { animation: none; }
+}

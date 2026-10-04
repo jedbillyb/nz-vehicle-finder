@@ -23,8 +23,8 @@ export function PageShell({
   intro?: ReactNode;
   /** Where the hero's API box points; see HeroAside. */
   heroApi?: { to: string; title: string; sub: string };
-  /** False drops the API and Sponsor buttons beside the heading. */
-  aside?: boolean;
+  /** False drops the API and Sponsor buttons beside the heading; a node replaces them. */
+  aside?: boolean | ReactNode;
   /** Analytics source tag for the footer links. */
   source: string;
   children: ReactNode;
@@ -36,7 +36,7 @@ export function PageShell({
         display: "flex",
         flexDirection: "column",
         background: "#ffffff",
-        fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "'Inter', 'Inter Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         color: "#111827",
       }}
     >
@@ -55,7 +55,7 @@ export function PageShell({
             </h2>
             {intro && <p style={{ fontSize: 16, color: "#374151", margin: 0, maxWidth: 800 }}>{intro}</p>}
           </div>
-          {aside && <HeroAside source={source} api={heroApi} />}
+          {aside === true ? <HeroAside source={source} api={heroApi} /> : aside || null}
         </div>
 
         {children}

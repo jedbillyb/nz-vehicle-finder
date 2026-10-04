@@ -433,7 +433,7 @@ export default function Index() {
         display: "flex",
         flexDirection: "column",
         background: "#f3f4f6",
-        fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "'Inter', 'Inter Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         color: "#111827",
       }}
     >
@@ -679,7 +679,7 @@ export default function Index() {
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="rows-in">
                 {sortedResults.length === 0 ? (
                   <tr>
                     <td colSpan={resultColumns.length} style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 11, letterSpacing: "0.1em" }}>

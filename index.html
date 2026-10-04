@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- Fonts load from the head, not a CSS @import, so they arrive with the page instead of
+       after the app's JS, and text doesn't visibly swap font and rewrap a second in. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- SEO: Title (53 chars) -->

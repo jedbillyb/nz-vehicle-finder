@@ -18,7 +18,7 @@ import { CONTACT_EMAIL } from "../../shared/contact";
 
 const BASE = "https://vehiclefinder.co.nz/api/v1";
 const CONTACT =
-  `mailto:${CONTACT_EMAIL.quotes}?subject=` +
+  `mailto:${CONTACT_EMAIL.support}?subject=` +
   encodeURIComponent("Custom report request") +
   "&body=" +
   encodeURIComponent("Which report (model, market, extract or monthly):\nWhich vehicles (make, model, years, region...):\nFormat (PDF, CSV, both):\nOne-off or every month:\n");

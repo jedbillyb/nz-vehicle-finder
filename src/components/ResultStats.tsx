@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 import { type BreakdownData } from "@/lib/vehicleApi";
 import { captureEvent } from "@/lib/posthog";
+import { LoadingDots } from "@/components/LoadingDots";
 
 interface ResultStatsProps {
   data: BreakdownData;
@@ -94,7 +95,7 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
                         {d.value}
                       </div>
                       <div style={{ flex: 1, height: 8, background: "#f3f4f6", position: "relative", borderRadius: 999, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
+                        <div className="bar-grow" style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
                       </div>
                       <div style={{ fontSize: 9, color: "#6b7280", minWidth: 45, textAlign: "right", whiteSpace: "nowrap" }}>
                         {d.count.toLocaleString('en-NZ')} ({((d.count / total) * 100).toFixed(1)}%)
@@ -154,8 +155,8 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
             <BarChart3 size={11} color="#0ea5e9" />
             <h2 style={{ color: "#0f172a", fontSize: "inherit", fontWeight: "inherit", margin: 0 }}>RESULT BREAKDOWN</h2>
             {loading && (
-              <span style={{ fontSize: 9, color: "#0ea5e9", letterSpacing: "0.15em", opacity: 0.8 }}>
-                · LOADING...
+              <span style={{ fontSize: 14, color: "#0ea5e9" }}>
+                <LoadingDots />
               </span>
             )}
           </span>

@@ -16,6 +16,7 @@ import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { resultColumns } from "@/lib/resultColumns";
 import { LoadingDots } from "@/components/LoadingDots";
 import { LinkTiles } from "@/components/LinkTiles";
+import { NumberSlot, Reserve } from "@/components/NumberSlot";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -263,7 +264,7 @@ export default function ModelStats() {
         display: "flex",
         flexDirection: "column",
         background: "#ffffff",
-        fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "'Inter', 'Inter Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         color: "#111827",
       }}
     >
@@ -291,15 +292,17 @@ export default function ModelStats() {
               <span style={{ color: "#111827" }}>{modelDisplay}</span>
             </nav>
             <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-              {total !== null ? total.toLocaleString("en-NZ") : <LoadingDots />} {makeDisplay} {modelDisplay} registered in NZ
+              <NumberSlot value={total} /> {makeDisplay} {modelDisplay} registered in NZ
             </h2>
             <p style={{ fontSize: 16, color: "#374151", margin: 0, letterSpacing: "0.01em", maxWidth: 800 }}>
               Breakdown and full listing of all {makeDisplay} {modelDisplay} vehicles on the New Zealand Motor Vehicle Register.
-              {top.fuel && top.colour && (total === 1 ? (
-                <> It is {top.fuel.value.toLowerCase()} powered and {top.colour.value.toLowerCase()}.</>
-              ) : (
-                <> Most are {top.fuel.value.toLowerCase()} powered, most common colour is {top.colour.value.toLowerCase()}.</>
-              ))}
+              <Reserve ready={total !== null && !breakdownLoading} standIn=" Most are petrol powered, most common colour is silver.">
+                {top.fuel && top.colour && (total === 1 ? (
+                  <> It is {top.fuel.value.toLowerCase()} powered and {top.colour.value.toLowerCase()}.</>
+                ) : (
+                  <> Most are {top.fuel.value.toLowerCase()} powered, most common colour is {top.colour.value.toLowerCase()}.</>
+                ))}
+              </Reserve>
             </p>
             <Link
               to={`/?MAKE=${encodeURIComponent(makeUpper)}&MODEL=${encodeURIComponent(modelUpper)}`}
@@ -347,11 +350,11 @@ export default function ModelStats() {
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="rows-in">
                   {loading && results.length === 0 ? (
                     <tr>
                       <td colSpan={resultColumns.length} style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 11, letterSpacing: "0.1em" }}>
-                        LOADING...
+                        <span style={{ fontSize: 22, color: "#0ea5e9" }}><LoadingDots /></span>
                       </td>
                     </tr>
                   ) : sortedResults.length === 0 ? (

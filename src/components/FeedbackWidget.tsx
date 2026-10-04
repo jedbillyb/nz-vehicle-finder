@@ -163,7 +163,7 @@ export function FeedbackWidget() {
               fontWeight: 600,
               letterSpacing: "0.1em",
               cursor: "pointer",
-              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+              fontFamily: "'Inter', 'Inter Fallback', system-ui, -apple-system, sans-serif",
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",
               boxShadow: "0 4px 16px rgba(15,23,42,0.22)",
@@ -210,7 +210,7 @@ export function FeedbackWidget() {
               position: "fixed",
               zIndex: 51,
               background: "#ffffff",
-              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+              fontFamily: "'Inter', 'Inter Fallback', system-ui, -apple-system, sans-serif",
               overflow: "hidden",
               ...(isMobile
                 ? {

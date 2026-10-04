@@ -458,7 +458,7 @@
 }
 
 /* Error pages (NotFound.tsx, public/403.html keeps its own copy): one centred column. */
-.error-page { min-height: 100vh; display: flex; flex-direction: column; background: #ffffff; color: #111827; font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+.error-page { min-height: 100vh; display: flex; flex-direction: column; background: #ffffff; color: #111827; font-family: 'Inter', 'Inter Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
 .error-page__main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 64px 24px; }
 .error-page__code { font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #0ea5e9; margin-bottom: 10px; }
 .error-page__title { font-size: 48px; font-weight: 800; color: #0f172a; letter-spacing: -0.03em; line-height: 1.1; margin: 0 0 12px; }
@@ -477,10 +477,14 @@
 
 /* ── Account page (docs layout): who's signed in, and the usage meter ── */
 .acct-who {
-  padding: 0 0 16px;
-  margin-bottom: 18px;
-  border-bottom: 1px solid #e5e7eb;
+  width: 240px;
+  flex-shrink: 0;
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
 }
+.acct-who__label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9ca3af; margin-bottom: 4px; }
 .acct-who__email { font-size: 13px; font-weight: 600; color: #0f172a; overflow-wrap: anywhere; }
 .acct-who__plan { font-size: 12px; color: #6b7280; margin: 2px 0 10px; }
 .acct-who__signout {
@@ -505,20 +509,35 @@
 .acct-usage__bar > div { height: 100%; border-radius: 999px; }
 .acct-usage__facts { display: flex; flex-wrap: wrap; gap: 6px 24px; font-size: 13px; color: #4b5563; }
 .acct-usage__facts strong { color: #0f172a; }
-.acct-plan { cursor: default; }
-@media (max-width: 899px) {
-  /* The menu is a row of chips here; put the signed-in panel on its own line above them. */
-  .doc-nav:has(.acct-who) { flex-wrap: wrap; }
-  .acct-who {
-    flex: 1 0 100%;
-    display: flex;
-    align-items: center;
-    gap: 4px 12px;
-    flex-wrap: wrap;
-    padding: 0 0 12px;
-    margin: 0 0 4px;
-  }
-  .acct-who .doc-nav-heading { display: none; }
+.acct-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 10px; }
+.acct-plan { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; background: #ffffff; display: flex; flex-direction: column; gap: 6px; }
+.acct-plan.is-current { border-color: #0ea5e9; background: #f0f9ff; }
+.acct-plan__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
+.acct-plan__name { font-size: 14px; font-weight: 700; color: #0f172a; }
+.acct-plan__price { font-size: 16px; font-weight: 800; color: #0f172a; white-space: nowrap; }
+.acct-plan__price span { font-size: 12px; font-weight: 500; color: #6b7280; }
+.acct-plan__reqs { font-size: 12px; color: #6b7280; }
+.acct-plan__current { font-size: 12px; font-weight: 700; color: #0369a1; }
+@media (max-width: 767px) {
+  .acct-who { width: auto; align-self: stretch; margin-top: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
+  .acct-who__label { display: none; }
   .acct-who__plan { margin: 0; }
   .acct-who__signout { width: auto; margin-left: auto; }
 }
+
+/* Contact page: the error-page column with one email button. */
+.contact-email {
+  display: inline-block;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  background: #0ea5e9;
+  border-radius: 10px;
+  padding: 12px 22px;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  transition: background-color 0.12s;
+}
+.contact-email:hover, .contact-email:focus-visible { background: #0284c7; }
+.contact-note { font-size: 13px; color: #6b7280; margin: 24px 0 0; }
+.contact-note button { background: none; border: none; padding: 0; font: inherit; color: #0369a1; font-weight: 600; cursor: pointer; }

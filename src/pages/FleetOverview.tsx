@@ -8,6 +8,7 @@ import { tlaToSlug, titleCaseRegion } from "@/lib/slugs";
 import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { LoadingDots } from "@/components/LoadingDots";
 import { LinkTiles } from "@/components/LinkTiles";
+import { NumberSlot } from "@/components/NumberSlot";
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -29,7 +30,7 @@ function BreakdownBars({ items, max }: { items: { value: string; count: number }
             {d.value}
           </div>
           <div style={{ flex: 1, height: 8, background: "#f3f4f6", borderRadius: 999, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
+            <div className="bar-grow" style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
           </div>
           <div style={{ fontSize: 9, color: "#6b7280", minWidth: 70, textAlign: "right" }}>
             {d.count.toLocaleString("en-NZ")} ({((d.count / total) * 100).toFixed(1)}%)
@@ -127,7 +128,7 @@ export default function FleetOverview() {
         display: "flex",
         flexDirection: "column",
         background: "#ffffff",
-        fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "'Inter', 'Inter Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         color: "#111827",
       }}
     >
@@ -143,7 +144,7 @@ export default function FleetOverview() {
               <span style={{ color: "#111827" }}>NZ Fleet Overview</span>
             </nav>
             <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-              {loading ? <LoadingDots /> : data?.total.toLocaleString("en-NZ")} vehicles on the NZ register
+              <NumberSlot value={loading ? null : data?.total} placeholder="0,000,000" /> vehicles on the NZ register
             </h2>
             <p style={{ fontSize: 16, color: "#374151", margin: 0, maxWidth: 800 }}>
               Fleet-wide statistics from the New Zealand Motor Vehicle Register. Fuel types, top makes, body styles, import status and regional breakdowns across every registered vehicle in the country.
@@ -154,7 +155,7 @@ export default function FleetOverview() {
 
         {/* Stat cards: columns are set in responsive.css (.fleet-stats) so no card is left alone on a row. */}
         {data && (
-          <div className="page-band fleet-stats" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "grid", gap: 12 }}>
+          <div className="fade-in page-band fleet-stats" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "grid", gap: 12 }}>
             <StatCard
               label="TOTAL REGISTERED"
               value={data.total.toLocaleString("en-NZ")}
@@ -185,7 +186,7 @@ export default function FleetOverview() {
 
         {/* Breakdowns */}
         {data && (
-          <div className="page-band" style={{ padding: "24px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb" }}>
+          <div className="fade-in page-band" style={{ padding: "24px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb" }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 32 }}>
               <div>
                 <h2 style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", marginBottom: 12, fontWeight: 700 }}>FUEL TYPE</h2>
@@ -205,7 +206,7 @@ export default function FleetOverview() {
 
         {/* Top makes */}
         {data && (
-          <section className="page-band" style={{ padding: "24px 24px 32px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+          <section className="fade-in page-band" style={{ padding: "24px 24px 32px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>
               Top makes by registrations
             </h2>
@@ -225,7 +226,7 @@ export default function FleetOverview() {
 
         {/* Regions */}
         {data && (
-          <section className="page-band" style={{ padding: "24px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb" }}>
+          <section className="fade-in page-band" style={{ padding: "24px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb" }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.01em" }}>
               Browse by region
             </h2>
@@ -244,8 +245,9 @@ export default function FleetOverview() {
         )}
 
         {loading && (
-          <div style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 11, letterSpacing: "0.1em" }}>
-            LOADING...
+          // A screen tall, so the footer isn't on screen to jump down when the stats arrive.
+          <div style={{ minHeight: "100vh", padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 11, letterSpacing: "0.1em" }}>
+            <span style={{ fontSize: 22, color: "#0ea5e9" }}><LoadingDots /></span>
           </div>
         )}
       </div>

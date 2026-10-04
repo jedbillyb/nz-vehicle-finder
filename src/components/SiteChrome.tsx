@@ -112,7 +112,11 @@ export function SiteHeader({
         </div>
         <div className="header-count" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
           {right ??
-            (shown !== null && (
+            (shown === null ? (
+              // Hold the count's space while it loads; on phones it is its own line, and
+              // appearing late pushed the whole page down.
+              <div aria-hidden style={{ visibility: "hidden", fontSize: 22, fontWeight: 700, lineHeight: 1 }}>0,000,000</div>
+            ) : (
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{shown.toLocaleString("en-NZ")}</div>
                 <div className="header-count-label" style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>{shown === 1 ? countLabel.replace("VEHICLES", "VEHICLE") : countLabel}</div>
@@ -198,6 +202,10 @@ export function SiteFooter({ source, eventProps }: { source: string; eventProps?
         >
           FEEDBACK
         </button>
+        {sep}
+        <Link to="/contact" onClick={() => track("contact_link_clicked")} style={{ color: "#0369a1", textDecoration: "none", fontWeight: 700 }}>
+          CONTACT
+        </Link>
         {sep}
         <a href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer" onClick={() => track("sponsor_link_clicked")} style={{ color: "#ef4444", textDecoration: "none", fontWeight: 700 }}>
           SPONSOR THIS PROJECT

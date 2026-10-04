@@ -17,6 +17,7 @@ import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { resultColumns } from "@/lib/resultColumns";
 import { LoadingDots } from "@/components/LoadingDots";
 import { LinkTiles } from "@/components/LinkTiles";
+import { NumberSlot, Reserve } from "@/components/NumberSlot";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -236,7 +237,7 @@ export default function RegionStats() {
         display: "flex",
         flexDirection: "column",
         background: "#ffffff",
-        fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "'Inter', 'Inter Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         color: "#111827",
       }}
     >
@@ -264,7 +265,7 @@ export default function RegionStats() {
               <span style={{ color: "#111827" }}>{tlaDisplay}</span>
             </nav>
             <h2 style={{ fontSize: 48, fontWeight: 800, color: "#0f172a", margin: "0 0 12px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-              {total !== null ? total.toLocaleString("en-NZ") : <LoadingDots />} vehicles registered in {tlaDisplay}
+              <NumberSlot value={total} /> vehicles registered in {tlaDisplay}
             </h2>
             <p style={{ fontSize: 16, color: "#374151", margin: 0, maxWidth: 800 }}>
               Breakdown and full listing of all vehicles registered in {tlaDisplay} on the New Zealand Motor Vehicle Register.
@@ -320,9 +321,9 @@ export default function RegionStats() {
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="rows-in">
                   {loading && results.length === 0 ? (
-                    <tr><td colSpan={resultColumns.length} style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 11, letterSpacing: "0.1em" }}>LOADING...</td></tr>
+                    <tr><td colSpan={resultColumns.length} style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 11, letterSpacing: "0.1em" }}><span style={{ fontSize: 22, color: "#0ea5e9" }}><LoadingDots /></span></td></tr>
                   ) : sortedResults.length === 0 ? (
                     <tr><td colSpan={resultColumns.length} style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 11, letterSpacing: "0.1em" }}>NO RECORDS FOUND</td></tr>
                   ) : (

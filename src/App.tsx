@@ -12,6 +12,7 @@ import RegionStats from "./pages/RegionStats";
 import NotFound from "./pages/NotFound";
 import Account from "./pages/Account";
 import Developers from "./pages/Developers";
+import Contact from "./pages/Contact";
 import { AnalyticsTracker } from "./components/AnalyticsTracker";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
@@ -21,8 +22,8 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      {/* Top centre, so notifications never sit on the Feedback button (bottom right). */}
-      <Sonner position="top-center" />
+      {/* Bottom centre, clear of the Feedback button in the bottom right corner. */}
+      <Sonner position="bottom-center" />
       <BrowserRouter>
         <ScrollToTop />
         <AnalyticsTracker />
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/region/:tla" element={<RegionStats />} />
           <Route path="/account" element={<Account />} />
           <Route path="/developers" element={<Developers />} />
+          <Route path="/contact" element={<Contact />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
