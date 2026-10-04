@@ -265,7 +265,7 @@ export default function ModelStats() {
         color: "#111827",
       }}
     >
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <SiteHeader
           source="model_stats_page"
           count={total}
@@ -314,7 +314,7 @@ export default function ModelStats() {
         <ResultStats data={breakdown} loading={breakdownLoading || (loading && total === null)} />
 
         {total !== null && (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#ffffff" }}>
+          <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#ffffff" }}>
             <div className="results-bar content-col" style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h2 style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", margin: 0, fontWeight: 400 }}>
                 SHOWING <span style={{ color: "#111827" }}>{displayResults.length.toLocaleString("en-NZ")}</span> OF{" "}
@@ -394,6 +394,9 @@ export default function ModelStats() {
             <Pagination page={page} pages={pages} onPageChange={handlePageChange} className="content-col" />
           </div>
         )}
+
+        {/* Push the link bands down to the footer when the listing is short. */}
+        <div aria-hidden style={{ flex: 1 }} />
 
         {otherModels.length > 0 && (
           <section className="page-band" style={{ padding: "24px 24px 32px", background: "#ffffff", borderTop: "1px solid #e5e7eb" }}>
