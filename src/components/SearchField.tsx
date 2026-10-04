@@ -1,9 +1,8 @@
 import { useMemo, useRef, useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { getSuggestionsLocal, getSuggestions, getModelsForMake, SUGGESTION_LIMIT } from "@/lib/vehicleApi";
+import { getSuggestionsLocal, preloadSuggestions, getSuggestions, getModelsForMake, SUGGESTION_LIMIT } from "@/lib/vehicleApi";
 import { Vehicle } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { captureEvent } from "@/lib/posthog";
 import { Check, Info, X } from "lucide-react";
 import { parseFilterValue, serializeTerms, type FilterTerm } from "../../shared/filterTerms";
@@ -45,6 +44,18 @@ export function SearchField({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [debouncedInput, setDebouncedInput] = useState("");
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  /** Set when Tab already picked a value, so the blur that follows doesn't also commit the typed text. */
+  const pickedOnTab = useRef(false);
+  // Flips once autocomplete.json has arrived, so the local fallback list below
+  // is rebuilt instead of staying the empty list it saw on first render.
+  const [localReady, setLocalReady] = useState(false);
+  useEffect(() => {
+    let live = true;
+    preloadSuggestions().then(() => { if (live) setLocalReady(true); });
+    return () => { live = false; };
+  }, []);
 
   const terms = useMemo(() => parseFilterValue(value), [value]);
 
@@ -61,8 +72,16 @@ export function SearchField({
   const { data: remoteSuggestions = NO_SUGGESTIONS, isFetching, isError } = useQuery({
     queryKey: ["suggestions", field, debouncedInput, filterBy],
     queryFn: ({ signal }) => getSuggestions(field, debouncedInput, filterBy, signal),
-    enabled: (showSuggestions || !!input.trim()) && (debouncedInput.length > 0 || hasActiveFilters),
+    enabled: showSuggestions || !!input.trim(),
     staleTime: 60 * 1000,
+    // While the next query loads, keep showing this field's last list rather
+    // than flashing "Loading…" or a differently ordered local list. It is
+    // filtered by what is typed below, so it never offers a stale mismatch.
+    placeholderData: (prev, prevQuery) =>
+      prevQuery?.queryKey[1] === field &&
+      JSON.stringify(prevQuery?.queryKey[3]) === JSON.stringify(filterBy)
+        ? prev
+        : undefined,
   });
 
   /** Values picked on this field, as typed. Contains-terms live in the chips only. */
@@ -78,7 +97,13 @@ export function SearchField({
   /** Everything still selectable for this field, most common first. */
   const available = useMemo(() => {
     // Remote suggestions are the most accurate - they respect the other fields.
-    if (remoteSuggestions.length > 0) return remoteSuggestions;
+    // A placeholder list from the previous keystroke is narrowed to what is typed now.
+    if (remoteSuggestions.length > 0) {
+      const typed = input.trim().toUpperCase();
+      return typed
+        ? remoteSuggestions.filter(v => v.toUpperCase().includes(typed))
+        : remoteSuggestions;
+    }
 
     // With other filters set, the global list would offer values from other
     // makes and categories - exactly the mismatches that return nothing - so it
@@ -95,7 +120,9 @@ export function SearchField({
     // General local fallback (the big autocomplete.json): no other filters to
     // respect, or the API is unreachable and a rough list beats none.
     return getSuggestionsLocal(field as string, input, filterBy);
-  }, [field, input, filterBy, hasActiveFilters, remoteSuggestions, isError]);
+    // localReady isn't read, but listing it rebuilds the list once autocomplete.json lands.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [field, input, filterBy, hasActiveFilters, remoteSuggestions, isError, localReady]);
 
   // What is already picked stays in the list, pinned at the top and ticked, so
   // the dropdown always shows the current selection - and clicking one takes it
@@ -172,12 +199,23 @@ export function SearchField({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  useEffect(() => {
+    if (highlightedIndex < 0) return;
+    const row = listRef.current?.children[highlightedIndex] as HTMLElement | undefined;
+    row?.scrollIntoView({ block: "nearest" });
+  }, [highlightedIndex]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Backspace" && !input && terms.length > 0) {
       removeTerm(terms.length - 1);
       return;
     }
-    if (e.key === "Enter" || e.key === "Tab") {
+    if (e.key === "Escape") {
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
+      return;
+    }
+    if (e.key === "Enter") {
       if (highlightedIndex >= 0 && suggestions[highlightedIndex]) {
         e.preventDefault();
         toggleValue(suggestions[highlightedIndex]);
@@ -189,15 +227,27 @@ export function SearchField({
       }
       return;
     }
-    if (!showSuggestions || suggestions.length === 0) return;
+    // Tab takes the highlighted value (or what is typed) and then moves on to
+    // the next field as usual; blur commits typed text, so only the
+    // highlighted pick needs doing here.
+    if (e.key === "Tab") {
+      if (highlightedIndex >= 0 && suggestions[highlightedIndex] && !selectedSet.has(suggestions[highlightedIndex].toUpperCase())) {
+        toggleValue(suggestions[highlightedIndex]);
+        pickedOnTab.current = true;
+      }
+      return;
+    }
+    if (!showSuggestions) {
+      if (e.key === "ArrowDown") { e.preventDefault(); setShowSuggestions(true); }
+      return;
+    }
+    if (suggestions.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setHighlightedIndex(i => Math.min(i + 1, suggestions.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setHighlightedIndex(i => Math.max(i - 1, -1));
-    } else if (e.key === "Escape") {
-      setShowSuggestions(false);
     }
   };
 
@@ -230,66 +280,88 @@ export function SearchField({
         )}
       </div>
 
-      <Input
-        value={input}
-        onChange={e => { setInput(e.target.value); setHighlightedIndex(-1); setShowSuggestions(true); }}
-        onFocus={() => {
+      {/* Picked values sit inside the box as chips, like a tag input, so picking
+          one never pushes the fields below it down. The box only grows if the
+          chips need a second line. */}
+      <div
+        onMouseDown={e => {
+          // Clicking the box (not just the text) focuses the input and opens the list.
+          if (e.target !== inputRef.current) e.preventDefault();
+          inputRef.current?.focus();
           setShowSuggestions(true);
-          captureEvent("filter_focused", { field: label });
         }}
-        onBlur={commitInput}
-        onKeyDown={handleKeyDown}
         className={cn(
-          "bg-secondary/50 border-border/60 text-foreground placeholder:text-muted-foreground/50 h-9 text-sm font-mono",
-          !isValid && "border-destructive ring-destructive/20 focus-visible:ring-destructive/20"
+          "flex min-h-9 w-full cursor-text flex-wrap items-center gap-1 rounded-md border border-border/60 bg-secondary/50 px-1.5 py-1 transition-shadow",
+          "focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background",
+          !isValid && "border-destructive focus-within:ring-destructive/20"
         )}
-        placeholder={terms.length > 0 ? "Add another…" : `Any ${label.toLowerCase()}...`}
-      />
-
-      {/* Chips sit below the input so adding one never pushes this field's input
-          out of line with the other fields in the grid row. */}
-      {terms.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-1.5">
-          {terms.map((term, i) => (
-            <span
-              key={`${term.contains ? "~" : "="}${term.value}`}
-              title={term.contains ? `Matches any value containing "${term.value}"` : term.value}
-              className={cn(
-                // Same rounded-md as the input above, so a chip reads as part of
-                // the same box rather than a pill stuck under it.
-                "group inline-flex max-w-full items-center gap-1 rounded-md py-1 pl-2 pr-1 text-[11px] font-mono leading-none",
-                term.contains
-                  // A wildcard term reads differently from a picked value, so it looks different.
-                  ? "border border-dashed border-primary/50 bg-primary/5 text-foreground"
-                  : "border border-border bg-secondary text-foreground"
-              )}
+      >
+        {terms.map((term, i) => (
+          <span
+            key={`${term.contains ? "~" : "="}${term.value}`}
+            title={term.contains ? `Matches any value containing "${term.value}"` : term.value}
+            className={cn(
+              "group inline-flex max-w-full items-center gap-1 rounded py-0.5 pl-1.5 pr-0.5 text-[11px] font-mono leading-none",
+              term.contains
+                // A wildcard term reads differently from a picked value, so it looks different.
+                ? "border border-dashed border-primary/50 bg-primary/5 text-foreground"
+                : "border border-border bg-background text-foreground"
+            )}
+          >
+            {term.contains && (
+              <span className="text-[9px] uppercase tracking-wide text-muted-foreground">has</span>
+            )}
+            <span className="truncate">{term.value}</span>
+            <button
+              type="button"
+              onMouseDown={e => { e.preventDefault(); e.stopPropagation(); removeTerm(i); }}
+              className="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+              aria-label={`Remove ${term.value}`}
             >
-              {term.contains && (
-                <span className="text-[9px] uppercase tracking-wide text-muted-foreground">has</span>
-              )}
-              <span className="truncate">{term.value}</span>
-              <button
-                type="button"
-                onClick={() => removeTerm(i)}
-                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
-                aria-label={`Remove ${term.value}`}
-              >
-                <X size={10} />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
+              <X size={10} />
+            </button>
+          </span>
+        ))}
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={e => { setInput(e.target.value); setHighlightedIndex(-1); setShowSuggestions(true); }}
+          onFocus={() => {
+            setShowSuggestions(true);
+            captureEvent("filter_focused", { field: label });
+          }}
+          onBlur={() => {
+            setShowSuggestions(false);
+            setHighlightedIndex(-1);
+            if (pickedOnTab.current) {
+              pickedOnTab.current = false;
+              setInput("");
+              return;
+            }
+            commitInput();
+          }}
+          onKeyDown={handleKeyDown}
+          role="combobox"
+          aria-expanded={showSuggestions}
+          aria-label={label}
+          className="h-6 min-w-[5ch] flex-1 bg-transparent px-1.5 text-sm font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+          placeholder={terms.length > 0 ? "Add…" : `Any ${label.toLowerCase()}...`}
+        />
+      </div>
 
       {showSuggestions && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-72 overflow-auto rounded-md border border-border bg-popover shadow-lg">
+        <div ref={listRef} tabIndex={-1} onMouseDown={e => e.preventDefault()} className="absolute z-50 top-full left-0 right-0 mt-1 max-h-72 overflow-auto scroll-pb-12 rounded-md border border-border bg-popover shadow-lg">
           {suggestions.map((s, i) => {
             const isSelected = selectedSet.has(s.toUpperCase());
             return (
               <button
                 key={s}
+                type="button"
+                // Rows are picked with the mouse or the arrow keys; leaving them
+                // out of the tab order lets Tab go straight to the next field.
+                tabIndex={-1}
                 className={cn(
-                  "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm font-mono transition-colors hover:bg-accent hover:text-accent-foreground",
+                  "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm font-mono hover:bg-accent hover:text-accent-foreground",
                   isSelected && "bg-secondary/60 font-semibold",
                   i === highlightedIndex && "bg-accent text-accent-foreground"
                 )}

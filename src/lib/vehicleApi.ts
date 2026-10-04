@@ -156,19 +156,21 @@ export function getModelsForMake(make: string, prefix: string): string[] {
 }
 
 let suggestionCache: Record<string, string[]> = {};
-let suggestionsLoaded = false;
+let suggestionsLoading: Promise<void> | null = null;
 
-export async function preloadSuggestions(_field?: string) {
-  if (suggestionsLoaded) return;
-  suggestionsLoaded = true;
-  try {
-    const res = await fetch("/autocomplete.json");
-    if (res.ok) {
-      suggestionCache = await res.json();
-    }
-  } catch {
-    suggestionsLoaded = false;
+/**
+ * Loads autocomplete.json once. Every caller gets the same promise, so a
+ * dropdown that mounts before the file arrives can wait for it and re-render,
+ * instead of holding on to the empty list it saw first.
+ */
+export function preloadSuggestions(): Promise<void> {
+  if (!suggestionsLoading) {
+    suggestionsLoading = fetch("/autocomplete.json")
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (data) suggestionCache = data; })
+      .catch(() => { suggestionsLoading = null; });
   }
+  return suggestionsLoading;
 }
 
 export function getSuggestionsLocal(
