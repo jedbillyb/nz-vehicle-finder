@@ -28,6 +28,69 @@ function getDistinctId() {
   }
 }
 
+const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
+const ATTRIBUTION_KEY = "nzvf_attribution";
+
+/**
+ * Where this visit came from: the UTM tags on the landing URL (posthog-js reads
+ * these for you; this hand-rolled client has to do it itself) plus the external
+ * referrer. Read once when the page first loads, because the search page
+ * rewrites the URL afterwards, and kept for the tab so every event in the visit
+ * carries it.
+ */
+function readAttribution(): Properties {
+  if (typeof window === "undefined") return {};
+  const params = new URLSearchParams(window.location.search);
+  const fromUrl: Properties = {};
+  for (const key of UTM_KEYS) {
+    const value = params.get(key)?.trim();
+    if (value) fromUrl[`$${key}`] = value.slice(0, 200);
+  }
+  try {
+    if (Object.keys(fromUrl).length) {
+      window.sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(fromUrl));
+      return fromUrl;
+    }
+    return JSON.parse(window.sessionStorage.getItem(ATTRIBUTION_KEY) || "{}") as Properties;
+  } catch {
+    return fromUrl;
+  }
+}
+
+function referringDomain(): string | undefined {
+  try {
+    const host = document.referrer ? new URL(document.referrer).hostname : "";
+    return host && host !== window.location.hostname ? host : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const attribution = readAttribution();
+const referrerDomain = typeof document === "undefined" ? undefined : referringDomain();
+
+/** Person properties recording the first source we ever saw for this person. */
+function initialAttribution(): Properties {
+  const initial: Properties = {};
+  for (const [key, value] of Object.entries(attribution)) initial[`$initial_${key.slice(1)}`] = value;
+  if (referrerDomain) initial.$initial_referring_domain = referrerDomain;
+  return initial;
+}
+
+/**
+ * This page's address with UTM tags for sharing, so a visit from a shared link
+ * says where it came from even when the app it was pasted into strips the referrer.
+ * Any UTM tags already on the URL are replaced.
+ */
+export function shareUrl(source: string, campaign?: string): string {
+  const url = new URL(window.location.href);
+  for (const key of UTM_KEYS) url.searchParams.delete(key);
+  url.searchParams.set("utm_source", source);
+  url.searchParams.set("utm_medium", "share");
+  if (campaign) url.searchParams.set("utm_campaign", campaign);
+  return url.toString();
+}
+
 export function captureEvent(event: string, properties: Properties = {}) {
   if (!isEnabled()) return;
 
@@ -36,10 +99,13 @@ export function captureEvent(event: string, properties: Properties = {}) {
     event,
     distinct_id: getDistinctId(),
     properties: {
+      ...attribution,
       ...properties,
       $current_url: window.location.href,
       $pathname: window.location.pathname,
       $referrer: document.referrer || undefined,
+      $referring_domain: referrerDomain,
+      $set_once: initialAttribution(),
     },
   };
 

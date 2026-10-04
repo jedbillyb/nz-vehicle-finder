@@ -305,7 +305,7 @@ export default function ModelStats() {
               Refine further <span aria-hidden>→</span>
             </Link>
           </div>
-          <HeroAside source="model_stats_page" />
+          <HeroAside source="model_stats_page" share />
         </div>
 
         {/* Skeleton from the first paint, not only once the totals are back. */}

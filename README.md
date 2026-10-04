@@ -153,6 +153,10 @@ Tracked in the browser: page views, searches (with active filters), zero-result 
 
 Tracked on the server: sign-in links sent and rejected, new accounts, sign-ins, every paid `/api/v1` call (endpoint, status, duration, plan, usage so far), API calls rejected for a bad key, burst or quota, and plan changes from Stripe.
 
+In production `VITE_POSTHOG_HOST` is `https://vehiclefinder.co.nz/ph`: nginx proxies `/ph/` to `us.i.posthog.com` (passing the visitor's IP), so ad blockers do not drop browser events. The API server always talks to PostHog directly.
+
+Where visitors come from: UTM tags on the landing URL (`utm_source`, `utm_medium`, `utm_campaign`, ...) are recorded as `$utm_*` on every event in that visit, and the first ones seen as `$initial_utm_*` on the person. Copy link and the Share button on the fleet and stats pages add `utm_source=copy_link` / `share_button` with `utm_medium=share`, so shared links stay attributable even when Messenger or WhatsApp strip the referrer. To track a link you post yourself, add tags, e.g. `https://vehiclefinder.co.nz/?utm_source=reddit&utm_medium=social&utm_campaign=nz-cars-post`.
+
 Signed-in people are identified as `user_<id>` (no email is sent), so a person's site visits and API calls show up together.
 
 ## Paid API

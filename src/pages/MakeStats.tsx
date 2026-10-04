@@ -293,7 +293,7 @@ export default function MakeStats() {
               Refine further <span aria-hidden>→</span>
             </Link>
           </div>
-          <HeroAside source="stats_page" />
+          <HeroAside source="stats_page" share />
         </div>
 
         {/* Breakdown */}

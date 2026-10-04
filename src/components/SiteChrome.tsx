@@ -4,6 +4,7 @@ import { captureEvent } from "@/lib/posthog";
 import { APP_VERSION } from "@/lib/version";
 import { useFleetOverview } from "@/lib/useFleetOverview";
 import { openFeedback } from "@/lib/feedback";
+import { ShareButton } from "@/components/ShareButton";
 
 const NAV_ITEMS = [
   { to: "/", label: "SEARCH", end: true },
@@ -128,7 +129,7 @@ export function SiteHeader({
  * that pays for the site) with a quiet sponsor link under it. `api` swaps the
  * button's target, e.g. on the docs page it points at the account page.
  */
-export function HeroAside({ source, api }: { source: string; api?: { to: string; title: string; sub: string } }) {
+export function HeroAside({ source, api, share = false }: { source: string; api?: { to: string; title: string; sub: string }; share?: boolean }) {
   const apiLink = api ?? { to: "/developers", title: "Get this data", sub: "Via the API, 500 free requests a month" };
   return (
     <div className="hero-sponsor" style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 10, width: 240, flexShrink: 0, marginTop: 8 }}>
@@ -151,6 +152,7 @@ export function HeroAside({ source, api }: { source: string; api?: { to: string;
       >
         <span aria-hidden style={{ color: "#ef4444" }}>♥</span>Sponsor this project
       </a>
+      {share && <ShareButton source={source} />}
     </div>
   );
 }

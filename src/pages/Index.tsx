@@ -21,7 +21,7 @@ import { hasTerms } from "../../shared/filterTerms";
 import { canonicalQuery } from "../../shared/savedSearch";
 import { exportToCsv } from "@/lib/csvExport";
 import { applySeo } from "@/lib/seo";
-import { captureEvent, summarizeFilters } from "@/lib/posthog";
+import { captureEvent, summarizeFilters, shareUrl } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
 import { resultColumns } from "@/lib/resultColumns";
 import { toast } from "sonner";
@@ -368,7 +368,7 @@ export default function Index() {
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(shareUrl("copy_link", "search"));
       setCopiedLink(true);
       captureEvent("copy_link_clicked", {
         ...summarizeFilters(filters as Record<string, string | undefined>),

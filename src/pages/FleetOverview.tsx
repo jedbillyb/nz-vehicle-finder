@@ -147,7 +147,7 @@ export default function FleetOverview() {
               Fleet-wide statistics from the New Zealand Motor Vehicle Register. Fuel types, top makes, body styles, import status and regional breakdowns across every registered vehicle in the country.
             </p>
           </div>
-          <HeroAside source="fleet_overview" />
+          <HeroAside source="fleet_overview" share />
         </div>
 
         {/* Stat cards: columns are set in responsive.css (.fleet-stats) so no card is left alone on a row. */}

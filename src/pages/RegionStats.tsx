@@ -280,7 +280,7 @@ export default function RegionStats() {
               Refine further <span aria-hidden>→</span>
             </Link>
           </div>
-          <HeroAside source="region_stats_page" />
+          <HeroAside source="region_stats_page" share />
         </div>
 
         {/* Skeleton from the first paint, not only once the totals are back. */}

@@ -9,7 +9,9 @@
  * No email addresses are sent.
  */
 const apiKey = process.env.POSTHOG_API_KEY || process.env.VITE_POSTHOG_API_KEY;
-const host = (process.env.POSTHOG_HOST || process.env.VITE_POSTHOG_HOST || "https://us.i.posthog.com").replace(/\/+$/, "");
+// Straight to PostHog, not VITE_POSTHOG_HOST: that is the /ph proxy on our own
+// domain, which only exists to get browser events past ad blockers.
+const host = (process.env.POSTHOG_HOST || "https://us.i.posthog.com").replace(/\/+$/, "");
 
 export const analyticsId = (userId: number) => `user_${userId}`;
 
@@ -23,7 +25,8 @@ export function track(event: string, distinctId: string, properties: Record<stri
       api_key: apiKey,
       event,
       distinct_id: distinctId,
-      properties: { ...properties, source: "server" },
+      // The request comes from this server, so its IP says nothing about where the person is.
+      properties: { ...properties, source: "server", $geoip_disable: true },
     }),
     signal: AbortSignal.timeout(5000),
   }).catch(() => {});
