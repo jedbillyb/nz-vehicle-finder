@@ -9,7 +9,7 @@ export default function Contact() {
   useEffect(() => {
     applySeo({
       title: "Contact | NZ Vehicle Finder",
-      description: "Get in touch with NZ Vehicle Finder about the site, the API, billing or custom vehicle data reports.",
+      description: "Get in touch with Jed, who built and runs NZ Vehicle Finder, about the site, the API, billing or custom vehicle data reports.",
       canonical: "https://vehiclefinder.co.nz/contact",
     });
   }, []);
@@ -19,9 +19,10 @@ export default function Contact() {
       <SiteHeader source="contact_page" subtitle="Contact" />
       <main className="error-page__main">
         <div className="error-page__code">CONTACT</div>
-        <h2 className="error-page__title">Get in touch</h2>
+        <h2 className="error-page__title">Hi, I&apos;m Jed</h2>
         <p className="error-page__intro">
-          Questions about the site, the data, the API, billing or a custom report: one email reaches a real person, usually within a day or two.
+          I built NZ Vehicle Finder and I run it on my own. Questions about the site, the data, the API, billing or a
+          custom report all come straight to me, and I usually reply within a day or two.
         </p>
         <a
           className="contact-email"
@@ -31,7 +32,7 @@ export default function Contact() {
           {CONTACT_EMAIL.support}
         </a>
         <p className="contact-note">
-          Just a quick thought or a bug?{" "}
+          Just a quick thought or found a bug?{" "}
           <button type="button" onClick={() => { captureEvent("contact_feedback_clicked"); openFeedback(); }}>Send feedback</button>{" "}
           without leaving the page.
         </p>
