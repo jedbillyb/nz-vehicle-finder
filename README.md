@@ -255,12 +255,6 @@ npm rebuild better-sqlite3
 ```
 This recompiles the database driver for the current environment.
 
----
-
-<div align="center">
-<sub>MIT © <a href="https://vehiclefinder.co.nz">jedbillyb</a> · Made with ❤️</sub>
-</div>
-
 ## Email
 
 `support@`, `quotes@`, `api@` and `security@vehiclefinder.co.nz` are Cloudflare Email Routing
@@ -268,3 +262,9 @@ forwards to hello@jedbillyb.com; the addresses the site uses are in `shared/cont
 Login emails are sent by Resend from the `send.` subdomain, so the two don't clash. To reply
 as one of the addresses, add it as a "send as" identity using SMTP `smtp.resend.com:587`,
 user `resend`, password a Resend sending key.
+
+---
+
+<div align="center">
+<sub>MIT © <a href="https://vehiclefinder.co.nz">jedbillyb</a> · Made with ❤️</sub>
+</div>

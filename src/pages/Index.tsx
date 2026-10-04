@@ -64,16 +64,17 @@ const advancedFilterKeySet = new Set([
   "NUMBER_OF_SEATS_MIN", "NUMBER_OF_AXLES_MIN",
 ]);
 
-const resultColumns: { key: keyof Vehicle; label: string }[] = [
-  { key: "MAKE", label: "Make" },
-  { key: "MODEL", label: "Model" },
-  { key: "VEHICLE_YEAR", label: "Year" },
-  { key: "BASIC_COLOUR", label: "Colour" },
-  { key: "BODY_TYPE", label: "Body" },
-  { key: "MOTIVE_POWER", label: "Fuel" },
-  { key: "TRANSMISSION_TYPE", label: "Trans" },
-  { key: "TLA", label: "Registered Region" },
-  { key: "VIN11", label: "VIN11" },
+/** Widths are shares of the table, sized to what each column usually holds. */
+const resultColumns: { key: keyof Vehicle; label: string; width: string }[] = [
+  { key: "MAKE", label: "Make", width: "11%" },
+  { key: "MODEL", label: "Model", width: "12%" },
+  { key: "VEHICLE_YEAR", label: "Year", width: "6%" },
+  { key: "BASIC_COLOUR", label: "Colour", width: "8%" },
+  { key: "BODY_TYPE", label: "Body", width: "13%" },
+  { key: "MOTIVE_POWER", label: "Fuel", width: "9%" },
+  { key: "TRANSMISSION_TYPE", label: "Transmission", width: "14%" },
+  { key: "TLA", label: "Region", width: "16%" },
+  { key: "VIN11", label: "VIN11", width: "11%" },
 ];
 
 type SortConfig = { key: keyof Vehicle; dir: "asc" | "desc" } | null;
@@ -485,9 +486,9 @@ export default function Index() {
                 filterBy={suggestionContextFor(f.key)}
               />
             ))}
-            <RangeField label="YEAR" fieldMin="VEHICLE_YEAR_MIN" fieldMax="VEHICLE_YEAR_MAX" valueMin={filters.VEHICLE_YEAR_MIN || ""} valueMax={filters.VEHICLE_YEAR_MAX || ""} onChangeMin={(v) => updateFilter("VEHICLE_YEAR_MIN", v)} onChangeMax={(v) => updateFilter("VEHICLE_YEAR_MAX", v)} min={1950} max={2026} />
-            <RangeField label="CC RATING" fieldMin="CC_RATING_MIN" fieldMax="CC_RATING_MAX" valueMin={filters.CC_RATING_MIN || ""} valueMax={filters.CC_RATING_MAX || ""} onChangeMin={(v) => updateFilter("CC_RATING_MIN", v)} onChangeMax={(v) => updateFilter("CC_RATING_MAX", v)} min={0} max={8000} />
-            <RangeField label="POWER (KW)" fieldMin="POWER_RATING_MIN" fieldMax="POWER_RATING_MAX" valueMin={filters.POWER_RATING_MIN || ""} valueMax={filters.POWER_RATING_MAX || ""} onChangeMin={(v) => updateFilter("POWER_RATING_MIN", v)} onChangeMax={(v) => updateFilter("POWER_RATING_MAX", v)} min={0} max={500} />
+            <RangeField label="Year" fieldMin="VEHICLE_YEAR_MIN" fieldMax="VEHICLE_YEAR_MAX" valueMin={filters.VEHICLE_YEAR_MIN || ""} valueMax={filters.VEHICLE_YEAR_MAX || ""} onChangeMin={(v) => updateFilter("VEHICLE_YEAR_MIN", v)} onChangeMax={(v) => updateFilter("VEHICLE_YEAR_MAX", v)} min={1950} max={2026} />
+            <RangeField label="CC rating" fieldMin="CC_RATING_MIN" fieldMax="CC_RATING_MAX" valueMin={filters.CC_RATING_MIN || ""} valueMax={filters.CC_RATING_MAX || ""} onChangeMin={(v) => updateFilter("CC_RATING_MIN", v)} onChangeMax={(v) => updateFilter("CC_RATING_MAX", v)} min={0} max={8000} />
+            <RangeField label="Power (kW)" fieldMin="POWER_RATING_MIN" fieldMax="POWER_RATING_MAX" valueMin={filters.POWER_RATING_MIN || ""} valueMax={filters.POWER_RATING_MAX || ""} onChangeMin={(v) => updateFilter("POWER_RATING_MIN", v)} onChangeMax={(v) => updateFilter("POWER_RATING_MAX", v)} min={0} max={500} />
           </div>
 
           {/* More filters toggle + advanced section */}
@@ -536,10 +537,9 @@ export default function Index() {
             )}
           </div>
 
-          {/* Actions + Breakdown */}
-          <div className="filters-bottom" style={{ display: "flex", gap: 24, marginTop: 20, alignItems: "flex-start", minWidth: 0 }}>
-            {/* Left Column: Actions */}
-            <div className="filters-left-col" style={{ flex: "0 0 auto", minWidth: 0 }}>
+          {/* Actions, then the breakdown full width below */}
+          <div className="filters-bottom" style={{ minWidth: 0 }}>
+            <div className="filters-left-col" style={{ minWidth: 0 }}>
               <div className="action-buttons" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minWidth: 0, flexWrap: "nowrap" }}>
                 <div className="action-buttons-primary" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
                   <button onClick={handleClear}
@@ -611,12 +611,11 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Right Column: Result Breakdown */}
-            <div className="filters-right-col" style={{ flex: "1 1 0", minWidth: 0, borderLeft: "1px solid #f3f4f6", paddingLeft: 32, display: "flex", flexDirection: "column", minHeight: 0 }}>
-              <div style={{ flex: 1, overflow: "auto", minWidth: 0 }}>
+            {(breakdownLoading || Object.keys(breakdown).length > 0) && (
+              <div className="filters-right-col" style={{ minWidth: 0 }}>
                 <ResultStats data={breakdown} loading={breakdownLoading} hideHeader isInline />
               </div>
-            </div>
+            )}
           </div>
 
           {errorMessage && (
@@ -644,7 +643,7 @@ export default function Index() {
                   <span style={{ color: "#4b5563" }}>{sort.dir === "asc" ? "↑" : "↓"}</span>
                 </span>
               )}
-              <label style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", display: "flex", alignItems: "center", gap: 6 }}>
+              <label style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
                 PER PAGE
                 <select
                   value={pageSize}
@@ -666,7 +665,7 @@ export default function Index() {
                 <tr>
                   {resultColumns.map((col) => (
                     <th key={col.key} onClick={() => handleSort(col.key)}
-                      style={{ padding: "8px 16px", textAlign: "left", fontSize: 9, letterSpacing: "0.2em", color: sort?.key === col.key ? "#0ea5e9" : "#6b7280", cursor: "pointer", borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap", fontWeight: 700, userSelect: "none", overflow: "hidden", textOverflow: "ellipsis", width: `${100 / resultColumns.length}%` }}
+                      style={{ padding: "8px 16px", textAlign: "left", fontSize: 9, letterSpacing: "0.2em", color: sort?.key === col.key ? "#0ea5e9" : "#6b7280", cursor: "pointer", borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap", fontWeight: 700, userSelect: "none", overflow: "hidden", textOverflow: "ellipsis", width: col.width }}
                     >
                       {col.label}
                       {sort?.key === col.key && <span style={{ marginLeft: 4, color: "#0ea5e9" }}>{sort.dir === "asc" ? "↑" : "↓"}</span>}

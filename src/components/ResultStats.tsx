@@ -46,7 +46,7 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
         background: isInline ? "transparent" : "#ffffff",
         display: "grid",
         gridTemplateColumns: isInline
-          ? "repeat(auto-fit, minmax(220px, 1fr))"
+          ? "repeat(auto-fill, minmax(200px, 1fr))"
           : "repeat(auto-fit, minmax(200px, 1fr))",
         gap: isInline ? 20 : 20,
         borderTop: !isInline && expanded && !hideHeader ? "1px solid #e5e7eb" : "none",
@@ -86,7 +86,7 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
                   </h3>
                   {items.map((d) => (
                     <div key={d.value} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                      <div style={{ width: 90, fontSize: 10, color: "#4b5563", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={d.value}>
+                      <div style={{ width: 110, fontSize: 10, color: "#4b5563", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={d.value}>
                         {d.value}
                       </div>
                       <div style={{ flex: 1, height: 8, background: "#f3f4f6", position: "relative", borderRadius: 999, overflow: "hidden" }}>

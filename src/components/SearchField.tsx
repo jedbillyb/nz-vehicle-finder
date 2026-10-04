@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { getSuggestionsLocal, preloadSuggestions, getSuggestions, getModelsForMake, SUGGESTION_LIMIT } from "@/lib/vehicleApi";
 import { Vehicle } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { captureEvent } from "@/lib/posthog";
 import { Check, Info, X } from "lucide-react";
 import { parseFilterValue, serializeTerms, type FilterTerm } from "../../shared/filterTerms";
@@ -68,6 +68,20 @@ export function SearchField({
     () => !!filterBy && Object.values(filterBy).some(v => !!v && v.trim()),
     [filterBy]
   );
+
+  const queryClient = useQueryClient();
+  /**
+   * Start fetching this field's list when the pointer arrives, so by the time
+   * the click lands the round trip is usually done and the list opens full.
+   */
+  const prefetch = () => {
+    if (input) return;
+    queryClient.prefetchQuery({
+      queryKey: ["suggestions", field, "", filterBy],
+      queryFn: ({ signal }) => getSuggestions(field, "", filterBy, signal),
+      staleTime: 60 * 1000,
+    });
+  };
 
   const { data: remoteSuggestions = NO_SUGGESTIONS, isFetching, isError } = useQuery({
     queryKey: ["suggestions", field, debouncedInput, filterBy],
@@ -164,7 +178,12 @@ export function SearchField({
   const commitInput = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
-    const exactMatch = suggestions.find(s => s.toLowerCase() === trimmed.toLowerCase());
+    // The full local list is checked too, so typing a real value and hitting
+    // Enter before the filtered list has loaded still picks it exactly instead
+    // of turning it into a "has" wildcard.
+    const exactMatch =
+      suggestions.find(s => s.toLowerCase() === trimmed.toLowerCase()) ??
+      getSuggestionsLocal(field as string, trimmed).find(s => s.toLowerCase() === trimmed.toLowerCase());
     if (exactMatch) {
       addTerm(exactMatch, false);
     } else {
@@ -252,7 +271,7 @@ export function SearchField({
   };
 
   return (
-    <div ref={wrapperRef} className="relative">
+    <div ref={wrapperRef} className="relative" onPointerEnter={prefetch}>
       <div className="flex items-center gap-1.5 mb-1">
         <label className="block text-xs font-medium text-muted-foreground font-mono tracking-wide">
           {label}
@@ -344,8 +363,8 @@ export function SearchField({
           role="combobox"
           aria-expanded={showSuggestions}
           aria-label={label}
-          className="h-6 min-w-[5ch] flex-1 bg-transparent px-1.5 text-sm font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
-          placeholder={terms.length > 0 ? "Add…" : `Any ${label.toLowerCase()}...`}
+          className="h-6 w-0 min-w-[2ch] flex-1 bg-transparent px-1.5 text-sm font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+          placeholder={terms.length > 0 ? "" : `Any ${label.toLowerCase()}...`}
         />
       </div>
 

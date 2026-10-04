@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { captureEvent } from "@/lib/posthog";
+import { cn } from "@/lib/utils";
 
 interface RangeFieldProps {
   label: string;
@@ -14,6 +14,17 @@ interface RangeFieldProps {
   step?: number;
 }
 
+/**
+ * Same box, label and type as SearchField, so a row of filters reads as one
+ * set. The number spinners are hidden: they are too small to hit and step one
+ * unit at a time, which is useless for years or engine sizes.
+ */
+const boxClass = cn(
+  "h-9 w-full min-w-0 rounded-md border border-border/60 bg-secondary/50 px-2.5 text-sm font-mono text-foreground",
+  "placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ring-offset-background",
+  "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+);
+
 export function RangeField({
   label,
   valueMin,
@@ -25,73 +36,37 @@ export function RangeField({
   step = 1,
 }: RangeFieldProps) {
   return (
-    <div style={{ minWidth: 0, width: "100%" }}>
-      <label style={{
-        display: "block",
-        fontSize: 12,
-        fontWeight: 500,
-        color: "#6b7280",
-        marginBottom: 6,
-        letterSpacing: "0.01em",
-        fontFamily: "inherit",
-      }}>
+    <div className="min-w-0">
+      <label className="mb-1 block text-xs font-medium text-muted-foreground font-mono tracking-wide">
         {label}
       </label>
-      <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+      <div className="flex min-w-0 items-center gap-1.5">
         <input
           type="number"
+          inputMode="numeric"
+          aria-label={`${label} from`}
           value={valueMin}
           onChange={(e) => onChangeMin(e.target.value)}
           placeholder={String(min)}
           min={min}
           max={max}
           step={step}
-          style={{
-            width: "100%",
-            minWidth: 0,
-            height: 36,
-            background: "#ffffff",
-            border: "1px solid #d1d5db",
-            borderRadius: 6,
-            color: valueMin ? "#111827" : "#9ca3af",
-            padding: "0 8px",
-            fontSize: 14,
-            fontFamily: "inherit",
-            outline: "none",
-          }}
-          onFocus={e => {
-            e.currentTarget.style.borderColor = "#0ea5e9";
-            captureEvent("filter_focused", { field: label, type: "min" });
-          }}
-          onBlur={e => e.currentTarget.style.borderColor = "#d1d5db"}
+          className={boxClass}
+          onFocus={() => captureEvent("filter_focused", { field: label, type: "min" })}
         />
-        <span style={{ color: "#9ca3af", fontSize: 10, flexShrink: 0 }}>–</span>
+        <span className="shrink-0 text-xs text-muted-foreground/60">–</span>
         <input
           type="number"
+          inputMode="numeric"
+          aria-label={`${label} to`}
           value={valueMax}
           onChange={(e) => onChangeMax(e.target.value)}
           placeholder={String(max)}
           min={min}
           max={max}
           step={step}
-          style={{
-            width: "100%",
-            minWidth: 0,
-            height: 36,
-            background: "#ffffff",
-            border: "1px solid #d1d5db",
-            borderRadius: 6,
-            color: valueMax ? "#111827" : "#9ca3af",
-            padding: "0 8px",
-            fontSize: 14,
-            fontFamily: "inherit",
-            outline: "none",
-          }}
-          onFocus={e => {
-            e.currentTarget.style.borderColor = "#0ea5e9";
-            captureEvent("filter_focused", { field: label, type: "max" });
-          }}
-          onBlur={e => e.currentTarget.style.borderColor = "#d1d5db"}
+          className={boxClass}
+          onFocus={() => captureEvent("filter_focused", { field: label, type: "max" })}
         />
       </div>
     </div>
