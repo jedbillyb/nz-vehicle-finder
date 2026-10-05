@@ -152,7 +152,7 @@
 
 /* ── Footer ─────────────────────────────────────────────────── */
 .footer-root {
-  padding: 12px 16px !important;
+  padding: 12px 16px 4px !important;
 }
 .footer-links {
   flex-wrap: wrap !important;
