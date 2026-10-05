@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { captureEvent } from "@/lib/posthog";
 import { APP_VERSION } from "@/lib/version";
@@ -75,6 +75,9 @@ export function SiteNavMobile() {
   );
 }
 
+/** The count the last header showed, so the next page's header starts there. */
+let lastHeaderCount: number | null = null;
+
 /**
  * The header every page shares: top bar, logo, site name, a one-line subtitle,
  * and on the right a vehicle count (the whole fleet unless the page passes its
@@ -96,7 +99,14 @@ export function SiteHeader({
   source: string;
 }) {
   const fleet = useFleetOverview();
-  const shown = count === undefined ? fleet?.total ?? null : count;
+  const loaded = count === undefined ? fleet?.total ?? null : count;
+  // Each page has its own header, so a nav tap mounts a new one. Hold the last
+  // count while the new page's loads, and count on from it instead of from 0.
+  const shown = loaded ?? lastHeaderCount;
+  const from = useRef(lastHeaderCount ?? 0).current;
+  useEffect(() => {
+    if (loaded !== null) lastHeaderCount = loaded;
+  }, [loaded]);
   return (
     <header style={{ borderBottom: "1px solid #e5e7eb", background: "#ffffff", position: "sticky", top: 0, zIndex: 40 }}>
       <SiteTopbar right={fleet?.snapshotDate ? `DATA AS AT ${fleet.snapshotDate}` : undefined} />
@@ -127,7 +137,7 @@ export function SiteHeader({
               <div aria-hidden style={{ visibility: "hidden", fontSize: 22, fontWeight: 700, lineHeight: 1 }}>0,000,000</div>
             ) : (
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}><AnimatedNumber value={shown} /></div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}><AnimatedNumber value={shown} from={from} /></div>
                 <div className="header-count-label" style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>{shown === 1 ? countLabel.replace("VEHICLES", "VEHICLE") : countLabel}</div>
               </div>
             ))}

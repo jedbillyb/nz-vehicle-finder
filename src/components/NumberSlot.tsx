@@ -3,9 +3,9 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 const COUNT_MS = 900;
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** Eases from the last value shown (0 on first mount) to `value`, so numbers land instead of popping in. */
-function CountUp({ value }: { value: number }) {
-  const [shown, setShown] = useState(() => (reducedMotion() ? value : 0));
+/** Eases from the last value shown (`initial` on first mount, else 0) to `value`, so numbers land instead of popping in. */
+function CountUp({ value, initial = 0 }: { value: number; initial?: number }) {
+  const [shown, setShown] = useState(() => (reducedMotion() ? value : initial));
   const from = useRef(shown);
   useEffect(() => {
     if (reducedMotion()) { setShown(value); from.current = value; return; }
@@ -29,11 +29,11 @@ function CountUp({ value }: { value: number }) {
  * A number that counts up when it appears or changes. It counts inside a box
  * sized to the final value, so the text around it doesn't reflow mid-count.
  */
-export function AnimatedNumber({ value, style }: { value: number; style?: CSSProperties }) {
+export function AnimatedNumber({ value, from, style }: { value: number; from?: number; style?: CSSProperties }) {
   return (
     <span style={{ position: "relative", display: "inline-block", fontVariantNumeric: "tabular-nums", ...style }}>
       <span aria-hidden style={{ visibility: "hidden" }}>{value.toLocaleString("en-NZ")}</span>
-      <span style={{ position: "absolute", inset: 0, textAlign: "right", whiteSpace: "nowrap" }}><CountUp value={value} /></span>
+      <span style={{ position: "absolute", inset: 0, textAlign: "right", whiteSpace: "nowrap" }}><CountUp value={value} initial={from} /></span>
     </span>
   );
 }
