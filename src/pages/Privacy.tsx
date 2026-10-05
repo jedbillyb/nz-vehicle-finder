@@ -95,8 +95,9 @@ export default function Privacy() {
 
         <DocSection id="rights" title="Seeing, fixing or deleting your information">
           <p style={p}>
-            Under the Privacy Act 2020 you can ask to see what I hold about you, ask me to correct it, or ask me to delete
-            your account. Email {mail} from the address on your account. Your information is kept until you delete your account.
+            Under the Privacy Act 2020 you can ask to see what I hold about you or ask me to correct it: email {mail} from
+            the address on your account. You can change your name and delete your account yourself, under Settings on
+            your account page. Your information is kept until you delete your account.
           </p>
           <p style={p}>
             If you&apos;re unhappy with how I handle it, you can complain to the{" "}

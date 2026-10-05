@@ -39,6 +39,8 @@ export interface Account {
   email: string;
   /** Asked for after the first sign-in; filled from Google when that's how they signed in. */
   name: string | null;
+  /** A Google account is linked; the emailed code always works too. */
+  google: boolean;
   /** Sees every account on the account page (ADMIN_EMAILS on the server). */
   isAdmin: boolean;
   /** PostHog distinct id for this account (`user_<id>`), shared with the server's API events. */
@@ -86,6 +88,11 @@ export interface AdminAccount {
 }
 
 export const fetchAdminAccounts = () => call<{ accounts: AdminAccount[] }>("/api/admin/accounts");
+
+export const signOutEverywhere = () => call<{ ok: true }>("/api/auth/logout-all", { method: "POST" });
+
+export const deleteAccount = (confirmEmail: string) =>
+  call<{ ok: true }>("/api/account", { method: "DELETE", body: JSON.stringify({ confirmEmail }) });
 
 export const signOut = () => call<{ ok: true }>("/api/auth/logout", { method: "POST" });
 

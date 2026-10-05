@@ -138,6 +138,13 @@ function getSeoForUrl(fullUrl: string): { title: string; description: string } {
     };
   }
 
+  if (urlPath === "/terms") {
+    return {
+      title: "Terms | NZ Vehicle Finder",
+      description: "The terms for using NZ Vehicle Finder, its API and paid plans.",
+    };
+  }
+
   if (urlPath === "/privacy") {
     return {
       title: "Privacy | NZ Vehicle Finder",

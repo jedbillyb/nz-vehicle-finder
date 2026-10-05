@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
 import { captureEvent, identifyUser, resetUser } from "@/lib/posthog";
 import {
-  createApiKey, deleteSavedSearch, fetchAccount, fetchAdminAccounts, fetchAuthOptions, googleSignInUrl, setAccountName, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
+  createApiKey, deleteSavedSearch, deleteAccount, fetchAccount, fetchAdminAccounts, signOutEverywhere, fetchAuthOptions, googleSignInUrl, setAccountName, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
   revokeApiKey, saveSearch, setPendingPlan, signOut, startCheckout, syncBilling, takePendingPlan, takePendingSave, verifySignInCode, verifySignInToken,
   type Account as AccountData, type AdminAccount, type SavedSearch,
 } from "@/lib/account";
@@ -80,6 +80,13 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
   const [typed, setTyped] = useState("");
   const [checking, setChecking] = useState(false);
   const [googleOn, setGoogleOn] = useState(false);
+  /** Seconds until another code can be sent; the server allows one a minute per email. */
+  const [cooldown, setCooldown] = useState(0);
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = window.setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [cooldown]);
   useEffect(() => {
     fetchAuthOptions().then((o) => setGoogleOn(o.google)).catch(() => {});
   }, []);
@@ -95,10 +102,25 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
       setPendingPlan(paid ? plan : null);
       captureEvent("api_signin_requested", { plan });
       setTyped("");
+      setCooldown(60);
       setState("sent");
     } catch (err) {
       setError((err as Error).message);
       setState("idle");
+    }
+  };
+
+  /** Stays on the code screen: a new email, and the old code stops working. */
+  const resend = async () => {
+    setError(null);
+    setCooldown(60);
+    try {
+      await requestSignInLink(email, paid ? plan : undefined);
+      captureEvent("signin_code_resent");
+      setTyped("");
+      toast.success("New code sent. Use the newest email.");
+    } catch (err) {
+      setError((err as Error).message);
     }
   };
 
@@ -181,14 +203,22 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
                 </button>
               </form>
               {error && <p style={errorText}>{error}</p>}
-              <p style={{ margin: "12px 0 0", fontSize: 12, color: "#6b7280" }}>
-                Expires in 15 minutes.{" "}
+              <p style={{ margin: "12px 0 0", fontSize: 12, color: "#6b7280", display: "flex", gap: 14, flexWrap: "wrap" }}>
+                <span>Expires in 15 minutes.</span>
+                <button
+                  type="button"
+                  disabled={cooldown > 0 || checking}
+                  onClick={resend}
+                  style={{ ...linkButton, fontWeight: 400, textDecoration: cooldown > 0 ? "none" : "underline", color: cooldown > 0 ? "#9ca3af" : "#0369a1", cursor: cooldown > 0 ? "default" : "pointer" }}
+                >
+                  {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+                </button>
                 <button
                   type="button"
                   onClick={() => { setState("idle"); setError(null); }}
-                  style={{ background: "none", border: 0, padding: 0, color: "#0369a1", cursor: "pointer", font: "inherit", textDecoration: "underline" }}
+                  style={{ ...linkButton, fontWeight: 400, textDecoration: "underline" }}
                 >
-                  Wrong email or no email? Send a new code
+                  Use a different email
                 </button>
               </p>
             </>
@@ -231,6 +261,10 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
                 </button>
               </form>
               {error && <p style={errorText}>{error}</p>}
+              <p style={{ margin: "12px 0 0", fontSize: 12, color: "#6b7280" }}>
+                By continuing you agree to the <Link to="/terms" style={{ color: "#0369a1" }}>Terms</Link> and{" "}
+                <Link to="/privacy" style={{ color: "#0369a1" }}>Privacy Policy</Link>.
+              </p>
             </>
           )}
         </div>
@@ -549,8 +583,146 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
           Every plan allows {BURST_PER_SECOND} calls a second. Payments are handled by Stripe. Cancel any time; your plan runs to the end of the month you paid for.
         </p>
       </DocSection>
+      <Settings account={account} reload={reload} />
       {account.isAdmin && <AdminAccounts />}
     </div>
+  );
+}
+
+const linkButton: React.CSSProperties = {
+  background: "none", border: 0, padding: 0, color: "#0369a1", cursor: "pointer", font: "inherit", fontWeight: 600,
+};
+
+function Settings({ account, reload }: { account: AccountData; reload: () => void }) {
+  const p = { fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 12px" } as const;
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const saveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingName === null) return;
+    try {
+      await setAccountName(editingName);
+      captureEvent("name_saved", { source: "settings" });
+      setEditingName(null);
+      reload();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
+  const everywhere = async () => {
+    setBusy(true);
+    try {
+      captureEvent("signed_out_everywhere");
+      await signOutEverywhere();
+      resetUser();
+      reload();
+    } catch (err) {
+      toast.error((err as Error).message);
+      setBusy(false);
+    }
+  };
+
+  const remove = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (confirmDelete === null) return;
+    setBusy(true);
+    try {
+      await deleteAccount(confirmDelete);
+      captureEvent("account_deleted");
+      resetUser();
+      toast.success("Your account has been deleted.");
+      reload();
+    } catch (err) {
+      toast.error((err as Error).message);
+      setBusy(false);
+    }
+  };
+
+  const row = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "12px 0", borderTop: "1px solid #f1f5f9", fontSize: 14 } as const;
+  const muted = { color: "#6b7280", fontSize: 13 } as const;
+
+  return (
+    <DocSection id="settings" title="Settings">
+      <div style={{ maxWidth: 640 }}>
+        <div style={{ ...row, borderTop: 0 }}>
+          <div>
+            <div style={{ fontWeight: 600 }}>Name</div>
+            {editingName === null && <div style={muted}>{account.name ?? "Not set"}</div>}
+          </div>
+          {editingName === null ? (
+            <button type="button" style={linkButton} onClick={() => setEditingName(account.name ?? "")}>Change</button>
+          ) : (
+            <form onSubmit={saveName} style={{ display: "flex", gap: 8, flex: "1 1 280px", justifyContent: "flex-end" }}>
+              <input autoFocus required autoComplete="name" maxLength={80} value={editingName} onChange={(e) => setEditingName(e.target.value)} style={{ ...input, flex: "1 1 160px", padding: "6px 10px" }} />
+              <button type="submit" style={{ ...primaryButton, padding: "6px 14px", fontSize: 13 }}>Save</button>
+              <button type="button" style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13 }} onClick={() => setEditingName(null)}>Cancel</button>
+            </form>
+          )}
+        </div>
+
+        <div style={row}>
+          <div>
+            <div style={{ fontWeight: 600 }}>Sign-in methods</div>
+            <div style={muted}>
+              Emailed code to {account.email}
+              {account.google ? " · Google linked" : ". Google links itself the first time you use Continue with Google with this email."}
+            </div>
+          </div>
+        </div>
+
+        <div style={row}>
+          <div>
+            <div style={{ fontWeight: 600 }}>Sign out everywhere</div>
+            <div style={muted}>Ends every session on every device, including this one.</div>
+          </div>
+          <button type="button" style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13 }} disabled={busy} onClick={everywhere}>Sign out everywhere</button>
+        </div>
+
+        <div style={row}>
+          <div style={{ flex: "1 1 300px" }}>
+            <div style={{ fontWeight: 600, color: "#b91c1c" }}>Delete account</div>
+            <div style={muted}>
+              Deletes your account, API keys, usage and saved searches for good. Keys stop working straight away.
+              {account.billing.subscribed && " Cancel your paid plan in Manage billing first."}
+            </div>
+            {confirmDelete !== null && (
+              <form onSubmit={remove} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                <input
+                  autoFocus
+                  type="email"
+                  aria-label="Type your email to confirm"
+                  placeholder={account.email}
+                  value={confirmDelete}
+                  onChange={(e) => setConfirmDelete(e.target.value)}
+                  style={{ ...input, flex: "1 1 220px", padding: "6px 10px" }}
+                />
+                <button
+                  type="submit"
+                  disabled={busy || confirmDelete.trim().toLowerCase() !== account.email}
+                  style={{ ...primaryButton, background: "#dc2626", padding: "6px 14px", fontSize: 13, opacity: confirmDelete.trim().toLowerCase() === account.email ? 1 : 0.5 }}
+                >
+                  Delete for good
+                </button>
+                <button type="button" style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13 }} onClick={() => setConfirmDelete(null)}>Cancel</button>
+              </form>
+            )}
+          </div>
+          {confirmDelete === null && (
+            <button
+              type="button"
+              style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13, color: "#b91c1c", borderColor: "#fecaca" }}
+              onClick={() => setConfirmDelete("")}
+            >
+              Delete account
+            </button>
+          )}
+        </div>
+        {confirmDelete !== null && <p style={{ ...p, ...muted, margin: "4px 0 0" }}>Type your email address above to confirm.</p>}
+      </div>
+    </DocSection>
   );
 }
 

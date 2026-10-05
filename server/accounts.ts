@@ -266,6 +266,28 @@ export class AccountStore {
     })();
   }
 
+  hasGoogle(userId: number): boolean {
+    return !!(this.db.prepare("SELECT google_sub FROM users WHERE id = ?").get(userId) as { google_sub: string | null } | undefined)?.google_sub;
+  }
+
+  /** Signs the account out on every device. */
+  endAllSessions(userId: number) {
+    this.db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
+  }
+
+  /** Removes the account and everything hanging off it. Billing must be dealt with first. */
+  deleteAccount(userId: number) {
+    this.db.transaction(() => {
+      const row = this.db.prepare("SELECT email FROM users WHERE id = ?").get(userId) as { email: string } | undefined;
+      if (!row) return;
+      for (const table of ["sessions", "api_keys", "usage", "saved_searches"]) {
+        this.db.prepare(`DELETE FROM ${table} WHERE user_id = ?`).run(userId);
+      }
+      this.db.prepare("DELETE FROM login_tokens WHERE email = ?").run(row.email);
+      this.db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+    })();
+  }
+
   setName(userId: number, name: string | null) {
     this.db.prepare("UPDATE users SET name = ? WHERE id = ?").run(name, userId);
   }
@@ -652,6 +674,32 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     res.json({ ok: true });
   });
 
+  router.post("/auth/logout-all", (req, res) => {
+    const user = sessionUser(req);
+    if (!user) return res.status(401).json({ error: "Not signed in" });
+    store.endAllSessions(user.id);
+    track("signed_out_everywhere", analyticsId(user.id));
+    res.clearCookie(SESSION_COOKIE, { path: "/api" });
+    res.json({ ok: true });
+  });
+
+  router.delete("/account", (req, res) => {
+    const user = sessionUser(req);
+    if (!user) return res.status(401).json({ error: "Not signed in" });
+    // A live subscription would keep charging an account that no longer exists.
+    const { subscriptionId, subscriptionStatus } = store.billingFor(user.id);
+    if (subscriptionId && subscriptionStatus !== "canceled") {
+      return res.status(409).json({ error: "Cancel your paid plan in Manage billing first, then delete the account." });
+    }
+    if (normaliseEmail(req.body?.confirmEmail) !== user.email) {
+      return res.status(400).json({ error: "Type your email address to confirm." });
+    }
+    store.deleteAccount(user.id);
+    track("account_deleted", analyticsId(user.id), { tier: user.tier });
+    res.clearCookie(SESSION_COOKIE, { path: "/api" });
+    res.json({ ok: true });
+  });
+
   router.get("/account", (req, res) => {
     const user = sessionUser(req);
     if (!user) return res.status(401).json({ error: "Not signed in" });
@@ -660,6 +708,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     res.json({
       email: user.email,
       name: user.name,
+      google: store.hasGoogle(user.id),
       isAdmin: admins.has(user.email),
       analyticsId: analyticsId(user.id),
       tier,

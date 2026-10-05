@@ -74,6 +74,28 @@ describe("Google ID tokens", () => {
   });
 });
 
+describe("signing out everywhere and deleting", () => {
+  it("ends every session for the account and no other", () => {
+    const one = signIn("a@b.nz");
+    const two = signIn("a@b.nz");
+    const other = signIn("c@d.nz");
+    store.endAllSessions(one.user.id);
+    expect(store.userForSession(one.session)).toBeNull();
+    expect(store.userForSession(two.session)).toBeNull();
+    expect(store.userForSession(other.session)).not.toBeNull();
+  });
+
+  it("deletes the account, its keys and its sessions; the email can sign up fresh", () => {
+    const { user, session } = signIn("a@b.nz");
+    const { key } = store.createKey(user.id, "k")!;
+    store.deleteAccount(user.id);
+    expect(store.userForSession(session)).toBeNull();
+    expect(store.useKey(key).ok).toBe(false);
+    expect(store.listAllAccounts()).toHaveLength(0);
+    expect(signIn("a@b.nz").created).toBe(true);
+  });
+});
+
 describe("names and the admin list", () => {
   it("tidies names", () => {
     expect(cleanName("  Dana   Dealer ")).toBe("Dana Dealer");

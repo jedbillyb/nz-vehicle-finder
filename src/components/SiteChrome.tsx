@@ -214,6 +214,10 @@ export function SiteFooter({ source, eventProps }: { source: string; eventProps?
           PRIVACY
         </Link>
         {sep}
+        <Link to="/terms" onClick={() => track("terms_link_clicked")} style={{ color: "#0369a1", textDecoration: "none", fontWeight: 700 }}>
+          TERMS
+        </Link>
+        {sep}
         <a href="https://buymeacoffee.com/jedbillyb" target="_blank" rel="noopener noreferrer" onClick={() => track("sponsor_link_clicked")} style={{ color: "#ef4444", textDecoration: "none", fontWeight: 700 }}>
           SPONSOR THIS PROJECT
         </a>
