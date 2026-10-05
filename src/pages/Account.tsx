@@ -664,7 +664,7 @@ function Settings({ account, reload }: { account: AccountData; reload: () => voi
 
   return (
     <DocSection id="settings" title="Settings">
-      <div style={{ maxWidth: 640 }}>
+      <div>
         <div style={{ ...row, borderTop: 0 }}>
           <div>
             <div style={{ fontWeight: 600 }}>First name</div>
@@ -679,16 +679,6 @@ function Settings({ account, reload }: { account: AccountData; reload: () => voi
               <button type="button" style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13 }} onClick={() => setEditingName(null)}>Cancel</button>
             </form>
           )}
-        </div>
-
-        <div style={row}>
-          <div>
-            <div style={{ fontWeight: 600 }}>Sign-in methods</div>
-            <div style={muted}>
-              Emailed code to {account.email}
-              {account.google ? " · Google linked" : ". Google links itself the first time you use Continue with Google with this email."}
-            </div>
-          </div>
         </div>
 
         <div style={row}>
