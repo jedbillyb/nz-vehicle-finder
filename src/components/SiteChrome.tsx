@@ -184,11 +184,15 @@ const sep = <span aria-hidden="true" className="footer-sep" style={{ color: "#9c
 /** Between the footer's three groups: on phones each group gets its own row instead. */
 const groupSep = sep;
 
-/** Footer shared by every page. `source` and `eventProps` tag the analytics events with where they came from. */
+/**
+ * Footer shared by every page. Tinted so it stands apart from a white last
+ * section; the body is the same tint (index.css). `source` and `eventProps`
+ * tag the analytics events with where they came from.
+ */
 export function SiteFooter({ source, eventProps }: { source: string; eventProps?: Record<string, unknown> }) {
   const track = (event: string) => captureEvent(event, { location: "footer", source, ...eventProps });
   return (
-    <footer className="footer-root" style={{ padding: "12px 24px", background: "#ffffff", borderTop: "1px solid #e5e7eb", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#6b7280", letterSpacing: "0.1em" }}>
+    <footer className="footer-root" style={{ padding: "12px 24px", background: "#f0f9ff", borderTop: "1px solid #bae6fd", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#6b7280", letterSpacing: "0.1em" }}>
       <div className="footer-links" style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <span className="footer-group">
         <span>

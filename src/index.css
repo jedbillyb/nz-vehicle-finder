@@ -10,11 +10,11 @@ body {
 }
 
 /* Safari on iPhone tints the strip under its floating bar from the body's
-   colour, so the body is white like the footer and the grey page colour lives
-   on the app inside it. */
+   colour, so the body matches the footer (SiteFooter) and the grey page
+   colour lives on the app inside it. */
 html,
 body {
-  background: #ffffff !important;
+  background: #f0f9ff !important;
 }
 #root {
   background: hsl(var(--background));
