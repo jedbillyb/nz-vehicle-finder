@@ -59,7 +59,8 @@ export function SiteTopbar({ right }: { right?: ReactNode }) {
       <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
         <NavLinks location="topbar" gap={14} />
         {right && (
-          <span style={{ fontSize: "10px", color: "#e0f2fe", letterSpacing: "0.1em", whiteSpace: "nowrap" }}>{right}</span>
+          // A divider sets the date apart; 14px either side, same as the gaps between links (18 - 4).
+          <span style={{ fontSize: "10px", color: "#e0f2fe", letterSpacing: "0.1em", whiteSpace: "nowrap", marginLeft: -4, paddingLeft: 14, borderLeft: "1px solid rgba(255,255,255,0.35)" }}>{right}</span>
         )}
       </div>
     </div>

@@ -18,6 +18,8 @@ import { LoadingDots } from "@/components/LoadingDots";
 import { SkeletonBlock } from "@/components/SkeletonRows";
 import { AnimatedNumber } from "@/components/NumberSlot";
 
+const SIGNED_IN_KEY = "nzvf_signed_in";
+
 const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" }) : "Never";
 
@@ -87,7 +89,7 @@ function SignIn({ pendingSave, initialPlan }: { pendingSave: boolean; initialPla
       <div className="signup-grid">
         <div>
           <div style={{ ...label, marginBottom: 8 }}>1. Pick a plan</div>
-          <div role="radiogroup" aria-label="Plan" className="stagger-in" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div role="radiogroup" aria-label="Plan" className="stagger-in stagger-in--slow" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {TIER_ORDER.map((id) => (
               <PlanOption
                 key={id}
@@ -155,7 +157,7 @@ function HowItWorks() {
   ];
   return (
     <DocSection id="how-it-works" title="How accounts work">
-      <div className="stagger-in howto-grid">
+      <div className="stagger-in stagger-in--slow howto-grid">
         {steps.map(([title, body], i) => (
           <div key={title} style={{ display: "flex", gap: 12 }}>
             <span style={{ width: 26, height: 26, borderRadius: 999, background: "#e0f2fe", color: "#0369a1", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
@@ -302,7 +304,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
   const p = { fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 12px" } as const;
 
   return (
-    <div className="stagger-in doc-layout doc-layout--plain">
+    <div className="stagger-in stagger-in--slow doc-layout doc-layout--plain">
       <DocSection id="overview" title="Overview">
         <div className="acct-usage">
           <div className="acct-usage__top">
@@ -410,7 +412,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
             Your last payment failed. Update your card in Manage billing to keep your plan.
           </p>
         )}
-        <div className="stagger-in acct-plans">
+        <div className="stagger-in stagger-in--slow acct-plans">
           {account.tiers.map((t) => {
             const current = t.id === account.tier.id;
             const busy = redirecting !== null;
@@ -562,6 +564,19 @@ export default function Account() {
   const [urlPlan] = useState(() => paidPlan(new URLSearchParams(window.location.search).get("plan")));
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
+  // While the session check runs, the heading uses last visit's answer, so signed-out
+  // visitors don't see "Your account" flash before it flips to "Get an API key".
+  const [wasSignedIn] = useState(() => {
+    try { return localStorage.getItem(SIGNED_IN_KEY) === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    if (loading) return;
+    try {
+      if (account) localStorage.setItem(SIGNED_IN_KEY, "1");
+      else localStorage.removeItem(SIGNED_IN_KEY);
+    } catch { /* storage blocked: fall back to the signed-out heading */ }
+  }, [account, loading]);
+  const showAccount = account || (loading && wasSignedIn);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   /** A paid plan to send the browser to checkout for, once the account has loaded. */
@@ -649,9 +664,9 @@ export default function Account() {
       source="account_page"
       subtitle="Your account"
       crumb="Account"
-      title={account || loading ? "Your account" : "Get an API key"}
+      title={showAccount ? "Your account" : "Get an API key"}
       intro={
-        account || loading
+        showAccount
           ? "Your API usage, keys, saved searches and plan."
           : "Start free with 500 requests a month, or pick a paid plan and go straight to checkout."
       }
@@ -664,12 +679,12 @@ export default function Account() {
         <div className="page-band" style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
       )}
       {loading ? (
-        <div className="page-band" aria-busy="true" style={{ padding: "24px", display: "grid", gap: 16 }}><SkeletonBlock height={120} /><SkeletonBlock height={260} /></div>
+        <div className="skeleton-late page-band" aria-busy="true" style={{ padding: "24px", display: "grid", gap: 16 }}><SkeletonBlock height={120} /><SkeletonBlock height={260} /></div>
       ) : account ? (
         <Dashboard account={account} reload={reload} />
       ) : (
         // Two short sections need no menu; same section styling as the docs, full width.
-        <div className="stagger-in doc-layout doc-layout--plain">
+        <div className="stagger-in stagger-in--slow doc-layout doc-layout--plain">
           <SignIn pendingSave={pendingSave} initialPlan={urlPlan ?? "free"} />
           <HowItWorks />
         </div>
