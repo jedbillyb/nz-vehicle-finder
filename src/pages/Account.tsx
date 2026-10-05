@@ -87,7 +87,7 @@ function SignIn({ pendingSave, initialPlan }: { pendingSave: boolean; initialPla
       <div className="signup-grid">
         <div>
           <div style={{ ...label, marginBottom: 8 }}>1. Pick a plan</div>
-          <div role="radiogroup" aria-label="Plan" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div role="radiogroup" aria-label="Plan" className="stagger-in" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {TIER_ORDER.map((id) => (
               <PlanOption
                 key={id}
@@ -155,7 +155,7 @@ function HowItWorks() {
   ];
   return (
     <DocSection id="how-it-works" title="How accounts work">
-      <div className="howto-grid">
+      <div className="stagger-in howto-grid">
         {steps.map(([title, body], i) => (
           <div key={title} style={{ display: "flex", gap: 12 }}>
             <span style={{ width: 26, height: 26, borderRadius: 999, background: "#e0f2fe", color: "#0369a1", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
@@ -302,7 +302,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
   const p = { fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 12px" } as const;
 
   return (
-    <div className="fade-in doc-layout doc-layout--plain">
+    <div className="stagger-in doc-layout doc-layout--plain">
       <DocSection id="overview" title="Overview">
         <div className="acct-usage">
           <div className="acct-usage__top">
@@ -313,7 +313,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
             <span className="acct-usage__reset">Resets {fmtDate(resetsAt)}</span>
           </div>
           <div className="acct-usage__bar">
-            <div style={{ width: `${pct}%`, background: pct >= 90 ? "#ef4444" : "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
+            <div className="bar-grow" style={{ width: `${pct}%`, background: pct >= 90 ? "#ef4444" : "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
           </div>
           <div className="acct-usage__facts">
             <span><strong>{account.tier.name}</strong> plan{account.tier.priceNzd > 0 && `, NZ$${account.tier.priceNzd} a month`}</span>
@@ -410,7 +410,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
             Your last payment failed. Update your card in Manage billing to keep your plan.
           </p>
         )}
-        <div className="acct-plans">
+        <div className="stagger-in acct-plans">
           {account.tiers.map((t) => {
             const current = t.id === account.tier.id;
             const busy = redirecting !== null;
@@ -669,7 +669,7 @@ export default function Account() {
         <Dashboard account={account} reload={reload} />
       ) : (
         // Two short sections need no menu; same section styling as the docs, full width.
-        <div className="fade-in doc-layout doc-layout--plain">
+        <div className="stagger-in doc-layout doc-layout--plain">
           <SignIn pendingSave={pendingSave} initialPlan={urlPlan ?? "free"} />
           <HowItWorks />
         </div>

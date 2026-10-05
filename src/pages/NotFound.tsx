@@ -30,7 +30,7 @@ const NotFound = () => {
   return (
     <div className="error-page">
       <SiteHeader source="not_found" subtitle="Page not found" />
-      <main className="error-page__main">
+      <main className="stagger-in error-page__main">
         <div className="error-page__code">404</div>
         <h2 className="error-page__title">Page not found</h2>
         <p className="error-page__intro">

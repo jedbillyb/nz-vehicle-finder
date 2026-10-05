@@ -41,7 +41,7 @@ export function DocLayout({ label, groups, onNav, navTop, children }: {
   const active = useActiveSection(ids);
   return (
     <div className="doc-layout">
-      <nav className="doc-nav" aria-label={label}>
+      <nav className="fade-late doc-nav" aria-label={label}>
         {navTop}
         {groups.map((g) => (
           <div key={g.group} className="doc-nav-group">
@@ -59,7 +59,7 @@ export function DocLayout({ label, groups, onNav, navTop, children }: {
           </div>
         ))}
       </nav>
-      <div className="doc-main">{children}</div>
+      <div className="stagger-in doc-main">{children}</div>
     </div>
   );
 }

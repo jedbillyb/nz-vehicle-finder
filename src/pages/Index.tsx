@@ -474,7 +474,7 @@ export default function Index() {
         <div className="filters-panel" style={{ padding: "20px 24px", background: "#ffffff" }}>
           {/* Primary Filters */}
           {/* Column counts live in responsive.css (.filters-grid): 2, 4 or 6, so the 12 fields fill whole rows. */}
-          <div className="main-filters-grid filters-grid" style={{ display: "grid", gap: "12px 16px" }}>
+          <div className="stagger-in stagger-in--fast main-filters-grid filters-grid" style={{ display: "grid", gap: "12px 16px" }}>
             {primaryFilterFields.map((f) => (
               <SearchField
                 key={f.key}
@@ -539,7 +539,7 @@ export default function Index() {
           </div>
 
           {/* Actions, then the breakdown full width below */}
-          <div className="filters-bottom" style={{ minWidth: 0 }}>
+          <div className="fade-late filters-bottom" style={{ minWidth: 0 }}>
             <div className="filters-left-col" style={{ minWidth: 0 }}>
               <div className="action-buttons" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minWidth: 0, flexWrap: "nowrap" }}>
                 <div className="action-buttons-primary" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
@@ -722,7 +722,7 @@ export default function Index() {
       )}
 
       {total === null && (
-        <div className="empty-state" style={{ padding: "60px 24px", maxWidth: 800, margin: "0 auto" }}>
+        <div className="fade-late empty-state" style={{ padding: "60px 24px", maxWidth: 800, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             {/* A first search (e.g. opened from a link) has no total yet, so say it's running rather than asking for filters. */}
             <div style={{ marginBottom: 16, display: "flex", justifyContent: "center" }}>
