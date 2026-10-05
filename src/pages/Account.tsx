@@ -254,9 +254,9 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
                   placeholder="you@example.co.nz"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  style={{ ...input, flex: "1 1 220px" }}
+                  style={{ ...input, flex: "1 1 220px", height: 42, boxSizing: "border-box" }}
                 />
-                <button type="submit" disabled={state === "sending"} style={primaryButton}>
+                <button type="submit" disabled={state === "sending"} style={{ ...primaryButton, height: 42 }}>
                   {state === "sending" ? "Sending..." : paid ? `Continue with ${tier.name}` : "Email me a code"}
                 </button>
               </form>

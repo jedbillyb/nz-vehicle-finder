@@ -272,8 +272,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 24px;
-  align-items: start;
 }
+/* A rule between the plan picker and the email box */
+.signup-grid > div + div { border-left: 1px solid #e5e7eb; padding-left: 24px; }
 .howto-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -281,6 +282,7 @@
 }
 @media (max-width: 899px) {
   .signup-grid, .howto-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .signup-grid > div + div { border-left: 0; padding-left: 0; border-top: 1px solid #e5e7eb; padding-top: 16px; }
 }
 
 /* ── API docs: sticky menu on the left, text beside its code ── */
@@ -550,7 +552,9 @@
   justify-content: center;
   gap: 10px;
   width: 100%;
-  padding: 10px 16px;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 0 16px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   background: #ffffff;
