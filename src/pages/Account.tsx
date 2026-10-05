@@ -12,7 +12,7 @@ import { DocSection, Split } from "@/components/DocLayout";
 import { code, input, label, primaryButton, secondaryButton } from "@/lib/pageStyles";
 import { BURST_PER_SECOND, TIERS, TIER_ORDER, type Tier, type TierId } from "../../shared/apiTiers";
 import { MAX_SAVED_SEARCH_NAME, MAX_SAVED_SEARCHES } from "../../shared/savedSearch";
-import { Star } from "lucide-react";
+import { LogOut, Star } from "lucide-react";
 import { toast } from "sonner";
 import { LoadingDots } from "@/components/LoadingDots";
 import { SkeletonBlock } from "@/components/SkeletonRows";
@@ -322,8 +322,11 @@ function HowItWorks() {
 function SignedInAs({ account, reload }: { account: AccountData; reload: () => void }) {
   return (
     <div className="acct-who">
-      <div className="acct-who__label">Signed in as</div>
-      <div className="acct-who__email">{account.email}</div>
+      <span className="acct-who__avatar" aria-hidden>{(account.name || account.email).charAt(0).toUpperCase()}</span>
+      <div className="acct-who__text">
+        <div className="acct-who__label">Signed in as</div>
+        <div className="acct-who__email">{account.email}</div>
+      </div>
       <button
         type="button"
         className="acct-who__signout"
@@ -334,6 +337,7 @@ function SignedInAs({ account, reload }: { account: AccountData; reload: () => v
           reload();
         }}
       >
+        <LogOut size={14} aria-hidden />
         Sign out
       </button>
     </div>
