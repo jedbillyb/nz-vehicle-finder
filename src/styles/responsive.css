@@ -178,12 +178,12 @@
 .footer-group { display: contents; }
 .footer-feedback { display: none; }
 @media (max-width: 767px) { .footer-feedback { display: contents; } }
-/* Phones: one centred row per group, spaced instead of dotted, so no line
-   starts or ends on a dot. */
+/* Phones: one centred row per group, dotted inside a row but not between
+   rows, so no line starts or ends on a dot. */
 @media (max-width: 767px) {
   .footer-links { flex-direction: column; row-gap: 10px !important; }
-  .footer-group { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 14px; }
-  .footer-sep { display: none; }
+  .footer-group { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px; }
+  .footer-sep--group { display: none; }
 }
 
 /* ── Empty state padding ────────────────────────────────────── */

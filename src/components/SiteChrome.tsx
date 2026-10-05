@@ -181,8 +181,8 @@ export function HeroAside({ source, api, share = false }: { source: string; api?
 }
 
 const sep = <span aria-hidden="true" className="footer-sep" style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1 }}>·</span>;
-/** Between the footer's three groups: on phones each group gets its own row instead. */
-const groupSep = sep;
+/** Between the footer's three groups: hidden on phones, where each group gets its own row. */
+const groupSep = <span aria-hidden="true" className="footer-sep footer-sep--group" style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1 }}>·</span>;
 
 /**
  * Footer shared by every page. Tinted so it stands apart from a white last
