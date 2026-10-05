@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { MessageSquare, X, Star } from "lucide-react";
-import { toast } from "sonner";
+import { toast, useSonner } from "sonner";
 import { captureEvent } from "@/lib/posthog";
 import { API_BASE } from "@/lib/vehicleApi";
 import { isValidEmail } from "../../shared/email";
@@ -38,6 +38,8 @@ export function FeedbackWidget() {
   const [submitting, setSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
+  // Toasts take this corner, so the pill ducks out of the way while any are showing.
+  const toastShowing = useSonner().toasts.length > 0;
 
   const pagePath = window.location.pathname;
 
@@ -145,6 +147,8 @@ export function FeedbackWidget() {
         <button
           onClick={handleOpen}
           aria-label="Give feedback"
+          aria-hidden={toastShowing}
+          tabIndex={toastShowing ? -1 : 0}
           style={
             {
               position: "fixed",
@@ -167,7 +171,10 @@ export function FeedbackWidget() {
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",
               boxShadow: "0 4px 16px rgba(15,23,42,0.22)",
-              transition: "background 0.15s ease, color 0.15s ease, transform 0.15s ease",
+              opacity: toastShowing ? 0 : 1,
+              transform: toastShowing ? "translateY(16px) scale(0.92)" : "none",
+              pointerEvents: toastShowing ? "none" : "auto",
+              transition: "background 0.15s ease, color 0.15s ease, opacity 0.25s ease, transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1)",
               textTransform: "uppercase",
             }
           }

@@ -22,8 +22,8 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      {/* Bottom centre, clear of the Feedback button in the bottom right corner. */}
-      <Sonner position="bottom-center" />
+      {/* Same corner as the desktop feedback pill, which hides while a toast shows (FeedbackWidget). */}
+      <Sonner position="bottom-right" offset={{ bottom: 24, right: 24 }} />
       <BrowserRouter>
         <ScrollToTop />
         <AnalyticsTracker />
