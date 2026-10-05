@@ -9,6 +9,12 @@ body {
   overscroll-behavior: none;
 }
 
+/* What shows past the end of the page, like under the iPhone's floating Safari
+   bar, matches the white footer rather than the grey page. */
+html {
+  background: #ffffff;
+}
+
 /* Arial (or a metric twin) scaled to Inter's size, shown until Inter loads. Text keeps
    the same line lengths when Inter swaps in, so headings don't rewrap and jump. */
 @font-face {
