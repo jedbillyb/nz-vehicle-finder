@@ -163,8 +163,7 @@ export function HeroAside({ source, api, share = false }: { source: string; api?
   );
 }
 
-// A drawn dot, not "·": the glyph is a hairline at 10px and sits wherever the font puts it.
-const sep = <span aria-hidden="true" style={{ width: 3, height: 3, borderRadius: "50%", background: "#9ca3af", flexShrink: 0 }} />;
+const sep = <span aria-hidden="true" style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1 }}>·</span>;
 
 /** Footer shared by every page. `source` and `eventProps` tag the analytics events with where they came from. */
 export function SiteFooter({ source, eventProps }: { source: string; eventProps?: Record<string, unknown> }) {

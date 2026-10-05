@@ -5,7 +5,8 @@ import { DocSection } from "@/components/DocLayout";
 import { CONTACT_EMAIL } from "../../shared/contact";
 
 const p = { fontSize: 14, color: "#374151", lineHeight: 1.7, margin: "0 0 12px" } as const;
-const ul = { ...p, paddingLeft: 20 } as const;
+// Tailwind's reset strips list markers, so ask for them back.
+const ul = { ...p, paddingLeft: 20, listStyle: "disc" } as const;
 const mail = <a href={`mailto:${CONTACT_EMAIL.support}`} style={{ color: "#0369a1", fontWeight: 600 }}>{CONTACT_EMAIL.support}</a>;
 
 function Who({ name, why }: { name: string; why: ReactNode }) {
