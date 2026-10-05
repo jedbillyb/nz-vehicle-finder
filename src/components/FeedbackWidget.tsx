@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { MessageSquare, X, Star } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { toast, useSonner } from "sonner";
 import { captureEvent } from "@/lib/posthog";
 import { API_BASE } from "@/lib/vehicleApi";
@@ -26,6 +27,41 @@ function getDistinctId(): string {
   return id;
 }
 
+/**
+ * Whether the footer is on screen on the account page. The pill steps aside
+ * there: the page's last buttons sit in its corner, right above the footer,
+ * and the footer has its own FEEDBACK link. Other pages keep the pill.
+ */
+function useFooterShowing(active: boolean) {
+  const { pathname } = useLocation();
+  const [showing, setShowing] = useState(false);
+  const watch = active && pathname.startsWith("/account");
+  useEffect(() => {
+    if (!watch) { setShowing(false); return; }
+    let frame = 0;
+    const update = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const footer = document.querySelector("footer.footer-root");
+        setShowing(!!footer && footer.getBoundingClientRect().top < window.innerHeight);
+      });
+    };
+    update();
+    // Each page mounts its own footer, and pages grow as their data loads.
+    const ro = new ResizeObserver(update);
+    ro.observe(document.body);
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [watch, pathname]);
+  return showing;
+}
+
 export function FeedbackWidget() {
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
@@ -38,8 +74,10 @@ export function FeedbackWidget() {
   const [submitting, setSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
-  // Toasts take this corner, so the pill ducks out of the way while any are showing.
-  const toastShowing = useSonner().toasts.length > 0;
+  // Toasts take this corner, so the pill ducks out of the way while any are
+  // showing, and at the foot of the account page.
+  const footerShowing = useFooterShowing(!isMobile);
+  const hidePill = useSonner().toasts.length > 0 || footerShowing;
 
   const pagePath = window.location.pathname;
 
@@ -147,8 +185,8 @@ export function FeedbackWidget() {
         <button
           onClick={handleOpen}
           aria-label="Give feedback"
-          aria-hidden={toastShowing}
-          tabIndex={toastShowing ? -1 : 0}
+          aria-hidden={hidePill}
+          tabIndex={hidePill ? -1 : 0}
           style={
             {
               position: "fixed",
@@ -171,9 +209,9 @@ export function FeedbackWidget() {
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",
               boxShadow: "0 4px 16px rgba(15,23,42,0.22)",
-              opacity: toastShowing ? 0 : 1,
-              transform: toastShowing ? "translateY(16px) scale(0.92)" : "none",
-              pointerEvents: toastShowing ? "none" : "auto",
+              opacity: hidePill ? 0 : 1,
+              transform: hidePill ? "translateY(16px) scale(0.92)" : "none",
+              pointerEvents: hidePill ? "none" : "auto",
               transition: "background 0.15s ease, color 0.15s ease, opacity 0.25s ease, transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1)",
               textTransform: "uppercase",
             }
