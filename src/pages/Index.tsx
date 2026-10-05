@@ -680,7 +680,7 @@ export default function Index() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="rows-in">
+              <tbody key={`${page}-${total}`} className="rows-in" style={{ opacity: loading ? 0.45 : 1, transition: "opacity 0.2s ease" }}>
                 {sortedResults.length === 0 ? (
                   <tr>
                     <td colSpan={resultColumns.length} style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 11, letterSpacing: "0.1em" }}>
