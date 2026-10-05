@@ -15,6 +15,7 @@ import { MAX_SAVED_SEARCH_NAME, MAX_SAVED_SEARCHES } from "../../shared/savedSea
 import { Star } from "lucide-react";
 import { toast } from "sonner";
 import { LoadingDots } from "@/components/LoadingDots";
+import { SkeletonBlock } from "@/components/SkeletonRows";
 import { AnimatedNumber } from "@/components/NumberSlot";
 
 const fmtDate = (iso: string | null) =>
@@ -663,7 +664,7 @@ export default function Account() {
         <div className="page-band" style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
       )}
       {loading ? (
-        <div className="page-band" style={{ padding: "24px", color: "#0ea5e9", fontSize: 22 }}><LoadingDots /></div>
+        <div className="page-band" aria-busy="true" style={{ padding: "24px", display: "grid", gap: 16 }}><SkeletonBlock height={120} /><SkeletonBlock height={260} /></div>
       ) : account ? (
         <Dashboard account={account} reload={reload} />
       ) : (

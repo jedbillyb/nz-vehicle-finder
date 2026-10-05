@@ -8,6 +8,7 @@ import { tlaToSlug, titleCaseRegion } from "@/lib/slugs";
 import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { LoadingDots } from "@/components/LoadingDots";
 import { LinkTiles } from "@/components/LinkTiles";
+import { SkeletonBlock } from "@/components/SkeletonRows";
 import { AnimatedNumber, NumberSlot } from "@/components/NumberSlot";
 
 function StatCard({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
@@ -245,9 +246,15 @@ export default function FleetOverview() {
         )}
 
         {loading && (
-          // A screen tall, so the footer isn't on screen to jump down when the stats arrive.
-          <div style={{ minHeight: "100vh", padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 11, letterSpacing: "0.1em" }}>
-            <span style={{ fontSize: 22, color: "#0ea5e9" }}><LoadingDots /></span>
+          // Placeholders shaped like the stat cards and sections, so the page keeps its layout when the data lands.
+          <div aria-busy="true" style={{ minHeight: "100vh" }}>
+            <div className="page-band fleet-stats" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "grid", gap: 12 }}>
+              {Array.from({ length: 5 }, (_, i) => <SkeletonBlock key={i} height={86} />)}
+            </div>
+            <div className="page-band" style={{ padding: "24px", borderBottom: "1px solid #e5e7eb", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 32 }}>
+              {Array.from({ length: 3 }, (_, i) => <SkeletonBlock key={i} height={220} />)}
+            </div>
+            <div className="page-band" style={{ padding: "24px", background: "#f9fafb" }}><SkeletonBlock height={320} /></div>
           </div>
         )}
       </div>

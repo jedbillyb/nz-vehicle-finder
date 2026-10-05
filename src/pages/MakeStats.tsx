@@ -16,6 +16,7 @@ import { modelToSlug, slugToMakeUpper, titleCaseModel, titleCaseMake } from "@/l
 import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { resultColumns } from "@/lib/resultColumns";
 import { LoadingDots } from "@/components/LoadingDots";
+import { SkeletonRows } from "@/components/SkeletonRows";
 import { LinkTiles } from "@/components/LinkTiles";
 import { AnimatedNumber, NumberSlot, Reserve } from "@/components/NumberSlot";
 import { POPULAR_MAKES } from "@/lib/popularMakes";
@@ -344,11 +345,7 @@ export default function MakeStats() {
                 </thead>
                 <tbody className="rows-in">
                   {loading && results.length === 0 ? (
-                    <tr>
-                      <td colSpan={resultColumns.length} style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 11, letterSpacing: "0.1em" }}>
-                        <span style={{ fontSize: 22, color: "#0ea5e9" }}><LoadingDots /></span>
-                      </td>
-                    </tr>
+                    <SkeletonRows columns={resultColumns.length} />
                   ) : sortedResults.length === 0 ? (
                     <tr>
                       <td colSpan={resultColumns.length} style={{ padding: "60px 24px", textAlign: "center", color: "#9ca3af", fontSize: 11, letterSpacing: "0.1em" }}>
