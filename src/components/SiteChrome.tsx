@@ -42,16 +42,11 @@ function NavLinks({ location, gap }: { location: string; gap: number }) {
 }
 
 /**
- * The blue strip above every page header, carrying the site-wide links. The
- * full strip is hidden on phones (see responsive.css), so a slimmer one with
- * just the links takes its place there.
+ * The blue strip above every page header, carrying the site-wide links. It is
+ * hidden on phones (see responsive.css), where SiteNavMobile takes its place.
  */
 export function SiteTopbar({ right }: { right?: ReactNode }) {
   return (
-    <>
-    <div className="site-nav-mobile" style={{ background: "#0ea5e9", padding: "0 16px 8px", justifyContent: "center" }}>
-      <NavLinks location="topbar_mobile" gap={18} />
-    </div>
     <div className="header-topbar" style={{ background: "#0ea5e9", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
       <span className="header-topbar-subtitle" style={{ fontSize: "10px", color: "#f9fafb", fontWeight: 600, letterSpacing: "0.16em" }}>
         WAKA KOTAHI · NZ MOTOR VEHICLE REGISTER · PUBLIC ACCESS TERMINAL
@@ -64,7 +59,19 @@ export function SiteTopbar({ right }: { right?: ReactNode }) {
         )}
       </div>
     </div>
-    </>
+  );
+}
+
+/**
+ * The phones' stand-in for the top bar: just the links, pinned to the top.
+ * App renders it once above the routes, so it stays on screen while a link
+ * swaps the page under it instead of being rebuilt with each page's header.
+ */
+export function SiteNavMobile() {
+  return (
+    <div className="site-nav-mobile" style={{ background: "#0ea5e9", padding: "0 16px 8px", justifyContent: "center" }}>
+      <NavLinks location="topbar_mobile" gap={18} />
+    </div>
   );
 }
 

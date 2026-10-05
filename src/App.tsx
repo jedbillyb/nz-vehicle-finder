@@ -17,6 +17,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import { AnalyticsTracker } from "./components/AnalyticsTracker";
 import { FeedbackWidget } from "./components/FeedbackWidget";
+import { SiteNavMobile } from "./components/SiteChrome";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
         <ScrollToTop />
         <AnalyticsTracker />
         <FeedbackWidget />
+        <SiteNavMobile />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/stats/:make" element={<MakeStats />} />
