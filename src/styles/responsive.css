@@ -513,7 +513,8 @@
   gap: 12px;
   max-width: 360px;
   flex-shrink: 0;
-  margin-top: 8px;
+  /* Centred against the hero text beside it, not pinned to its top. */
+  align-self: center;
   padding: 10px 10px 10px 14px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
