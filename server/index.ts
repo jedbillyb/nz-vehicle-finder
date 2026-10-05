@@ -663,6 +663,8 @@ const accounts = createAccounts(accountStore, {
     const { error } = await resend.emails.send({
       from: loginFrom,
       to: email,
+      // login@ has no inbox; a reply to the sign-in email should reach a person.
+      replyTo: CONTACT_EMAIL.support,
       subject: `${code} is your NZ Vehicle Finder sign-in code`,
       text: [
         `Your sign-in code: ${code}`,
