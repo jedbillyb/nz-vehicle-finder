@@ -158,6 +158,14 @@
 @media (max-width: 767px) {
   .footer-root { padding-bottom: 0 !important; }
 }
+/* Everywhere but iOS (only iOS knows -webkit-touch-callout): Chrome on Android
+   draws edge to edge under viewport-fit=cover, so clear the gesture bar. The
+   inset is 0 where there's nothing to clear. */
+@supports not (-webkit-touch-callout: none) {
+  @media (max-width: 767px) {
+    .footer-root { padding-bottom: env(safe-area-inset-bottom, 0px) !important; }
+  }
+}
 .footer-links {
   flex-wrap: wrap !important;
   justify-content: center;
