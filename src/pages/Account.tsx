@@ -93,6 +93,7 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
   }, []);
   const tier = TIERS[plan];
   const paid = tier.priceNzd > 0;
+  const submitLabel = state === "sending" ? "Sending..." : paid ? `Continue with ${tier.name}` : "Email me a code";
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -271,8 +272,14 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
                   onChange={(e) => setEmail(e.target.value)}
                   style={{ ...input, flex: "1 1 220px", height: 42, boxSizing: "border-box" }}
                 />
-                <button type="submit" disabled={state === "sending"} style={{ ...primaryButton, height: 42 }}>
-                  {state === "sending" ? "Sending..." : paid ? `Continue with ${tier.name}` : "Email me a code"}
+                {/* Every label sits in the same grid cell, so the button keeps the widest one's
+                    width and the email box beside it doesn't jump when the plan changes. */}
+                <button type="submit" disabled={state === "sending"} style={{ ...primaryButton, height: 42, display: "inline-grid", alignItems: "center", justifyItems: "center" }}>
+                  {["Sending...", "Email me a code", ...TIER_ORDER.filter((id) => TIERS[id].priceNzd > 0).map((id) => `Continue with ${TIERS[id].name}`)].map((label) => (
+                    <span key={label} aria-hidden={label !== submitLabel} style={{ gridArea: "1 / 1", visibility: label === submitLabel ? "visible" : "hidden" }}>
+                      {label}
+                    </span>
+                  ))}
                 </button>
               </form>
               {error && <p style={errorText}>{error}</p>}
