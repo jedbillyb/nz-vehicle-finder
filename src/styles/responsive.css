@@ -39,6 +39,12 @@
   input, select, textarea {
     font-size: 16px !important;
   }
+  /* Stays 16px so iOS won't zoom, but drawn at label size. */
+  .per-page-select {
+    transform: scale(0.7);
+    transform-origin: right center;
+    margin-left: -14px;
+  }
 }
 
 /* ── Header main row ────────────────────────────────────────── */
@@ -153,6 +159,16 @@
   gap: 8px !important;
   row-gap: 4px !important;
 }
+.footer-group { display: contents; }
+/* Phones: one centred row per group, spaced instead of dotted, so no line
+   starts or ends on a dot. */
+@media (max-width: 767px) {
+  .footer-links { flex-direction: column; row-gap: 10px !important; }
+  .footer-group { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 14px; }
+  .footer-sep { display: none; }
+  /* Room for the docked Result Breakdown bar, so it never covers the footer. */
+  body:has(.breakdown-trigger) .footer-root { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important; }
+}
 
 /* ── Breakdown sheet trigger — mobile only ──────────────────── */
 .breakdown-trigger {
@@ -169,10 +185,23 @@
   padding: 48px 16px !important;
 }
 
-/* ── Header — scroll away on mobile instead of glitchy sticky ── */
+/* ── Header on phones: the full header is too tall to pin, so it scrolls away
+   and only the slim nav strip stays at the top. `display: contents` lets the
+   strip stick against the whole page instead of just the header box. */
 @media (max-width: 767px) {
   header {
-    position: static !important;
+    display: contents;
+  }
+  .header-main {
+    border-bottom: 1px solid #e5e7eb;
+  }
+}
+@media (max-width: 767px) {
+  .site-nav-mobile,
+  .header-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
   }
 }
 
@@ -578,3 +607,22 @@
 .admin-table td { padding: 8px 12px; border-top: 1px solid #f1f5f9; color: #1f2937; white-space: nowrap; }
 .admin-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .admin-table .muted { color: #9ca3af; }
+
+/* ── Results table scroll box: edge fades and a "Swipe" hint ── */
+.table-scroll { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.table-scroll__box { flex: 1; min-height: 0; overflow: auto; }
+.table-scroll__fade { position: absolute; top: 0; bottom: 0; width: 28px; pointer-events: none; opacity: 0; transition: opacity 200ms ease; z-index: 11; }
+.table-scroll__fade.is-on { opacity: 1; }
+.table-scroll__fade--left { left: 0; background: linear-gradient(to right, rgba(15, 23, 42, 0.12), transparent); }
+.table-scroll__fade--right { right: 0; background: linear-gradient(to left, rgba(15, 23, 42, 0.12), transparent); }
+.table-scroll__hint {
+  position: absolute; top: 40px; right: 10px; z-index: 12; pointer-events: none;
+  display: flex; align-items: center; gap: 2px; padding: 4px 6px 4px 10px; border-radius: 999px;
+  background: #0f172a; color: #ffffff; font-size: 11px; font-weight: 600; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+  opacity: 0; transform: translateX(6px); transition: opacity 250ms ease, transform 250ms ease;
+}
+.table-scroll__hint.is-on { opacity: 0.9; transform: none; animation: swipe-nudge 1.6s ease-in-out 0.4s 3; }
+@keyframes swipe-nudge { 0%, 100% { transform: none; } 50% { transform: translateX(-6px); } }
+@media (prefers-reduced-motion: reduce) {
+  .table-scroll__hint.is-on { animation: none; }
+}

@@ -67,7 +67,7 @@ export function Pagination({ page, pages, onPageChange, className }: PaginationP
         <ChevronsRight size={12} />
       </button>
 
-      <span style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", marginLeft: 8 }}>
+      <span style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", marginLeft: 8, whiteSpace: "nowrap" }}>
         PAGE <span style={{ color: "#0f172a" }}>{page}</span> OF <span style={{ color: "#4b5563" }}>{pages}</span>
       </span>
     </div>

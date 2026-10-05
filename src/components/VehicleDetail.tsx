@@ -1,4 +1,6 @@
 import { Vehicle } from "@/lib/mockData";
+import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -49,12 +51,51 @@ const fieldLabels: Record<string, string> = {
   SYNTHETIC_GREENHOUSE_GAS: "Greenhouse Gas",
 };
 
+/** Matches the exit animation in index.css. */
+const CLOSE_MS = 160;
+
 export function VehicleDetail({ vehicle, onClose }: VehicleDetailProps) {
   const entries = Object.entries(fieldLabels);
+  const [closing, setClosing] = useState(false);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4" onClick={onClose}>
-      <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col p-4" onClick={(e) => e.stopPropagation()}>
+  // Play the exit animation, then unmount.
+  const close = useCallback(() => {
+    setClosing(true);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(onClose, reduced ? 0 : CLOSE_MS);
+  }, [onClose]);
+
+  // Freeze the page behind the popup, and give back the scrollbar's width so
+  // nothing shifts sideways.
+  useEffect(() => {
+    const root = document.documentElement;
+    const gap = window.innerWidth - root.clientWidth;
+    const before = { overflow: root.style.overflow, paddingRight: root.style.paddingRight };
+    root.style.overflow = "hidden";
+    if (gap > 0) root.style.paddingRight = `${gap}px`;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      root.style.overflow = before.overflow;
+      root.style.paddingRight = before.paddingRight;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [close]);
+
+  // Rendered on <body>, so a scroll on the popup can't pass up to a scrolling box
+  // it would otherwise sit inside.
+  return createPortal(
+    <div
+      className={`vehicle-detail fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4${closing ? " is-closing" : ""}`}
+      onClick={close}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${vehicle.VEHICLE_YEAR} ${vehicle.MAKE} ${vehicle.MODEL}`}
+        className="vehicle-detail__panel bg-card border border-border rounded-lg shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between pb-4 border-b border-border mb-4">
           <div>
             <h2 className="text-lg font-bold text-foreground font-mono">
@@ -68,11 +109,11 @@ export function VehicleDetail({ vehicle, onClose }: VehicleDetailProps) {
                   : "No VIN on record"}
             </p>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={close} aria-label="Close">
             <X className="h-4 w-4" />
           </Button>
         </div>
-        <div className="overflow-auto">
+        <div className="overflow-auto overscroll-contain">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {entries.map(([key, label]) => {
               const val = vehicle[key as keyof Vehicle];
@@ -93,6 +134,7 @@ export function VehicleDetail({ vehicle, onClose }: VehicleDetailProps) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

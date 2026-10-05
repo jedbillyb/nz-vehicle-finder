@@ -31,6 +31,7 @@ import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { POPULAR_MAKES } from "@/lib/popularMakes";
 import { LinkTiles } from "@/components/LinkTiles";
 import { AnimatedNumber } from "@/components/NumberSlot";
+import { TableScroll } from "@/components/TableScroll";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -653,6 +654,7 @@ export default function Index() {
               <label style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
                 PER PAGE
                 <select
+                  className="per-page-select"
                   value={pageSize}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                   disabled={loading}
@@ -666,7 +668,7 @@ export default function Index() {
             </div>
           </div>
 
-          <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
+          <TableScroll>
             <table className="results-table" style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
               <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 10 }}>
                 <tr>
@@ -715,7 +717,7 @@ export default function Index() {
                 )}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
 
           <Pagination page={page} pages={pages} onPageChange={handlePageChange} />
         </div>
@@ -827,25 +829,28 @@ export default function Index() {
             className="breakdown-trigger"
             onClick={() => setBreakdownSheetOpen(true)}
             style={{
+              // Docked to the bottom edge, its colour running down under the
+              // iPhone home bar instead of leaving a strip of page below it.
               position: "fixed",
-              left: 16,
-              right: 16,
-              bottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
+              left: 0,
+              right: 0,
+              bottom: 0,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               gap: 12,
-              padding: "11px 14px",
-              background: "rgba(15, 23, 42, 0.96)",
+              padding: "13px 18px calc(13px + env(safe-area-inset-bottom, 0px))",
+              background: "rgba(15, 23, 42, 0.97)",
               color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 12,
+              border: "none",
+              borderTop: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "14px 14px 0 0",
               fontSize: 11,
               fontWeight: 700,
               letterSpacing: "0.15em",
               cursor: "pointer",
               zIndex: 30,
-              boxShadow: "0 10px 24px rgba(15, 23, 42, 0.22)",
+              boxShadow: "0 -6px 20px rgba(15, 23, 42, 0.18)",
               backdropFilter: "blur(10px)",
               fontFamily: "inherit",
             }}

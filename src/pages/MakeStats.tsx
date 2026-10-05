@@ -19,6 +19,7 @@ import { LoadingDots } from "@/components/LoadingDots";
 import { SkeletonRows } from "@/components/SkeletonRows";
 import { LinkTiles } from "@/components/LinkTiles";
 import { AnimatedNumber, NumberSlot, Reserve } from "@/components/NumberSlot";
+import { TableScroll } from "@/components/TableScroll";
 import { POPULAR_MAKES } from "@/lib/popularMakes";
 
 function useIsMobile() {
@@ -329,7 +330,7 @@ export default function MakeStats() {
               )}
             </div>
 
-            <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
+            <TableScroll>
               <table className="results-table" style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
                 <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 10 }}>
                   <tr>
@@ -380,7 +381,7 @@ export default function MakeStats() {
                   )}
                 </tbody>
               </table>
-            </div>
+            </TableScroll>
 
             <Pagination page={page} pages={pages} onPageChange={handlePageChange} className="content-col" />
           </div>
