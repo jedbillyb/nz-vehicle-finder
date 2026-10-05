@@ -486,6 +486,7 @@
 }
 .acct-who__label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9ca3af; margin-bottom: 4px; }
 .acct-who__email { font-size: 13px; font-weight: 600; color: #0f172a; overflow-wrap: anywhere; }
+.acct-who__name { font-size: 14px; font-weight: 700; color: #0f172a; overflow-wrap: anywhere; }
 .acct-who__plan { font-size: 12px; color: #6b7280; margin: 2px 0 10px; }
 .acct-who__signout {
   width: 100%;
@@ -541,3 +542,32 @@
 .contact-email:hover, .contact-email:focus-visible { background: #0284c7; }
 .contact-note { font-size: 13px; color: #6b7280; margin: 24px 0 0; }
 .contact-note button { background: none; border: none; padding: 0; font: inherit; color: #0369a1; font-weight: 600; cursor: pointer; }
+
+/* ── Sign-in: Google first, then the emailed code ── */
+.google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.google-btn:hover { background: #f9fafb; border-color: #9ca3af; }
+.or-rule { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: #9ca3af; font-size: 12px; }
+.or-rule::before, .or-rule::after { content: ""; flex: 1; height: 1px; background: #e5e7eb; }
+
+/* ── Admin: every account ── */
+.admin-table-wrap { overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 10px; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-table th { text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6b7280; background: #f9fafb; padding: 8px 12px; white-space: nowrap; }
+.admin-table td { padding: 8px 12px; border-top: 1px solid #f1f5f9; color: #1f2937; white-space: nowrap; }
+.admin-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.admin-table .muted { color: #9ca3af; }

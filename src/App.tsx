@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import Account from "./pages/Account";
 import Developers from "./pages/Developers";
 import Contact from "./pages/Contact";
+import Privacy from "./pages/Privacy";
 import { AnalyticsTracker } from "./components/AnalyticsTracker";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/account" element={<Account />} />
           <Route path="/developers" element={<Developers />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy" element={<Privacy />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

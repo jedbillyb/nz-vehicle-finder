@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach } from "vitest";
-import { AccountStore, monthOf, nextMonthStart, normaliseEmail } from "../../server/accounts";
+import { AccountStore, cleanName, monthOf, nextMonthStart, normaliseEmail, profileFromIdToken } from "../../server/accounts";
 import { MAX_KEYS_PER_ACCOUNT, TIERS } from "../../shared/apiTiers";
 
 let store: AccountStore;
@@ -14,6 +14,86 @@ function signIn(email = "dealer@example.co.nz") {
 
 beforeEach(() => {
   store = new AccountStore(":memory:");
+});
+
+describe("Google sign-in", () => {
+  const google = (over: Partial<{ sub: string; email: string; emailVerified: boolean; name: string | null }> = {}) =>
+    ({ sub: "g-1", email: "dealer@example.co.nz", emailVerified: true, name: "Dana Dealer", ...over });
+
+  it("lands on the account an emailed code already made, and links it", () => {
+    const first = signIn("dealer@example.co.nz");
+    const viaGoogle = store.signInWithGoogle(google())!;
+    expect(viaGoogle.user.id).toBe(first.user.id);
+    expect(viaGoogle.created).toBe(false);
+    expect(store.listAllAccounts()[0].google).toBe(true);
+  });
+
+  it("a later emailed code lands on the account Google made", () => {
+    const viaGoogle = store.signInWithGoogle(google())!;
+    expect(viaGoogle.created).toBe(true);
+    expect(signIn("dealer@example.co.nz").user.id).toBe(viaGoogle.user.id);
+  });
+
+  it("follows the Google account after its email changes", () => {
+    const first = store.signInWithGoogle(google())!;
+    const moved = store.signInWithGoogle(google({ email: "new@example.co.nz" }))!;
+    expect(moved.user.id).toBe(first.user.id);
+  });
+
+  it("refuses an email Google has not verified", () => {
+    signIn("dealer@example.co.nz");
+    expect(store.signInWithGoogle(google({ emailVerified: false }))).toBeNull();
+  });
+
+  it("matches email case-insensitively", () => {
+    const first = signIn("dealer@example.co.nz");
+    expect(store.signInWithGoogle(google({ email: "Dealer@Example.co.nz" }))!.user.id).toBe(first.user.id);
+  });
+
+  it("fills an empty name from Google but never replaces a typed one", () => {
+    const { user } = signIn("a@b.nz");
+    store.setName(user.id, "Typed Name");
+    expect(store.signInWithGoogle(google({ email: "a@b.nz" }))!.user.name).toBe("Typed Name");
+    expect(store.signInWithGoogle(google({ sub: "g-2", email: "c@d.nz" }))!.user.name).toBe("Dana Dealer");
+  });
+});
+
+describe("Google ID tokens", () => {
+  const make = (claims: object) => `x.${Buffer.from(JSON.stringify(claims)).toString("base64url")}.sig`;
+  const good = { aud: "client", iss: "https://accounts.google.com", exp: Date.now() / 1000 + 60, sub: "1", email: "a@b.nz", email_verified: true, name: "A" };
+
+  it("reads a valid token", () => {
+    expect(profileFromIdToken(make(good), "client")).toEqual({ sub: "1", email: "a@b.nz", emailVerified: true, name: "A" });
+  });
+
+  it("rejects another app's token, a foreign issuer, or an expired one", () => {
+    expect(profileFromIdToken(make(good), "other")).toBeNull();
+    expect(profileFromIdToken(make({ ...good, iss: "https://evil.example" }), "client")).toBeNull();
+    expect(profileFromIdToken(make({ ...good, exp: Date.now() / 1000 - 1 }), "client")).toBeNull();
+    expect(profileFromIdToken("garbage", "client")).toBeNull();
+  });
+});
+
+describe("names and the admin list", () => {
+  it("tidies names", () => {
+    expect(cleanName("  Dana   Dealer ")).toBe("Dana Dealer");
+    expect(cleanName("   ")).toBeNull();
+    expect(cleanName(42)).toBeNull();
+    expect(cleanName("x".repeat(200))!.length).toBe(80);
+  });
+
+  it("lists every account newest first with its keys and usage", () => {
+    const a = signIn("a@b.nz").user;
+    const b = signIn("c@d.nz").user;
+    store.setName(b.id, "Cee");
+    const { key } = store.createKey(b.id, "k")!;
+    store.useKey(key);
+    const rows = store.listAllAccounts();
+    expect(rows.map((r) => r.email)).toEqual(["c@d.nz", "a@b.nz"]);
+    expect(rows[0]).toMatchObject({ name: "Cee", keys: 1, requests_this_month: 1, google: false });
+    expect(rows[1].id).toBe(a.id);
+    expect(rows[1].last_signin_at).not.toBeNull();
+  });
 });
 
 describe("sign-in codes", () => {

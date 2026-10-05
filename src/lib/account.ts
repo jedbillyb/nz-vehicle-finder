@@ -37,6 +37,10 @@ export interface SavedSearch {
 
 export interface Account {
   email: string;
+  /** Asked for after the first sign-in; filled from Google when that's how they signed in. */
+  name: string | null;
+  /** Sees every account on the account page (ADMIN_EMAILS on the server). */
+  isAdmin: boolean;
   /** PostHog distinct id for this account (`user_<id>`), shared with the server's API events. */
   analyticsId: string;
   tier: Tier;
@@ -57,6 +61,31 @@ export const verifySignInToken = (token: string) =>
 /** The 6-digit code from the same email, typed into the tab that asked for it. */
 export const verifySignInCode = (email: string, code: string) =>
   call<{ ok: true }>("/api/auth/verify", { method: "POST", body: JSON.stringify({ email, code }) });
+
+export const setAccountName = (name: string) =>
+  call<{ ok: true; name: string }>("/api/account", { method: "PATCH", body: JSON.stringify({ name }) });
+
+/** Which sign-in methods the server has turned on. */
+export const fetchAuthOptions = () => call<{ google: boolean }>("/api/auth/options");
+
+/** A full-page navigation, not a fetch: Google's consent screen can't load in the background. */
+export const googleSignInUrl = (plan?: TierId) => `/api/auth/google${plan ? `?plan=${plan}` : ""}`;
+
+export interface AdminAccount {
+  id: number;
+  email: string;
+  name: string | null;
+  tier: string;
+  created_at: string;
+  last_signin_at: string | null;
+  google: boolean;
+  subscription_status: string | null;
+  keys: number;
+  searches: number;
+  requests_this_month: number;
+}
+
+export const fetchAdminAccounts = () => call<{ accounts: AdminAccount[] }>("/api/admin/accounts");
 
 export const signOut = () => call<{ ok: true }>("/api/auth/logout", { method: "POST" });
 

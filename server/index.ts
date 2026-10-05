@@ -654,6 +654,10 @@ const publicUrl = (process.env.PUBLIC_URL || "https://vehiclefinder.co.nz").repl
 const accounts = createAccounts(accountStore, {
   publicUrl,
   billingEnabled: !!process.env.STRIPE_SECRET_KEY,
+  google: process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET }
+    : null,
+  adminEmails: (process.env.ADMIN_EMAILS ?? "").split(","),
   sendLoginEmail: async (email, link, code) => {
     if (!resend || !loginFrom) {
       // Local development has no mail setup; the link or code is all you need.

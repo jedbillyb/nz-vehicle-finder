@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
 import { captureEvent, identifyUser, resetUser } from "@/lib/posthog";
 import {
-  createApiKey, deleteSavedSearch, fetchAccount, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
+  createApiKey, deleteSavedSearch, fetchAccount, fetchAdminAccounts, fetchAuthOptions, googleSignInUrl, setAccountName, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
   revokeApiKey, saveSearch, setPendingPlan, signOut, startCheckout, syncBilling, takePendingPlan, takePendingSave, verifySignInCode, verifySignInToken,
-  type Account as AccountData, type SavedSearch,
+  type Account as AccountData, type AdminAccount, type SavedSearch,
 } from "@/lib/account";
 import { PageShell } from "@/components/PageShell";
 import { DocSection, Split } from "@/components/DocLayout";
@@ -55,6 +55,18 @@ function PlanOption({ tier, selected, onSelect }: { tier: Tier; selected: boolea
   );
 }
 
+/** Google's four-colour G, as their sign-in branding asks for. */
+function GoogleMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
+}
+
 function SignIn({ pendingSave, initialPlan, onSignedIn }: {
   pendingSave: boolean;
   initialPlan: TierId;
@@ -67,6 +79,10 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
   const [error, setError] = useState<string | null>(null);
   const [typed, setTyped] = useState("");
   const [checking, setChecking] = useState(false);
+  const [googleOn, setGoogleOn] = useState(false);
+  useEffect(() => {
+    fetchAuthOptions().then((o) => setGoogleOn(o.google)).catch(() => {});
+  }, []);
   const tier = TIERS[plan];
   const paid = tier.priceNzd > 0;
 
@@ -184,6 +200,22 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
                   ? <> Then you go straight to Stripe to pay NZ${tier.priceNzd} a month for <strong>{tier.name}</strong>.</>
                   : <> No card needed.</>}
               </p>
+              {googleOn && (
+                <>
+                  <a
+                    href={googleSignInUrl(paid ? plan : undefined)}
+                    className="google-btn"
+                    onClick={() => {
+                      setPendingPlan(paid ? plan : null);
+                      captureEvent("api_signin_requested", { plan, method: "google" });
+                    }}
+                  >
+                    <GoogleMark />
+                    Continue with Google
+                  </a>
+                  <div className="or-rule"><span>or use your email</span></div>
+                </>
+              )}
               <form onSubmit={submit} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input
                   type="email"
@@ -239,7 +271,8 @@ function SignedInAs({ account, reload }: { account: AccountData; reload: () => v
   return (
     <div className="acct-who">
       <div className="acct-who__label">Signed in as</div>
-      <div className="acct-who__email">{account.email}</div>
+      {account.name && <div className="acct-who__name">{account.name}</div>}
+      <div className={account.name ? "acct-who__plan" : "acct-who__email"} style={account.name ? { margin: 0, overflowWrap: "anywhere" } : undefined}>{account.email}</div>
       <div className="acct-who__plan">{account.tier.name} plan</div>
       <button
         type="button"
@@ -364,6 +397,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
 
   return (
     <div className="stagger-in stagger-in--slow doc-layout doc-layout--plain">
+      {!account.name && <NamePrompt reload={reload} />}
       <DocSection id="overview" title="Overview">
         <div className="acct-usage">
           <div className="acct-usage__top">
@@ -515,7 +549,111 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
           Every plan allows {BURST_PER_SECOND} calls a second. Payments are handled by Stripe. Cancel any time; your plan runs to the end of the month you paid for.
         </p>
       </DocSection>
+      {account.isAdmin && <AdminAccounts />}
     </div>
+  );
+}
+
+/** Shown once, straight after the first sign-in, until a name is saved. */
+function NamePrompt({ reload }: { reload: () => void }) {
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await setAccountName(name);
+      captureEvent("name_saved");
+      reload();
+    } catch (err) {
+      toast.error((err as Error).message);
+      setSaving(false);
+    }
+  };
+  return (
+    <DocSection id="name" title="What should we call you?">
+      <form onSubmit={save} style={{ display: "flex", gap: 8, flexWrap: "wrap", maxWidth: 520 }}>
+        <input
+          autoFocus
+          required
+          autoComplete="name"
+          placeholder="Your name"
+          maxLength={80}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={{ ...input, flex: "1 1 220px" }}
+        />
+        <button type="submit" disabled={saving || !name.trim()} style={{ ...primaryButton, opacity: name.trim() ? 1 : 0.5 }}>
+          {saving ? "Saving..." : "Save"}
+        </button>
+      </form>
+    </DocSection>
+  );
+}
+
+const shortDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "2-digit" }) : "never";
+
+/** Every account on the site, for whoever is listed in ADMIN_EMAILS. */
+function AdminAccounts() {
+  const [rows, setRows] = useState<AdminAccount[] | null>(null);
+  const [filter, setFilter] = useState("");
+  useEffect(() => {
+    fetchAdminAccounts().then((r) => setRows(r.accounts)).catch((err) => toast.error((err as Error).message));
+  }, []);
+
+  const q = filter.trim().toLowerCase();
+  const shown = (rows ?? []).filter((r) => !q || r.email.includes(q) || (r.name ?? "").toLowerCase().includes(q));
+  const paid = (rows ?? []).filter((r) => r.tier !== "free").length;
+  const requests = (rows ?? []).reduce((n, r) => n + r.requests_this_month, 0);
+
+  return (
+    <DocSection id="all-accounts" title="All accounts">
+      {!rows ? (
+        <SkeletonBlock height={160} />
+      ) : (
+        <>
+          <div className="acct-usage__facts" style={{ marginBottom: 12 }}>
+            <span><strong><AnimatedNumber value={rows.length} /></strong> accounts</span>
+            <span><strong><AnimatedNumber value={paid} /></strong> paying</span>
+            <span><strong><AnimatedNumber value={requests} /></strong> API requests this month</span>
+          </div>
+          <input
+            placeholder="Filter by name or email"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            style={{ ...input, maxWidth: 320, marginBottom: 12 }}
+          />
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Name</th><th>Email</th><th>Plan</th><th>Sign-in</th><th>Joined</th><th>Last in</th>
+                  <th className="num">Keys</th><th className="num">Requests</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.name ?? <span className="muted">no name yet</span>}</td>
+                    <td>{r.email}</td>
+                    <td>{TIERS[r.tier as TierId]?.name ?? r.tier}{r.subscription_status && r.subscription_status !== "active" ? ` (${r.subscription_status})` : ""}</td>
+                    <td>{r.google ? "Google" : "Email"}</td>
+                    <td>{shortDate(r.created_at)}</td>
+                    <td>{shortDate(r.last_signin_at)}</td>
+                    <td className="num">{r.keys}</td>
+                    <td className="num">{r.requests_this_month.toLocaleString("en-NZ")}</td>
+                  </tr>
+                ))}
+                {shown.length === 0 && (
+                  <tr><td colSpan={8} className="muted">No accounts match.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </DocSection>
   );
 }
 
@@ -672,6 +810,11 @@ export default function Account() {
       window.history.replaceState(null, "", "/account");
       captureEvent("checkout_cancelled");
       setNotice("Checkout cancelled, nothing was charged. You can upgrade any time from Plans below.");
+      return reload();
+    }
+    if (query.get("signin") === "google_failed") {
+      window.history.replaceState(null, "", "/account");
+      setError("Google sign-in didn't finish. Try again, or use your email instead.");
       return reload();
     }
     const token = query.get("token");

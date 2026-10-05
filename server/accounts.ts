@@ -26,6 +26,7 @@ const KEY_PREFIX = "nzvf_";
 export interface User {
   id: number;
   email: string;
+  name: string | null;
   tier: string;
   created_at: string;
 }
@@ -44,6 +45,36 @@ export interface SavedSearch {
   /** Canonical query string, without the leading "?" - see shared/savedSearch.ts */
   query: string;
   created_at: string;
+}
+
+/** What Google's ID token says about who signed in. */
+export interface GoogleProfile {
+  sub: string;
+  email: string;
+  emailVerified: boolean;
+  name: string | null;
+}
+
+export interface AdminAccountRow {
+  id: number;
+  email: string;
+  name: string | null;
+  tier: string;
+  created_at: string;
+  last_signin_at: string | null;
+  google: boolean;
+  subscription_status: string | null;
+  keys: number;
+  searches: number;
+  requests_this_month: number;
+}
+
+export const MAX_NAME_LENGTH = 80;
+
+export function cleanName(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const name = raw.replace(/\s+/g, " ").trim().slice(0, MAX_NAME_LENGTH);
+  return name || null;
 }
 
 export type UsageCheck =
@@ -126,6 +157,10 @@ export class AccountStore {
     const columns = new Set((this.db.prepare("PRAGMA table_info(users)").all() as { name: string }[]).map((c) => c.name));
     if (!columns.has("stripe_subscription_id")) this.db.exec("ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT");
     if (!columns.has("subscription_status")) this.db.exec("ALTER TABLE users ADD COLUMN subscription_status TEXT");
+    if (!columns.has("name")) this.db.exec("ALTER TABLE users ADD COLUMN name TEXT");
+    if (!columns.has("google_sub")) this.db.exec("ALTER TABLE users ADD COLUMN google_sub TEXT");
+    if (!columns.has("last_signin_at")) this.db.exec("ALTER TABLE users ADD COLUMN last_signin_at TEXT");
+    this.db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users (google_sub)");
     this.db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_stripe_customer ON users (stripe_customer_id)");
     const loginColumns = new Set((this.db.prepare("PRAGMA table_info(login_tokens)").all() as { name: string }[]).map((c) => c.name));
     if (!loginColumns.has("code_hash")) this.db.exec("ALTER TABLE login_tokens ADD COLUMN code_hash TEXT");
@@ -148,7 +183,7 @@ export class AccountStore {
   }
 
   userByStripeCustomer(customerId: string): User | null {
-    return (this.db.prepare("SELECT id, email, tier, created_at FROM users WHERE stripe_customer_id = ?").get(customerId) as
+    return (this.db.prepare("SELECT id, email, name, tier, created_at FROM users WHERE stripe_customer_id = ?").get(customerId) as
       | User | undefined) ?? null;
   }
 
@@ -213,10 +248,48 @@ export class AccountStore {
     })();
   }
 
-  private startSession(email: string, now: number): { user: User; session: string; created: boolean } {
+  /**
+   * Google and the emailed code land on the same account: a Google sign-in is
+   * matched by Google's own account id first, then by email, which Google has
+   * verified. The first match links the two, so a later change of address at
+   * Google still finds this account.
+   */
+  signInWithGoogle(profile: GoogleProfile, now = Date.now()): { user: User; session: string; created: boolean } | null {
+    return this.db.transaction(() => {
+      const linked = this.db.prepare("SELECT email FROM users WHERE google_sub = ?").get(profile.sub) as { email: string } | undefined;
+      if (linked) return this.startSession(linked.email, now, profile.name);
+      const email = normaliseEmail(profile.email);
+      if (!email || !profile.emailVerified) return null;
+      const result = this.startSession(email, now, profile.name);
+      this.db.prepare("UPDATE users SET google_sub = ? WHERE id = ? AND google_sub IS NULL").run(profile.sub, result.user.id);
+      return result;
+    })();
+  }
+
+  setName(userId: number, name: string | null) {
+    this.db.prepare("UPDATE users SET name = ? WHERE id = ?").run(name, userId);
+  }
+
+  /** Every account, newest first, with enough to see who is using what. */
+  listAllAccounts(now = new Date()): AdminAccountRow[] {
+    const rows = this.db.prepare(
+      `SELECT u.id, u.email, u.name, u.tier, u.created_at, u.last_signin_at, u.google_sub IS NOT NULL AS google,
+         u.subscription_status,
+         (SELECT COUNT(*) FROM api_keys k WHERE k.user_id = u.id AND k.revoked_at IS NULL) AS keys,
+         (SELECT COUNT(*) FROM saved_searches s WHERE s.user_id = u.id) AS searches,
+         COALESCE((SELECT count FROM usage g WHERE g.user_id = u.id AND g.month = ?), 0) AS requests_this_month
+       FROM users u ORDER BY u.id DESC`
+    ).all(monthOf(now)) as (Omit<AdminAccountRow, "google"> & { google: number })[];
+    return rows.map((r) => ({ ...r, google: !!r.google }));
+  }
+
+  /** `name` (from Google) only fills an empty name; it never replaces one the person typed. */
+  private startSession(email: string, now: number, name: string | null = null): { user: User; session: string; created: boolean } {
     const created = this.db.prepare("INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)")
       .run(email, new Date(now).toISOString()).changes > 0;
-    const user = this.db.prepare("SELECT id, email, tier, created_at FROM users WHERE email = ?").get(email) as User;
+    this.db.prepare("UPDATE users SET last_signin_at = ?, name = COALESCE(name, ?) WHERE email = ?")
+      .run(new Date(now).toISOString(), cleanName(name), email);
+    const user = this.db.prepare("SELECT id, email, name, tier, created_at FROM users WHERE email = ?").get(email) as User;
 
     const session = token();
     this.db.prepare("DELETE FROM sessions WHERE expires_at < ?").run(now);
@@ -228,7 +301,7 @@ export class AccountStore {
   userForSession(raw: string | undefined, now = Date.now()): User | null {
     if (!raw) return null;
     return (this.db.prepare(
-      `SELECT u.id, u.email, u.tier, u.created_at FROM sessions s JOIN users u ON u.id = s.user_id
+      `SELECT u.id, u.email, u.name, u.tier, u.created_at FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.token_hash = ? AND s.expires_at >= ?`
     ).get(sha256(raw), now) as User | undefined) ?? null;
   }
@@ -321,7 +394,7 @@ export class AccountStore {
       return { ok: false, status: 401, error: "Missing or malformed API key. Send it as: Authorization: Bearer nzvf_..." };
     }
     const row = this.db.prepare(
-      `SELECT k.id as key_id, u.id, u.email, u.tier, u.created_at FROM api_keys k JOIN users u ON u.id = k.user_id
+      `SELECT k.id as key_id, u.id, u.email, u.name, u.tier, u.created_at FROM api_keys k JOIN users u ON u.id = k.user_id
        WHERE k.key_hash = ? AND k.revoked_at IS NULL`
     ).get(sha256(rawKey)) as (User & { key_id: number }) | undefined;
     if (!row) return { ok: false, status: 401, error: "Unknown or revoked API key" };
@@ -407,9 +480,54 @@ export interface AccountsOptions {
   sendLoginEmail: (email: string, link: string, code: string) => Promise<void>;
   publicUrl: string;
   billingEnabled: boolean;
+  /** Google sign-in is offered only when both are set. */
+  google?: { clientId: string; clientSecret: string } | null;
+  /** Emails that see the list of every account on their account page. */
+  adminEmails?: string[];
+}
+
+const OAUTH_COOKIE = "nzvf_oauth";
+
+/**
+ * The ID token comes straight from Google's token endpoint over TLS, so its
+ * signature needn't be checked again (OpenID Connect Core 3.1.3.7); the
+ * audience, issuer and expiry still are.
+ */
+export function profileFromIdToken(idToken: string, clientId: string, now = Date.now()): GoogleProfile | null {
+  try {
+    const claims = JSON.parse(Buffer.from(idToken.split(".")[1], "base64url").toString("utf8"));
+    if (claims.aud !== clientId) return null;
+    if (claims.iss !== "https://accounts.google.com" && claims.iss !== "accounts.google.com") return null;
+    if (typeof claims.exp !== "number" || claims.exp * 1000 < now) return null;
+    if (typeof claims.sub !== "string" || typeof claims.email !== "string") return null;
+    return {
+      sub: claims.sub,
+      email: claims.email,
+      emailVerified: claims.email_verified === true || claims.email_verified === "true",
+      name: typeof claims.name === "string" ? claims.name : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function setSessionCookie(res: Response, session: string) {
+  res.cookie(SESSION_COOKIE, session, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/api",
+    maxAge: SESSION_TTL_MS,
+  });
+}
+
+/** A paid plan picked before signing in, carried through the sign-in so checkout can follow. */
+function paidPlanFrom(raw: unknown): string | null {
+  return typeof raw === "string" && Object.prototype.hasOwnProperty.call(TIERS, raw) && raw !== "free" ? raw : null;
 }
 
 export function createAccounts(store: AccountStore, opts: AccountsOptions) {
+  const admins = new Set((opts.adminEmails ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean));
   const router = express.Router();
   const perIp = attemptLimiter(5, 15 * 60 * 1000);
   const perEmail = attemptLimiter(1, 60 * 1000);
@@ -428,7 +546,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     const { token: raw, code } = store.createLogin(email);
     // A paid plan picked before signing up rides along in the link, so the
     // account page can go straight to checkout even on another device.
-    const plan = typeof req.body?.plan === "string" && Object.prototype.hasOwnProperty.call(TIERS, req.body.plan) && req.body.plan !== "free" ? req.body.plan : null;
+    const plan = paidPlanFrom(req.body?.plan);
     try {
       await opts.sendLoginEmail(email, `${opts.publicUrl}/account?token=${raw}${plan ? `&plan=${plan}` : ""}`, code);
     } catch (err) {
@@ -460,14 +578,72 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     const id = analyticsId(result.user.id);
     if (result.created) track("account_created", id, { $set_once: { signed_up_at: result.user.created_at } });
     track("signed_in", id, { method: byCode ? "code" : "link", new_account: result.created, $set: { tier: result.user.tier } });
-    res.cookie(SESSION_COOKIE, result.session, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/api",
-      maxAge: SESSION_TTL_MS,
-    });
+    setSessionCookie(res, result.session);
     res.json({ ok: true });
+  });
+
+  router.get("/auth/options", (_req, res) => {
+    res.json({ google: !!opts.google });
+  });
+
+  router.get("/auth/google", (req, res) => {
+    if (!opts.google) return res.redirect(`${opts.publicUrl}/account`);
+    const state = token();
+    const plan = paidPlanFrom(req.query.plan);
+    res.cookie(OAUTH_COOKIE, `${state}.${plan ?? ""}`, {
+      httpOnly: true, secure: true, sameSite: "lax", path: "/api/auth/google", maxAge: 10 * 60 * 1000,
+    });
+    const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    url.search = new URLSearchParams({
+      client_id: opts.google.clientId,
+      redirect_uri: `${opts.publicUrl}/api/auth/google/callback`,
+      response_type: "code",
+      scope: "openid email profile",
+      state,
+      prompt: "select_account",
+    }).toString();
+    res.redirect(url.toString());
+  });
+
+  router.get("/auth/google/callback", async (req, res) => {
+    const [expectedState, plan] = (readCookie(req, OAUTH_COOKIE) ?? "").split(".");
+    res.clearCookie(OAUTH_COOKIE, { path: "/api/auth/google" });
+    const fail = (reason: string) => {
+      track("signin_google_failed", "server", { reason });
+      res.redirect(`${opts.publicUrl}/account?signin=google_failed`);
+    };
+    if (!opts.google) return fail("disabled");
+    // Cancelled on Google's screen, or a forged/replayed callback.
+    if (typeof req.query.code !== "string") return fail(typeof req.query.error === "string" ? req.query.error : "no_code");
+    if (!expectedState || req.query.state !== expectedState) return fail("state");
+
+    let profile: GoogleProfile | null = null;
+    try {
+      const response = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code: req.query.code,
+          client_id: opts.google.clientId,
+          client_secret: opts.google.clientSecret,
+          redirect_uri: `${opts.publicUrl}/api/auth/google/callback`,
+          grant_type: "authorization_code",
+        }),
+      });
+      const body = await response.json() as { id_token?: string };
+      if (body.id_token) profile = profileFromIdToken(body.id_token, opts.google.clientId);
+    } catch (err) {
+      console.error("Google token exchange failed:", (err as Error).message);
+    }
+    if (!profile) return fail("token");
+    const result = store.signInWithGoogle(profile);
+    if (!result) return fail("unverified_email");
+
+    const id = analyticsId(result.user.id);
+    if (result.created) track("account_created", id, { $set_once: { signed_up_at: result.user.created_at } });
+    track("signed_in", id, { method: "google", new_account: result.created, $set: { tier: result.user.tier } });
+    setSessionCookie(res, result.session);
+    res.redirect(`${opts.publicUrl}/account${plan ? `?plan=${plan}` : ""}`);
   });
 
   router.post("/auth/logout", (req, res) => {
@@ -483,6 +659,8 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     const now = new Date();
     res.json({
       email: user.email,
+      name: user.name,
+      isAdmin: admins.has(user.email),
       analyticsId: analyticsId(user.id),
       tier,
       tiers: TIER_ORDER.map((id) => TIERS[id]),
@@ -495,6 +673,23 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
         status: store.billingFor(user.id).subscriptionStatus,
       },
     });
+  });
+
+  router.patch("/account", (req, res) => {
+    const user = sessionUser(req);
+    if (!user) return res.status(401).json({ error: "Not signed in" });
+    const name = cleanName(req.body?.name);
+    if (!name) return res.status(400).json({ error: "Enter your name" });
+    store.setName(user.id, name);
+    track("name_set", analyticsId(user.id), { first_time: !user.name, $set: { name } });
+    res.json({ ok: true, name });
+  });
+
+  router.get("/admin/accounts", (req, res) => {
+    const user = sessionUser(req);
+    if (!user) return res.status(401).json({ error: "Not signed in" });
+    if (!admins.has(user.email)) return res.status(404).json({ error: "Not found" });
+    res.json({ accounts: store.listAllAccounts() });
   });
 
   const keyNameFrom = (req: Request) =>

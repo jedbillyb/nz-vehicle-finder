@@ -138,6 +138,13 @@ function getSeoForUrl(fullUrl: string): { title: string; description: string } {
     };
   }
 
+  if (urlPath === "/privacy") {
+    return {
+      title: "Privacy | NZ Vehicle Finder",
+      description: "What NZ Vehicle Finder collects about you, why, who else handles it, and how to see or delete it.",
+    };
+  }
+
   if (urlPath === "/nz-fleet") {
     return {
       title: "NZ Vehicle Register: 5.9 million vehicles in New Zealand | NZ Vehicle Finder",

@@ -195,6 +195,8 @@ Environment variables (all optional):
 - `RESEND_API_KEY`: without it, sign-in links are printed to the server console instead of
   emailed, which is how local development works.
 - `LOGIN_FROM_EMAIL`: defaults to `NZ Vehicle Finder <login@vehiclefinder.co.nz>`.
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`: turn on "Continue with Google". The OAuth client's redirect URI is `https://vehiclefinder.co.nz/api/auth/google/callback`. A Google sign-in joins the account with the same email.
+- `ADMIN_EMAILS`: comma-separated; these accounts see every account at the bottom of `/account`.
 - `PUBLIC_URL`: base of the sign-in link, defaults to `https://vehiclefinder.co.nz`. Set it to
   `http://localhost:8080` locally.
 
