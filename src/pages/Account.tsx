@@ -323,9 +323,7 @@ function SignedInAs({ account, reload }: { account: AccountData; reload: () => v
   return (
     <div className="acct-who">
       <div className="acct-who__label">Signed in as</div>
-      {account.name && <div className="acct-who__name">{account.name}</div>}
-      <div className={account.name ? "acct-who__plan" : "acct-who__email"} style={account.name ? { margin: 0, overflowWrap: "anywhere" } : undefined}>{account.email}</div>
-      <div className="acct-who__plan">{account.tier.name} plan</div>
+      <div className="acct-who__email">{account.email}</div>
       <button
         type="button"
         className="acct-who__signout"
@@ -501,9 +499,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
                   </div>
                 </div>
               )}
-              {account.keys.length === 0 ? (
-                <p style={{ ...p, color: "#6b7280", margin: 0 }}>No keys yet. Create one to start calling the API.</p>
-              ) : (
+              {account.keys.length > 0 && (
                 <div style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}>
                   {account.keys.map((k, i) => (
                     <div key={k.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderTop: i ? "1px solid #f3f4f6" : "none", flexWrap: "wrap" }}>

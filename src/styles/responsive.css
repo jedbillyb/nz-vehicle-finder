@@ -505,8 +505,8 @@
 }
 
 /* ── Account page (docs layout): who's signed in, and the usage meter ── */
-/* Details on the left, Sign out beside them, so the card is no taller than
-   the hero text next to it. */
+/* Email on the left, Sign out beside it at the card's full height, so the
+   card is no taller than the hero text next to it. */
 .acct-who {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -521,12 +521,11 @@
 }
 .acct-who > :not(.acct-who__signout) { grid-column: 1; }
 .acct-who__label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9ca3af; margin-bottom: 4px; }
-.acct-who__email { font-size: 13px; font-weight: 600; color: #0f172a; overflow-wrap: anywhere; }
-.acct-who__name { font-size: 14px; font-weight: 700; color: #0f172a; overflow-wrap: anywhere; }
-.acct-who__plan { font-size: 12px; color: #6b7280; margin: 2px 0 0; }
+.acct-who__email { font-size: 14px; font-weight: 600; color: #0f172a; overflow-wrap: anywhere; }
 .acct-who__signout {
   grid-column: 2;
-  grid-row: 1 / span 4;
+  grid-row: 1 / span 2;
+  align-self: stretch;
   white-space: nowrap;
   font: inherit;
   font-size: 12px;
@@ -560,7 +559,6 @@
 @media (max-width: 767px) {
   .acct-who { max-width: none; align-self: stretch; margin-top: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
   .acct-who__label { display: none; }
-  .acct-who__plan { margin: 0; }
   .acct-who__signout { margin-left: auto; }
 }
 
