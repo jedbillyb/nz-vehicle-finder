@@ -262,7 +262,9 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
                   <div className="or-rule"><span>or use your email</span></div>
                 </>
               )}
-              <form onSubmit={submit} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {/* Stacked and full width, like the Google button above, so the button
+                  doesn't change size with each plan's label. */}
+              <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <input
                   type="email"
                   required
@@ -270,16 +272,10 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
                   placeholder="you@example.co.nz"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  style={{ ...input, flex: "1 1 220px", height: 42, boxSizing: "border-box" }}
+                  style={{ ...input, width: "100%", height: 42, boxSizing: "border-box" }}
                 />
-                {/* Every label sits in the same grid cell, so the button keeps the widest one's
-                    width and the email box beside it doesn't jump when the plan changes. */}
-                <button type="submit" disabled={state === "sending"} style={{ ...primaryButton, height: 42, display: "inline-grid", alignItems: "center", justifyItems: "center" }}>
-                  {["Sending...", "Email me a code", ...TIER_ORDER.filter((id) => TIERS[id].priceNzd > 0).map((id) => `Continue with ${TIERS[id].name}`)].map((label) => (
-                    <span key={label} aria-hidden={label !== submitLabel} style={{ gridArea: "1 / 1", visibility: label === submitLabel ? "visible" : "hidden" }}>
-                      {label}
-                    </span>
-                  ))}
+                <button type="submit" disabled={state === "sending"} style={{ ...primaryButton, width: "100%", height: 42 }}>
+                  {submitLabel}
                 </button>
               </form>
               {error && <p style={errorText}>{error}</p>}
