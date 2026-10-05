@@ -216,22 +216,18 @@ export function SiteFooter({ source, eventProps }: { source: string; eventProps?
         </span>
         {groupSep}
         <span className="footer-group">
-        <Link to="/developers" onClick={() => track("api_docs_link_clicked")} style={{ color: "#0369a1", textDecoration: "none", fontWeight: 700 }}>
-          API
-        </Link>
-        {sep}
-        <Link to="/account" onClick={() => track("account_link_clicked")} style={{ color: "#0369a1", textDecoration: "none", fontWeight: 700 }}>
-          ACCOUNT
-        </Link>
-        {sep}
-        <button
-          type="button"
-          onClick={openFeedback}
-          style={{ background: "none", border: "none", padding: 0, font: "inherit", letterSpacing: "inherit", color: "#0369a1", fontWeight: 700, cursor: "pointer" }}
-        >
-          FEEDBACK
-        </button>
-        {sep}
+        {/* API and ACCOUNT live in the nav at the top of every page. FEEDBACK is
+            phones only: desktop has the floating pill (FeedbackWidget). */}
+        <span className="footer-feedback">
+          <button
+            type="button"
+            onClick={openFeedback}
+            style={{ background: "none", border: "none", padding: 0, font: "inherit", letterSpacing: "inherit", color: "#0369a1", fontWeight: 700, cursor: "pointer" }}
+          >
+            FEEDBACK
+          </button>
+          {sep}
+        </span>
         <Link to="/contact" onClick={() => track("contact_link_clicked")} style={{ color: "#0369a1", textDecoration: "none", fontWeight: 700 }}>
           CONTACT
         </Link>

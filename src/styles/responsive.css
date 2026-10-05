@@ -176,6 +176,8 @@
   row-gap: 4px !important;
 }
 .footer-group { display: contents; }
+.footer-feedback { display: none; }
+@media (max-width: 767px) { .footer-feedback { display: contents; } }
 /* Phones: one centred row per group, spaced instead of dotted, so no line
    starts or ends on a dot. */
 @media (max-width: 767px) {
@@ -503,20 +505,29 @@
 }
 
 /* ── Account page (docs layout): who's signed in, and the usage meter ── */
+/* Details on the left, Sign out beside them, so the card is no taller than
+   the hero text next to it. */
 .acct-who {
-  width: 240px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 16px;
+  align-items: center;
+  max-width: 340px;
   flex-shrink: 0;
   margin-top: 8px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
 }
+.acct-who > :not(.acct-who__signout) { grid-column: 1; }
 .acct-who__label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9ca3af; margin-bottom: 4px; }
 .acct-who__email { font-size: 13px; font-weight: 600; color: #0f172a; overflow-wrap: anywhere; }
 .acct-who__name { font-size: 14px; font-weight: 700; color: #0f172a; overflow-wrap: anywhere; }
-.acct-who__plan { font-size: 12px; color: #6b7280; margin: 2px 0 10px; }
+.acct-who__plan { font-size: 12px; color: #6b7280; margin: 2px 0 0; }
 .acct-who__signout {
-  width: 100%;
+  grid-column: 2;
+  grid-row: 1 / span 4;
+  white-space: nowrap;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -547,10 +558,10 @@
 .acct-plan__reqs { font-size: 12px; color: #6b7280; }
 .acct-plan__current { font-size: 12px; font-weight: 700; color: #0369a1; }
 @media (max-width: 767px) {
-  .acct-who { width: auto; align-self: stretch; margin-top: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
+  .acct-who { max-width: none; align-self: stretch; margin-top: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
   .acct-who__label { display: none; }
   .acct-who__plan { margin: 0; }
-  .acct-who__signout { width: auto; margin-left: auto; }
+  .acct-who__signout { margin-left: auto; }
 }
 
 /* Contact page: the error-page column with one email button. */
