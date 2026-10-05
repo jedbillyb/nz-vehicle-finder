@@ -1,5 +1,6 @@
 import { Vehicle } from "@/lib/mockData";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,22 +66,20 @@ export function VehicleDetail({ vehicle, onClose }: VehicleDetailProps) {
     window.setTimeout(onClose, reduced ? 0 : CLOSE_MS);
   }, [onClose]);
 
-  // Freeze the page behind the popup, and give back the scrollbar's width so
-  // nothing shifts sideways.
+  useScrollLock(true);
   useEffect(() => {
-    const root = document.documentElement;
-    const gap = window.innerWidth - root.clientWidth;
-    const before = { overflow: root.style.overflow, paddingRight: root.style.paddingRight };
-    root.style.overflow = "hidden";
-    if (gap > 0) root.style.paddingRight = `${gap}px`;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
     window.addEventListener("keydown", onKey);
-    return () => {
-      root.style.overflow = before.overflow;
-      root.style.paddingRight = before.paddingRight;
-      window.removeEventListener("keydown", onKey);
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [close]);
+
+  // A scroll anywhere on the popup, the dimmed page around it included,
+  // scrolls the vehicle's details.
+  const listRef = useRef<HTMLDivElement>(null);
+  const onWheel = (e: React.WheelEvent) => {
+    const list = listRef.current;
+    if (list && !list.contains(e.target as Node)) list.scrollTop += e.deltaY;
+  };
 
   // Rendered on <body>, so a scroll on the popup can't pass up to a scrolling box
   // it would otherwise sit inside.
@@ -88,6 +87,7 @@ export function VehicleDetail({ vehicle, onClose }: VehicleDetailProps) {
     <div
       className={`vehicle-detail fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4${closing ? " is-closing" : ""}`}
       onClick={close}
+      onWheel={onWheel}
     >
       <div
         role="dialog"
@@ -113,7 +113,7 @@ export function VehicleDetail({ vehicle, onClose }: VehicleDetailProps) {
             <X className="h-4 w-4" />
           </Button>
         </div>
-        <div className="overflow-auto overscroll-contain">
+        <div ref={listRef} className="overflow-auto overscroll-contain">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {entries.map(([key, label]) => {
               const val = vehicle[key as keyof Vehicle];

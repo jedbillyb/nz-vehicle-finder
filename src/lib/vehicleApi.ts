@@ -40,8 +40,9 @@ export interface SearchFilters {
 
 export type BreakdownData = Record<string, { value: string; count: number }[]>;
 
-export const API_BASE =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "") || "http://localhost:3001";
+// Unset in development: requests stay on the page's own origin and Vite passes
+// /api to the local server, so a phone on the same wifi works too.
+export const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "") ?? "";
 
 async function fetchApi(path: string, options?: RequestInit): Promise<Response> {
   try {
@@ -53,7 +54,7 @@ async function fetchApi(path: string, options?: RequestInit): Promise<Response> 
 
     const msg =
       err instanceof TypeError && (err as TypeError).message?.includes("fetch")
-        ? `Cannot reach the API at ${API_BASE}. Start the backend with: npm run server (in another terminal).`
+        ? `Cannot reach the API at ${API_BASE || "/api"}. Start the backend with: npm run server (in another terminal).`
         : err instanceof Error
           ? err.message
           : "Network error";
@@ -254,7 +255,7 @@ export async function getSuggestions(
   } catch (err) {
     const msg =
       err instanceof TypeError && (err as TypeError).message?.includes("fetch")
-        ? `Cannot reach the API at ${API_BASE}. Start the backend with: npm run server (in another terminal).`
+        ? `Cannot reach the API at ${API_BASE || "/api"}. Start the backend with: npm run server (in another terminal).`
         : err instanceof Error
           ? err.message
           : "Network error";

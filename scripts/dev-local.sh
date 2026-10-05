@@ -18,6 +18,11 @@ if [ -n "$old" ]; then kill $old; sleep 1; fi
 # Keep test clicks and test accounts out of the real PostHog project.
 export POSTHOG_API_KEY= VITE_POSTHOG_API_KEY=
 
+# A phone on the same wifi opens the site at this address.
+ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+[ -z "$ip" ] && ip=$(ip -4 route get 1.1.1.1 2>/dev/null | grep -o 'src [0-9.]*' | cut -d' ' -f2)
+[ -n "$ip" ] && echo "On your phone: http://$ip:8080"
+
 trap 'kill 0' EXIT
 PUBLIC_URL=http://localhost:8080 DEV_LOGIN=1 ADMIN_EMAILS=admin@dev.local \
   npx tsx watch --env-file-if-exists .env server/index.ts &

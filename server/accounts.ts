@@ -541,10 +541,11 @@ export function profileFromIdToken(idToken: string, clientId: string, now = Date
   }
 }
 
-function setSessionCookie(res: Response, session: string) {
+/** `secure` is off only for a plain-http local server, which a phone reaches by its wifi address. */
+function setSessionCookie(res: Response, session: string, secure: boolean) {
   res.cookie(SESSION_COOKIE, session, {
     httpOnly: true,
-    secure: true,
+    secure,
     sameSite: "lax",
     path: "/api",
     maxAge: SESSION_TTL_MS,
@@ -557,6 +558,7 @@ function paidPlanFrom(raw: unknown): string | null {
 }
 
 export function createAccounts(store: AccountStore, opts: AccountsOptions) {
+  const secureCookies = !opts.publicUrl.startsWith("http://");
   const admins = new Set((opts.adminEmails ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean));
   const router = express.Router();
   const perIp = attemptLimiter(5, 15 * 60 * 1000);
@@ -608,7 +610,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     const id = analyticsId(result.user.id);
     if (result.created) track("account_created", id, { $set_once: { signed_up_at: result.user.created_at } });
     track("signed_in", id, { method: byCode ? "code" : "link", new_account: result.created, $set: { tier: result.user.tier } });
-    setSessionCookie(res, result.session);
+    setSessionCookie(res, result.session, secureCookies);
     res.json({ ok: true });
   });
 
@@ -620,7 +622,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     router.post("/auth/dev-login", (req, res) => {
       const admin = req.body?.as === "admin";
       const result = store.devSignIn(admin ? "admin@dev.local" : "test@dev.local", admin ? "Admin" : "Tester");
-      setSessionCookie(res, result.session);
+      setSessionCookie(res, result.session, secureCookies);
       res.json({ ok: true });
     });
   }
@@ -681,7 +683,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     const id = analyticsId(result.user.id);
     if (result.created) track("account_created", id, { $set_once: { signed_up_at: result.user.created_at } });
     track("signed_in", id, { method: "google", new_account: result.created, $set: { tier: result.user.tier } });
-    setSessionCookie(res, result.session);
+    setSessionCookie(res, result.session, secureCookies);
     res.redirect(`${opts.publicUrl}/account${plan ? `?plan=${plan}` : ""}`);
   });
 

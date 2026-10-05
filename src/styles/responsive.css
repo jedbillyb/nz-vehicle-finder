@@ -14,10 +14,11 @@
   }
 }
 
-/* The long register line only fits beside the nav on wide screens. */
+/* The long register line only fits beside the nav on wide screens; without
+   it, the links sit in the middle. */
 @media (max-width: 1023px) {
   .header-topbar {
-    justify-content: flex-end !important;
+    justify-content: center !important;
   }
   .header-topbar-subtitle {
     display: none;
@@ -613,15 +614,15 @@
 .table-scroll__box { flex: 1; min-height: 0; overflow: auto; }
 .table-scroll__fade { position: absolute; top: 0; bottom: 0; width: 28px; pointer-events: none; opacity: 0; transition: opacity 200ms ease; z-index: 11; }
 .table-scroll__fade.is-on { opacity: 1; }
-.table-scroll__fade--left { left: 0; background: linear-gradient(to right, rgba(15, 23, 42, 0.12), transparent); }
-.table-scroll__fade--right { right: 0; background: linear-gradient(to left, rgba(15, 23, 42, 0.12), transparent); }
+.table-scroll__fade--left { left: 0; background: linear-gradient(to right, rgba(14, 165, 233, 0.16), transparent); }
+.table-scroll__fade--right { right: 0; background: linear-gradient(to left, rgba(14, 165, 233, 0.16), transparent); }
 .table-scroll__hint {
   position: absolute; top: 40px; right: 10px; z-index: 12; pointer-events: none;
   display: flex; align-items: center; gap: 2px; padding: 4px 6px 4px 10px; border-radius: 999px;
-  background: #0f172a; color: #ffffff; font-size: 11px; font-weight: 600; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+  background: #0ea5e9; color: #ffffff; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; box-shadow: 0 2px 8px rgba(14, 165, 233, 0.35);
   opacity: 0; transform: translateX(6px); transition: opacity 250ms ease, transform 250ms ease;
 }
-.table-scroll__hint.is-on { opacity: 0.9; transform: none; animation: swipe-nudge 1.6s ease-in-out 0.4s 3; }
+.table-scroll__hint.is-on { opacity: 1; transform: none; animation: swipe-nudge 1.6s ease-in-out 0.4s 3; }
 @keyframes swipe-nudge { 0%, 100% { transform: none; } 50% { transform: translateX(-6px); } }
 @media (prefers-reduced-motion: reduce) {
   .table-scroll__hint.is-on { animation: none; }

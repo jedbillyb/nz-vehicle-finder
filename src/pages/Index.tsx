@@ -32,6 +32,7 @@ import { POPULAR_MAKES } from "@/lib/popularMakes";
 import { LinkTiles } from "@/components/LinkTiles";
 import { AnimatedNumber } from "@/components/NumberSlot";
 import { TableScroll } from "@/components/TableScroll";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -154,6 +155,7 @@ export default function Index() {
   const [breakdown, setBreakdown] = useState<BreakdownData>({});
   const [breakdownLoading, setBreakdownLoading] = useState(false);
   const [breakdownSheetOpen, setBreakdownSheetOpen] = useState(false);
+  useScrollLock(breakdownSheetOpen);
   const [validity, setValidity] = useState<Record<string, boolean>>({});
   const isSearching = useRef(false);
   const [showAdvanced, setShowAdvanced] = useState(() => [...searchParams.keys()].some(k => advancedFilterKeySet.has(k)));
@@ -459,7 +461,7 @@ export default function Index() {
             Start the API server in another terminal:{" "}
             <code style={{ background: "#fee2e2", padding: "2px 6px", borderRadius: 4 }}>npm run server</code>
           </span>
-          <span style={{ color: "#6b7280" }}>API: {API_BASE}</span>
+          <span style={{ color: "#6b7280" }}>API: {API_BASE || "/api on this site"}</span>
         </div>
       )}
 
@@ -886,19 +888,28 @@ export default function Index() {
               overflow: "hidden",
             }}
           >
+            {/* The whole top of the sheet, handle and title, closes it. */}
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label="Close result breakdown"
+              onClick={() => setBreakdownSheetOpen(false)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setBreakdownSheetOpen(false); } }}
+              style={{ cursor: "pointer", borderBottom: "1px solid #e5e7eb" }}
+            >
             <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: "#d1d5db" }} />
             </div>
             <div style={{
               padding: "8px 16px 12px",
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              borderBottom: "1px solid #e5e7eb",
             }}>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", color: "#0f172a" }}>
                 RESULT BREAKDOWN
               </span>
               <button
-                onClick={() => setBreakdownSheetOpen(false)}
+                tabIndex={-1}
+                aria-hidden="true"
                 style={{
                   background: "none", border: "none", cursor: "pointer",
                   fontSize: 16, color: "#6b7280", lineHeight: 1, padding: 4,
@@ -907,7 +918,9 @@ export default function Index() {
                 ✕
               </button>
             </div>
-            <div style={{ flex: 1, overflowY: "auto" }}>
+            </div>
+            {/* No rubber-band bounce at either end of the list. */}
+            <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "none" }}>
               <ResultStats data={breakdown} loading={breakdownLoading} hideHeader />
             </div>
           </div>
