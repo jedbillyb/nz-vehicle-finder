@@ -49,7 +49,7 @@ function NavLinks({ location, gap }: { location: string; gap: number }) {
 export function SiteTopbar({ right }: { right?: ReactNode }) {
   return (
     <>
-    <div className="site-nav-mobile" style={{ background: "#0ea5e9", padding: "6px 16px", justifyContent: "center" }}>
+    <div className="site-nav-mobile" style={{ background: "#0ea5e9", padding: "2px 16px 6px", justifyContent: "center" }}>
       <NavLinks location="topbar_mobile" gap={18} />
     </div>
     <div className="header-topbar" style={{ background: "#0ea5e9", padding: "4px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>

@@ -136,6 +136,9 @@
   .action-buttons-secondary > * {
     flex: 1 1 calc(50% - 4px) !important;
   }
+  .action-buttons-secondary > .breakdown-open {
+    flex: 1 1 100% !important;
+  }
   .action-buttons-primary > button,
   .action-buttons-secondary > button {
     min-width: 0 !important;
@@ -179,18 +182,6 @@
   .footer-links { flex-direction: column; row-gap: 10px !important; }
   .footer-group { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 14px; }
   .footer-sep { display: none; }
-  /* Room for the docked Result Breakdown bar, so it never covers the footer. */
-  body:has(.breakdown-trigger) .footer-root { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important; }
-}
-
-/* ── Breakdown sheet trigger — mobile only ──────────────────── */
-.breakdown-trigger {
-  display: flex !important;
-}
-@media (min-width: 768px) {
-  .breakdown-trigger {
-    display: none !important;
-  }
 }
 
 /* ── Empty state padding ────────────────────────────────────── */

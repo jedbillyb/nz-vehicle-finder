@@ -26,7 +26,7 @@ import { sharePage } from "@/lib/share";
 import { Vehicle } from "@/lib/mockData";
 import { resultColumns } from "@/lib/resultColumns";
 import { toast } from "sonner";
-import { Search, RotateCcw, Download, Share2, LoaderCircle, ChevronDown } from "lucide-react";
+import { Search, RotateCcw, Download, Share2, LoaderCircle, ChevronDown, BarChart3 } from "lucide-react";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { POPULAR_MAKES } from "@/lib/popularMakes";
 import { LinkTiles } from "@/components/LinkTiles";
@@ -617,6 +617,17 @@ export default function Index() {
                       Get via API
                     </Link>
                   )}
+                  {/* Phones only: the breakdown sits beside the filters on wider screens. */}
+                  {total !== null && isMobile && (
+                    <button
+                      className="breakdown-open"
+                      onClick={() => setBreakdownSheetOpen(true)}
+                      style={{ flex: "1 1 100%", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "#0f172a", color: "#ffffff", border: "1px solid #0f172a", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.02em", fontWeight: 700, whiteSpace: "nowrap" }}
+                    >
+                      <BarChart3 size={11} />
+                      Result breakdown
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -826,40 +837,6 @@ export default function Index() {
       {/* ── Mobile breakdown bottom sheet ── */}
       {total !== null && (
         <>
-          {/* Floating trigger */}
-          <button
-            className="breakdown-trigger"
-            onClick={() => setBreakdownSheetOpen(true)}
-            style={{
-              // Docked to the bottom edge, its colour running down under the
-              // iPhone home bar instead of leaving a strip of page below it.
-              position: "fixed",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              padding: "13px 18px calc(13px + env(safe-area-inset-bottom, 0px))",
-              background: "rgba(15, 23, 42, 0.97)",
-              color: "#ffffff",
-              border: "none",
-              borderTop: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "14px 14px 0 0",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.15em",
-              cursor: "pointer",
-              zIndex: 30,
-              boxShadow: "0 -6px 20px rgba(15, 23, 42, 0.18)",
-              backdropFilter: "blur(10px)",
-              fontFamily: "inherit",
-            }}
-          >
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em" }}>RESULT BREAKDOWN</span>
-            <span style={{ fontSize: 10, color: "#7dd3fc", letterSpacing: "0.16em" }}>OPEN</span>
-          </button>
 
           {/* Overlay */}
           <div
