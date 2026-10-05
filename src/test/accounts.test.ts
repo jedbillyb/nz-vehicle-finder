@@ -60,7 +60,7 @@ describe("Google sign-in", () => {
 
 describe("Google ID tokens", () => {
   const make = (claims: object) => `x.${Buffer.from(JSON.stringify(claims)).toString("base64url")}.sig`;
-  const good = { aud: "client", iss: "https://accounts.google.com", exp: Date.now() / 1000 + 60, sub: "1", email: "a@b.nz", email_verified: true, name: "A" };
+  const good = { aud: "client", iss: "https://accounts.google.com", exp: Date.now() / 1000 + 60, sub: "1", email: "a@b.nz", email_verified: true, name: "A Person", given_name: "A" };
 
   it("reads a valid token", () => {
     expect(profileFromIdToken(make(good), "client")).toEqual({ sub: "1", email: "a@b.nz", emailVerified: true, name: "A" });
@@ -101,7 +101,7 @@ describe("names and the admin list", () => {
     expect(cleanName("  Dana   Dealer ")).toBe("Dana Dealer");
     expect(cleanName("   ")).toBeNull();
     expect(cleanName(42)).toBeNull();
-    expect(cleanName("x".repeat(200))!.length).toBe(80);
+    expect(cleanName("x".repeat(200))!.length).toBe(40);
   });
 
   it("lists every account newest first with its keys and usage", () => {

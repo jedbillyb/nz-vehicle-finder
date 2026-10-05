@@ -69,7 +69,7 @@ export interface AdminAccountRow {
   requests_this_month: number;
 }
 
-export const MAX_NAME_LENGTH = 80;
+export const MAX_NAME_LENGTH = 40;
 
 export function cleanName(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
@@ -526,7 +526,8 @@ export function profileFromIdToken(idToken: string, clientId: string, now = Date
       sub: claims.sub,
       email: claims.email,
       emailVerified: claims.email_verified === true || claims.email_verified === "true",
-      name: typeof claims.name === "string" ? claims.name : null,
+      // Only the first name is kept; full names are more than the site needs.
+      name: typeof claims.given_name === "string" ? claims.given_name : null,
     };
   } catch {
     return null;

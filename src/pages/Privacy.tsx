@@ -47,7 +47,7 @@ export default function Privacy() {
         <DocSection id="collect" title="What I collect">
           <p style={p}>Searching the site needs no account. If you make one, I keep:</p>
           <ul style={ul}>
-            <li>your email address and your name</li>
+            <li>your email address and first name</li>
             <li>if you sign in with Google, your Google account ID, so the same account is found next time</li>
             <li>when you joined and last signed in</li>
             <li>your API keys (stored scrambled, never in readable form), how many API requests you make each month, and your saved searches</li>

@@ -649,14 +649,14 @@ function Settings({ account, reload }: { account: AccountData; reload: () => voi
       <div style={{ maxWidth: 640 }}>
         <div style={{ ...row, borderTop: 0 }}>
           <div>
-            <div style={{ fontWeight: 600 }}>Name</div>
+            <div style={{ fontWeight: 600 }}>First name</div>
             {editingName === null && <div style={muted}>{account.name ?? "Not set"}</div>}
           </div>
           {editingName === null ? (
             <button type="button" style={linkButton} onClick={() => setEditingName(account.name ?? "")}>Change</button>
           ) : (
             <form onSubmit={saveName} style={{ display: "flex", gap: 8, flex: "1 1 280px", justifyContent: "flex-end" }}>
-              <input autoFocus required autoComplete="name" maxLength={80} value={editingName} onChange={(e) => setEditingName(e.target.value)} style={{ ...input, flex: "1 1 160px", padding: "6px 10px" }} />
+              <input autoFocus required autoComplete="given-name" aria-label="First name" maxLength={40} value={editingName} onChange={(e) => setEditingName(e.target.value)} style={{ ...input, flex: "1 1 160px", padding: "6px 10px" }} />
               <button type="submit" style={{ ...primaryButton, padding: "6px 14px", fontSize: 13 }}>Save</button>
               <button type="button" style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13 }} onClick={() => setEditingName(null)}>Cancel</button>
             </form>
@@ -748,9 +748,10 @@ function NamePrompt({ reload }: { reload: () => void }) {
         <input
           autoFocus
           required
-          autoComplete="name"
-          placeholder="Your name"
-          maxLength={80}
+          autoComplete="given-name"
+          aria-label="First name"
+          placeholder="First name"
+          maxLength={40}
           value={name}
           onChange={(e) => setName(e.target.value)}
           style={{ ...input, flex: "1 1 220px" }}
@@ -800,7 +801,7 @@ function AdminAccounts() {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>Name</th><th>Email</th><th>Plan</th><th>Sign-in</th><th>Joined</th><th>Last in</th>
+                  <th>First name</th><th>Email</th><th>Plan</th><th>Sign-in</th><th>Joined</th><th>Last in</th>
                   <th className="num">Keys</th><th className="num">Requests</th>
                 </tr>
               </thead>
