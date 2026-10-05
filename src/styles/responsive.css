@@ -209,15 +209,12 @@
   }
 }
 
-/* ── Matches count — left-align on mobile ───────────────────── */
+/* ── Header count — hidden on mobile ────────────────────────── */
 @media (max-width: 767px) {
+  /* Phones drop the header count: the page itself already shows the number,
+     and on pages without one it was just filler on its own line. */
   .header-count {
-    margin-left: 0 !important;
-    width: 100%;
-    justify-content: flex-start !important;
-  }
-  .header-count > div[style] {
-    text-align: left !important;
+    display: none !important;
   }
 }
 
@@ -254,13 +251,6 @@
   .hero-sponsor {
     align-self: stretch !important;
     margin-top: 0 !important;
-  }
-  /* "1,234 VEHICLES REGISTERED" in the header overflowed at 22px */
-  .header-count > div {
-    flex-wrap: wrap !important;
-  }
-  .header-count .header-count-label {
-    font-size: 12px !important;
   }
   .stats-section {
     padding: 16px !important;
@@ -315,7 +305,9 @@
 }
 @media (max-width: 899px) {
   .signup-grid, .howto-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-  .signup-grid > div + div { border-left: 0; padding-left: 0; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+  /* Stacked, the plan picker and the email step need room either side of their rule. */
+  .signup-grid { gap: 28px; }
+  .signup-grid > div + div { border-left: 0; padding-left: 0; border-top: 1px solid #e5e7eb; padding-top: 28px; }
 }
 
 /* ── API docs: sticky menu on the left, text beside its code ── */

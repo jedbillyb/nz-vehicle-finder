@@ -5,12 +5,14 @@ const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)"
 
 /** Eases from the last value shown (`initial` on first mount, else 0) to `value`, so numbers land instead of popping in. */
 function CountUp({ value, initial = 0 }: { value: number; initial?: number }) {
-  const [shown, setShown] = useState(() => (reducedMotion() ? value : initial));
+  // The box is sized to `value`, so a count down from a wider number would
+  // spill over the text beside it. Counting down starts from 0 instead.
+  const [shown, setShown] = useState(() => (reducedMotion() ? value : initial > value ? 0 : initial));
   const from = useRef(shown);
   useEffect(() => {
     if (reducedMotion()) { setShown(value); from.current = value; return; }
     const start = performance.now();
-    const origin = from.current;
+    const origin = from.current > value ? 0 : from.current;
     let frame = 0;
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / COUNT_MS);
