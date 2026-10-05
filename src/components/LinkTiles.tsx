@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { AnimatedNumber } from "@/components/NumberSlot";
 
 export type LinkTile = {
   key: string;
@@ -18,7 +19,7 @@ export function LinkTiles({ items, tone = "white", wide = false }: { items: Link
       {items.map((t) => (
         <Link key={t.key} to={t.to} onClick={t.onClick} className="link-tile" title={t.label}>
           <span className="link-tile__label">{t.label}</span>
-          {t.count !== undefined && <span className="link-tile__count">{t.count.toLocaleString("en-NZ")}</span>}
+          {t.count !== undefined && <span className="link-tile__count"><AnimatedNumber value={t.count} /></span>}
         </Link>
       ))}
     </div>

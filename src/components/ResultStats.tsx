@@ -3,6 +3,7 @@ import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 import { type BreakdownData } from "@/lib/vehicleApi";
 import { captureEvent } from "@/lib/posthog";
 import { LoadingDots } from "@/components/LoadingDots";
+import { AnimatedNumber } from "@/components/NumberSlot";
 
 interface ResultStatsProps {
   data: BreakdownData;
@@ -98,7 +99,7 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
                         <div className="bar-grow" style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
                       </div>
                       <div style={{ fontSize: 9, color: "#6b7280", minWidth: 45, textAlign: "right", whiteSpace: "nowrap" }}>
-                        {d.count.toLocaleString('en-NZ')} ({((d.count / total) * 100).toFixed(1)}%)
+                        <AnimatedNumber value={d.count} /> ({((d.count / total) * 100).toFixed(1)}%)
                       </div>
                     </div>
                   ))}

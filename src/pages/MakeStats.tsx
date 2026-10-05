@@ -17,7 +17,7 @@ import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { resultColumns } from "@/lib/resultColumns";
 import { LoadingDots } from "@/components/LoadingDots";
 import { LinkTiles } from "@/components/LinkTiles";
-import { NumberSlot, Reserve } from "@/components/NumberSlot";
+import { AnimatedNumber, NumberSlot, Reserve } from "@/components/NumberSlot";
 import { POPULAR_MAKES } from "@/lib/popularMakes";
 
 function useIsMobile() {
@@ -290,7 +290,7 @@ export default function MakeStats() {
                     ready={total !== null && !breakdownLoading}
                     standIn={`0,000,000 ${makeDisplay} vehicles are registered on the NZ Motor Vehicle Register - most are station wagon body types running on petrol. Most common colour is silver. `}
                   >
-                    {total !== null && <>{total.toLocaleString('en-NZ')} {makeDisplay} {total === 1 ? "vehicle is" : "vehicles are"} registered on the NZ Motor Vehicle Register{total > 1 && top.bodyType && top.fuel ? ` - most are ${top.bodyType.value.toLowerCase()} body types running on ${top.fuel.value.toLowerCase()}` : ""}. </>}
+                    {total !== null && <><AnimatedNumber value={total} /> {makeDisplay} {total === 1 ? "vehicle is" : "vehicles are"} registered on the NZ Motor Vehicle Register{total > 1 && top.bodyType && top.fuel ? ` - most are ${top.bodyType.value.toLowerCase()} body types running on ${top.fuel.value.toLowerCase()}` : ""}. </>}
                     {top.colour && total !== 1 && <>Most common colour is {top.colour.value.toLowerCase()}. </>}
                   </Reserve>
                   {blurb.blurb}
@@ -316,8 +316,8 @@ export default function MakeStats() {
           <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#ffffff" }}>
             <div className="results-bar content-col" style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h2 style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", margin: 0, fontWeight: 400 }}>
-                SHOWING <span style={{ color: "#111827" }}>{displayResults.length.toLocaleString('en-NZ')}</span> OF{" "}
-                <span style={{ color: "#0f766e" }}>{total.toLocaleString('en-NZ')}</span> RECORDS
+                SHOWING <span style={{ color: "#111827" }}><AnimatedNumber value={displayResults.length} /></span> OF{" "}
+                <span style={{ color: "#0f766e" }}><AnimatedNumber value={total} /></span> RECORDS
                 {pages > 1 && <> · PAGE <span style={{ color: "#111827" }}>{page}</span>/<span style={{ color: "#4b5563" }}>{pages}</span></>}
               </h2>
               {sort && (

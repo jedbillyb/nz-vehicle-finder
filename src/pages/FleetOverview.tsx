@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { fetchFleetOverview, type FleetOverview } from "@/lib/vehicleApi";
 import { applySeo } from "@/lib/seo";
@@ -8,9 +8,9 @@ import { tlaToSlug, titleCaseRegion } from "@/lib/slugs";
 import { HeroAside, SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { LoadingDots } from "@/components/LoadingDots";
 import { LinkTiles } from "@/components/LinkTiles";
-import { NumberSlot } from "@/components/NumberSlot";
+import { AnimatedNumber, NumberSlot } from "@/components/NumberSlot";
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function StatCard({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
   return (
     <div style={{ background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "16px 20px", minWidth: 140 }}>
       <div style={{ fontSize: 9, color: "#6b7280", letterSpacing: "0.18em", marginBottom: 6, fontWeight: 700 }}>{label}</div>
@@ -33,7 +33,7 @@ function BreakdownBars({ items, max }: { items: { value: string; count: number }
             <div className="bar-grow" style={{ height: "100%", width: `${(d.count / max) * 100}%`, background: "linear-gradient(90deg,#0ea5e9,#22c55e)" }} />
           </div>
           <div style={{ fontSize: 9, color: "#6b7280", minWidth: 70, textAlign: "right" }}>
-            {d.count.toLocaleString("en-NZ")} ({((d.count / total) * 100).toFixed(1)}%)
+            <AnimatedNumber value={d.count} /> ({((d.count / total) * 100).toFixed(1)}%)
           </div>
         </div>
       ))}
@@ -158,27 +158,27 @@ export default function FleetOverview() {
           <div className="fade-in page-band fleet-stats" style={{ padding: "20px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", display: "grid", gap: 12 }}>
             <StatCard
               label="TOTAL REGISTERED"
-              value={data.total.toLocaleString("en-NZ")}
+              value={<AnimatedNumber value={data.total} />}
               sub="Motor Vehicle Register"
             />
             <StatCard
               label="BATTERY ELECTRIC"
-              value={evCount.toLocaleString("en-NZ")}
+              value={<AnimatedNumber value={evCount} />}
               sub={`${((evCount / data.total) * 100).toFixed(1)}% of fleet`}
             />
             <StatCard
               label="USED IMPORTS"
-              value={usedCount.toLocaleString("en-NZ")}
+              value={<AnimatedNumber value={usedCount} />}
               sub={`${((usedCount / data.total) * 100).toFixed(1)}% of fleet`}
             />
             <StatCard
               label="TOP MAKE"
               value={topMake ? titleCaseMake(topMake.value) : "-"}
-              sub={topMake ? `${topMake.count.toLocaleString("en-NZ")} registered` : undefined}
+              sub={topMake ? <><AnimatedNumber value={topMake.count} /> registered</> : undefined}
             />
             <StatCard
               label="REGIONS"
-              value={data.regions.length.toString()}
+              value={<AnimatedNumber value={data.regions.length} />}
               sub="Territorial Local Authorities"
             />
           </div>

@@ -1,19 +1,22 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 const COUNT_MS = 900;
+const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** Counts up from 0 to `value` with an ease-out, so a number lands instead of popping in. */
+/** Eases from the last value shown (0 on first mount) to `value`, so numbers land instead of popping in. */
 function CountUp({ value }: { value: number }) {
-  const [shown, setShown] = useState(() =>
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches ? value : 0,
-  );
+  const [shown, setShown] = useState(() => (reducedMotion() ? value : 0));
+  const from = useRef(shown);
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setShown(value); return; }
-    let frame = 0;
+    if (reducedMotion()) { setShown(value); from.current = value; return; }
     const start = performance.now();
+    const origin = from.current;
+    let frame = 0;
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / COUNT_MS);
-      setShown(Math.round(value * (1 - Math.pow(1 - t, 3))));
+      const next = Math.round(origin + (value - origin) * (1 - Math.pow(1 - t, 3)));
+      from.current = next;
+      setShown(next);
       if (t < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -23,22 +26,25 @@ function CountUp({ value }: { value: number }) {
 }
 
 /**
+ * A number that counts up when it appears or changes. It counts inside a box
+ * sized to the final value, so the text around it doesn't reflow mid-count.
+ */
+export function AnimatedNumber({ value, style }: { value: number; style?: CSSProperties }) {
+  return (
+    <span style={{ position: "relative", display: "inline-block", fontVariantNumeric: "tabular-nums", ...style }}>
+      <span aria-hidden style={{ visibility: "hidden" }}>{value.toLocaleString("en-NZ")}</span>
+      <span style={{ position: "absolute", inset: 0, textAlign: "right", whiteSpace: "nowrap" }}><CountUp value={value} /></span>
+    </span>
+  );
+}
+
+/**
  * A number that is still loading. While it loads, a row of dots (one per
  * digit of `placeholder`) ripples across a hidden copy of the placeholder, so
- * the slot already has roughly the final width. When the value lands it
- * counts up inside a box sized to the final number, so the heading around it
- * doesn't rewrap (and jump) mid-count.
+ * the slot already has roughly the final width. Then it counts up.
  */
 export function NumberSlot({ value, placeholder = "000,000" }: { value: number | null | undefined; placeholder?: string }) {
-  if (value !== null && value !== undefined) {
-    const final = value.toLocaleString("en-NZ");
-    return (
-      <span className="fade-in" style={{ position: "relative", display: "inline-block", fontVariantNumeric: "tabular-nums" }}>
-        <span aria-hidden style={{ visibility: "hidden" }}>{final}</span>
-        <span style={{ position: "absolute", inset: 0, textAlign: "right" }}><CountUp value={value} /></span>
-      </span>
-    );
-  }
+  if (value !== null && value !== undefined) return <span className="fade-in"><AnimatedNumber value={value} /></span>;
   const digits = placeholder.replace(/\D/g, "").length || 3;
   return (
     <span style={{ position: "relative", display: "inline-block" }}>

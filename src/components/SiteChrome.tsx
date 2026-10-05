@@ -5,6 +5,7 @@ import { APP_VERSION } from "@/lib/version";
 import { useFleetOverview } from "@/lib/useFleetOverview";
 import { openFeedback } from "@/lib/feedback";
 import { ShareButton } from "@/components/ShareButton";
+import { AnimatedNumber } from "@/components/NumberSlot";
 
 const NAV_ITEMS = [
   { to: "/", label: "SEARCH", end: true },
@@ -118,7 +119,7 @@ export function SiteHeader({
               <div aria-hidden style={{ visibility: "hidden", fontSize: 22, fontWeight: 700, lineHeight: 1 }}>0,000,000</div>
             ) : (
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}>{shown.toLocaleString("en-NZ")}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e", lineHeight: 1 }}><AnimatedNumber value={shown} /></div>
                 <div className="header-count-label" style={{ fontSize: 22, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em" }}>{shown === 1 ? countLabel.replace("VEHICLES", "VEHICLE") : countLabel}</div>
               </div>
             ))}

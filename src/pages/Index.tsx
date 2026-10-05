@@ -30,6 +30,7 @@ import { Search, RotateCcw, Download, Share2, LoaderCircle, ChevronDown } from "
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { POPULAR_MAKES } from "@/lib/popularMakes";
 import { LinkTiles } from "@/components/LinkTiles";
+import { AnimatedNumber } from "@/components/NumberSlot";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -638,8 +639,8 @@ export default function Index() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", background: "#f3f4f6" }}>
           <div className="results-bar" style={{ padding: "6px 24px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h2 style={{ fontSize: 10, color: "#6b7280", letterSpacing: "0.1em", margin: 0, fontWeight: 400 }}>
-              SHOWING <span style={{ color: "#111827" }}>{displayResults.length.toLocaleString('en-NZ')}</span> OF{" "}
-              <span style={{ color: "#0f766e" }}>{total.toLocaleString('en-NZ')}</span> RECORDS
+              SHOWING <span style={{ color: "#111827" }}><AnimatedNumber value={displayResults.length} /></span> OF{" "}
+              <span style={{ color: "#0f766e" }}><AnimatedNumber value={total} /></span> RECORDS
               {pages > 1 && <> · PAGE <span style={{ color: "#111827" }}>{page}</span>/<span style={{ color: "#4b5563" }}>{pages}</span></>}
             </h2>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>

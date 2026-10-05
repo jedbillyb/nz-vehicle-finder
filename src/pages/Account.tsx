@@ -15,6 +15,7 @@ import { MAX_SAVED_SEARCH_NAME, MAX_SAVED_SEARCHES } from "../../shared/savedSea
 import { Star } from "lucide-react";
 import { toast } from "sonner";
 import { LoadingDots } from "@/components/LoadingDots";
+import { AnimatedNumber } from "@/components/NumberSlot";
 
 const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" }) : "Never";
@@ -305,7 +306,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
         <div className="acct-usage">
           <div className="acct-usage__top">
             <div>
-              <span className="acct-usage__num">{used.toLocaleString("en-NZ")}</span>
+              <span className="acct-usage__num"><AnimatedNumber value={used} /></span>
               <span className="acct-usage__of"> of {limit.toLocaleString("en-NZ")} requests used this month</span>
             </div>
             <span className="acct-usage__reset">Resets {fmtDate(resetsAt)}</span>
