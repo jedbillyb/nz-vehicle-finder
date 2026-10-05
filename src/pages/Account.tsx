@@ -322,7 +322,6 @@ function HowItWorks() {
 function SignedInAs({ account, reload }: { account: AccountData; reload: () => void }) {
   return (
     <div className="acct-who">
-      <span className="acct-who__avatar" aria-hidden>{(account.name || account.email).charAt(0).toUpperCase()}</span>
       <div className="acct-who__text">
         <div className="acct-who__label">Signed in as</div>
         <div className="acct-who__email">{account.email}</div>

@@ -505,7 +505,7 @@
 }
 
 /* ── Account page (docs layout): who's signed in, and the usage meter ── */
-/* Initial, then who you are, then Sign out behind a thin rule. One row, so
+/* Who you are, then Sign out behind a thin rule. One row, so
    the card is no taller than the hero text next to it. */
 .acct-who {
   display: flex;
@@ -514,24 +514,11 @@
   max-width: 360px;
   flex-shrink: 0;
   margin-top: 8px;
-  padding: 10px 10px 10px 12px;
+  padding: 10px 10px 10px 14px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-.acct-who__avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  border-radius: 999px;
-  background: #e0f2fe;
-  color: #0369a1;
-  font-size: 15px;
-  font-weight: 700;
 }
 .acct-who__text { min-width: 0; flex: 1; }
 .acct-who__label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9ca3af; margin-bottom: 2px; }
