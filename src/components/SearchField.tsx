@@ -270,8 +270,10 @@ export function SearchField({
     }
   };
 
+  // The fade-up animation makes each field its own layer, so the open one is
+  // lifted or the fields below it would paint over its list.
   return (
-    <div ref={wrapperRef} className="relative" onPointerEnter={prefetch}>
+    <div ref={wrapperRef} className={cn("relative", showSuggestions && "z-50")} onPointerEnter={prefetch}>
       <div className="flex items-center gap-1.5 mb-1">
         <label className="block text-xs font-medium text-muted-foreground font-mono tracking-wide">
           {label}
