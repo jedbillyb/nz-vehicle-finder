@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Fragment, type ReactNode } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import Index from "./pages/Index";
 import MakeStats from "./pages/MakeStats";
@@ -21,6 +22,16 @@ import { SiteNavMobile } from "./components/SiteChrome";
 
 const queryClient = new QueryClient();
 
+/**
+ * The stats pages load their data once, on mount. A link from one region (or
+ * make, or model) to another keeps the same route, so without a fresh mount
+ * the page kept the first one's numbers. Keyed by path, each one starts clean.
+ */
+function PerPath({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  return <Fragment key={pathname}>{children}</Fragment>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -34,10 +45,10 @@ const App = () => (
         <SiteNavMobile />
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/stats/:make" element={<MakeStats />} />
-          <Route path="/stats/:make/:model" element={<ModelStats />} />
+          <Route path="/stats/:make" element={<PerPath><MakeStats /></PerPath>} />
+          <Route path="/stats/:make/:model" element={<PerPath><ModelStats /></PerPath>} />
           <Route path="/nz-fleet" element={<FleetOverview />} />
-          <Route path="/region/:tla" element={<RegionStats />} />
+          <Route path="/region/:tla" element={<PerPath><RegionStats /></PerPath>} />
           <Route path="/account" element={<Account />} />
           <Route path="/developers" element={<Developers />} />
           <Route path="/contact" element={<Contact />} />
