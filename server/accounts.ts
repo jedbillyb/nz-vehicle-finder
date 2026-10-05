@@ -6,7 +6,7 @@
  * stored only as SHA-256 hashes; the raw key is shown to its owner once.
  */
 import Database from "better-sqlite3";
-import { createHash, randomBytes } from "crypto";
+import { createHash, randomBytes, randomInt, timingSafeEqual } from "crypto";
 import express, { type Request, type Response, type NextFunction } from "express";
 import { clientIp } from "./rateLimit.js";
 import { isValidEmail } from "../shared/email.js";
@@ -19,6 +19,8 @@ import {
 const LOGIN_TOKEN_TTL_MS = 15 * 60 * 1000;
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const SESSION_COOKIE = "nzvf_session";
+/** Wrong guesses allowed against one emailed code before it is burned. */
+const MAX_CODE_ATTEMPTS = 5;
 const KEY_PREFIX = "nzvf_";
 
 export interface User {
@@ -50,6 +52,9 @@ export type UsageCheck =
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 const token = () => randomBytes(32).toString("base64url");
+const sixDigits = () => String(randomInt(0, 1_000_000)).padStart(6, "0");
+/** The code is hashed with its email so equal codes for two people never share a hash. */
+const codeHash = (email: string, code: string) => sha256(`${email}:${code}`);
 
 /** Usage is counted per calendar month in UTC. */
 export function monthOf(date: Date): string {
@@ -122,6 +127,9 @@ export class AccountStore {
     if (!columns.has("stripe_subscription_id")) this.db.exec("ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT");
     if (!columns.has("subscription_status")) this.db.exec("ALTER TABLE users ADD COLUMN subscription_status TEXT");
     this.db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_stripe_customer ON users (stripe_customer_id)");
+    const loginColumns = new Set((this.db.prepare("PRAGMA table_info(login_tokens)").all() as { name: string }[]).map((c) => c.name));
+    if (!loginColumns.has("code_hash")) this.db.exec("ALTER TABLE login_tokens ADD COLUMN code_hash TEXT");
+    if (!loginColumns.has("attempts")) this.db.exec("ALTER TABLE login_tokens ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0");
   }
 
   billingFor(userId: number): { stripeCustomerId: string | null; subscriptionId: string | null; subscriptionStatus: string | null } {
@@ -149,15 +157,25 @@ export class AccountStore {
       .run(b.tier, b.subscriptionId, b.subscriptionStatus, userId);
   }
 
-  createLoginToken(email: string, now = Date.now()): string {
+  /**
+   * One sign-in email carries both a link and a 6-digit code; spending either
+   * spends both. Only the newest request per email is valid, so a code can't
+   * be guessed across several live ones.
+   */
+  createLogin(email: string, now = Date.now()): { token: string; code: string } {
     const raw = token();
-    this.db.prepare("DELETE FROM login_tokens WHERE expires_at < ?").run(now);
-    this.db.prepare("INSERT INTO login_tokens (token_hash, email, expires_at) VALUES (?, ?, ?)")
-      .run(sha256(raw), email, now + LOGIN_TOKEN_TTL_MS);
-    return raw;
+    const code = sixDigits();
+    this.db.prepare("DELETE FROM login_tokens WHERE expires_at < ? OR email = ?").run(now, email);
+    this.db.prepare("INSERT INTO login_tokens (token_hash, email, expires_at, code_hash) VALUES (?, ?, ?, ?)")
+      .run(sha256(raw), email, now + LOGIN_TOKEN_TTL_MS, codeHash(email, code));
+    return { token: raw, code };
   }
 
-  /** Spend a login token: one use only. Creates the account on first sign-in. */
+  createLoginToken(email: string, now = Date.now()): string {
+    return this.createLogin(email, now).token;
+  }
+
+  /** Spend a login link: one use only. Creates the account on first sign-in. */
   redeemLoginToken(raw: string, now = Date.now()): { user: User; session: string; created: boolean } | null {
     return this.db.transaction(() => {
       const hash = sha256(raw);
@@ -166,17 +184,45 @@ export class AccountStore {
       if (!row) return null;
       this.db.prepare("DELETE FROM login_tokens WHERE token_hash = ?").run(hash);
       if (row.expires_at < now) return null;
-
-      const created = this.db.prepare("INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)")
-        .run(row.email, new Date(now).toISOString()).changes > 0;
-      const user = this.db.prepare("SELECT id, email, tier, created_at FROM users WHERE email = ?").get(row.email) as User;
-
-      const session = token();
-      this.db.prepare("DELETE FROM sessions WHERE expires_at < ?").run(now);
-      this.db.prepare("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)")
-        .run(sha256(session), user.id, now + SESSION_TTL_MS);
-      return { user, session, created };
+      return this.startSession(row.email, now);
     })();
+  }
+
+  /** Spend a 6-digit code typed by hand. A few wrong guesses burn it. */
+  redeemLoginCode(email: string, code: string, now = Date.now()): { user: User; session: string; created: boolean } | null {
+    return this.db.transaction(() => {
+      const row = this.db.prepare("SELECT token_hash, expires_at, code_hash, attempts FROM login_tokens WHERE email = ?").get(email) as
+        | { token_hash: string; expires_at: number; code_hash: string | null; attempts: number } | undefined;
+      if (!row?.code_hash) return null;
+      if (row.expires_at < now) {
+        this.db.prepare("DELETE FROM login_tokens WHERE token_hash = ?").run(row.token_hash);
+        return null;
+      }
+      const given = Buffer.from(codeHash(email, code));
+      const expected = Buffer.from(row.code_hash);
+      if (!/^\d{6}$/.test(code) || !timingSafeEqual(given, expected)) {
+        if (row.attempts + 1 >= MAX_CODE_ATTEMPTS) {
+          this.db.prepare("DELETE FROM login_tokens WHERE token_hash = ?").run(row.token_hash);
+        } else {
+          this.db.prepare("UPDATE login_tokens SET attempts = attempts + 1 WHERE token_hash = ?").run(row.token_hash);
+        }
+        return null;
+      }
+      this.db.prepare("DELETE FROM login_tokens WHERE token_hash = ?").run(row.token_hash);
+      return this.startSession(email, now);
+    })();
+  }
+
+  private startSession(email: string, now: number): { user: User; session: string; created: boolean } {
+    const created = this.db.prepare("INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)")
+      .run(email, new Date(now).toISOString()).changes > 0;
+    const user = this.db.prepare("SELECT id, email, tier, created_at FROM users WHERE email = ?").get(email) as User;
+
+    const session = token();
+    this.db.prepare("DELETE FROM sessions WHERE expires_at < ?").run(now);
+    this.db.prepare("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)")
+      .run(sha256(session), user.id, now + SESSION_TTL_MS);
+    return { user, session, created };
   }
 
   userForSession(raw: string | undefined, now = Date.now()): User | null {
@@ -358,7 +404,7 @@ function apiKeyFrom(req: Request): string | undefined {
 }
 
 export interface AccountsOptions {
-  sendLoginEmail: (email: string, link: string) => Promise<void>;
+  sendLoginEmail: (email: string, link: string, code: string) => Promise<void>;
   publicUrl: string;
   billingEnabled: boolean;
 }
@@ -367,6 +413,8 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   const router = express.Router();
   const perIp = attemptLimiter(5, 15 * 60 * 1000);
   const perEmail = attemptLimiter(1, 60 * 1000);
+  // Each code also burns after a few misses; this stops one IP cycling through codes.
+  const codeGuesses = attemptLimiter(20, 15 * 60 * 1000);
   const burst = burstLimiter(BURST_PER_SECOND);
 
   const sessionUser = (req: Request) => store.userForSession(readCookie(req, SESSION_COOKIE));
@@ -377,12 +425,12 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     if (!perIp(clientIp(req)) || !perEmail(email)) {
       return res.status(429).json({ error: "Too many sign-in attempts. Wait a minute and try again." });
     }
-    const raw = store.createLoginToken(email);
+    const { token: raw, code } = store.createLogin(email);
     // A paid plan picked before signing up rides along in the link, so the
     // account page can go straight to checkout even on another device.
     const plan = typeof req.body?.plan === "string" && Object.prototype.hasOwnProperty.call(TIERS, req.body.plan) && req.body.plan !== "free" ? req.body.plan : null;
     try {
-      await opts.sendLoginEmail(email, `${opts.publicUrl}/account?token=${raw}${plan ? `&plan=${plan}` : ""}`);
+      await opts.sendLoginEmail(email, `${opts.publicUrl}/account?token=${raw}${plan ? `&plan=${plan}` : ""}`, code);
     } catch (err) {
       console.error("Login email failed:", (err as Error).message);
       track("signin_link_failed", "server", { reason: "email_send" });
@@ -394,14 +442,24 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
 
   router.post("/auth/verify", (req, res) => {
     const raw = typeof req.body?.token === "string" ? req.body.token : "";
-    const result = raw ? store.redeemLoginToken(raw) : null;
+    const email = normaliseEmail(req.body?.email);
+    const code = typeof req.body?.code === "string" ? req.body.code.replace(/\s/g, "") : "";
+    const byCode = !raw && !!email && !!code;
+    if (byCode && !codeGuesses(clientIp(req))) {
+      return res.status(429).json({ error: "Too many wrong codes. Wait a few minutes and try again." });
+    }
+    const result = raw ? store.redeemLoginToken(raw) : byCode ? store.redeemLoginCode(email, code) : null;
     if (!result) {
-      track("signin_link_rejected", "server");
-      return res.status(400).json({ error: "This sign-in link has expired or was already used." });
+      track("signin_link_rejected", "server", { method: byCode ? "code" : "link" });
+      return res.status(400).json({
+        error: byCode
+          ? "That code is wrong or has expired. Check the latest email, or send a new one."
+          : "This sign-in link has expired or was already used.",
+      });
     }
     const id = analyticsId(result.user.id);
     if (result.created) track("account_created", id, { $set_once: { signed_up_at: result.user.created_at } });
-    track("signed_in", id, { new_account: result.created, $set: { tier: result.user.tier } });
+    track("signed_in", id, { method: byCode ? "code" : "link", new_account: result.created, $set: { tier: result.user.tier } });
     res.cookie(SESSION_COOKIE, result.session, {
       httpOnly: true,
       secure: true,

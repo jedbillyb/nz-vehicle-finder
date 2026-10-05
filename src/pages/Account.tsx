@@ -4,7 +4,7 @@ import { applySeo } from "@/lib/seo";
 import { captureEvent, identifyUser, resetUser } from "@/lib/posthog";
 import {
   createApiKey, deleteSavedSearch, fetchAccount, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
-  revokeApiKey, saveSearch, setPendingPlan, signOut, startCheckout, syncBilling, takePendingPlan, takePendingSave, verifySignInToken,
+  revokeApiKey, saveSearch, setPendingPlan, signOut, startCheckout, syncBilling, takePendingPlan, takePendingSave, verifySignInCode, verifySignInToken,
   type Account as AccountData, type SavedSearch,
 } from "@/lib/account";
 import { PageShell } from "@/components/PageShell";
@@ -55,11 +55,18 @@ function PlanOption({ tier, selected, onSelect }: { tier: Tier; selected: boolea
   );
 }
 
-function SignIn({ pendingSave, initialPlan }: { pendingSave: boolean; initialPlan: TierId }) {
+function SignIn({ pendingSave, initialPlan, onSignedIn }: {
+  pendingSave: boolean;
+  initialPlan: TierId;
+  /** Called after a typed code signs this tab in, with the paid plan picked here (if any). */
+  onSignedIn: (plan: TierId | null) => void;
+}) {
   const [email, setEmail] = useState("");
   const [plan, setPlan] = useState<TierId>(initialPlan);
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [typed, setTyped] = useState("");
+  const [checking, setChecking] = useState(false);
   const tier = TIERS[plan];
   const paid = tier.priceNzd > 0;
 
@@ -71,11 +78,35 @@ function SignIn({ pendingSave, initialPlan }: { pendingSave: boolean; initialPla
       await requestSignInLink(email, paid ? plan : undefined);
       setPendingPlan(paid ? plan : null);
       captureEvent("api_signin_requested", { plan });
+      setTyped("");
       setState("sent");
     } catch (err) {
       setError((err as Error).message);
       setState("idle");
     }
+  };
+
+  const checkCode = async (value: string) => {
+    if (checking) return;
+    setChecking(true);
+    setError(null);
+    try {
+      await verifySignInCode(email, value);
+      captureEvent("signin_code_entered", { result: "ok" });
+      onSignedIn(paid ? plan : null);
+    } catch (err) {
+      captureEvent("signin_code_entered", { result: "rejected" });
+      setError((err as Error).message);
+      setTyped("");
+      setChecking(false);
+    }
+  };
+
+  const onCodeChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 6);
+    setTyped(digits);
+    // Six digits is the whole code: check it without waiting for a click.
+    if (digits.length === 6) checkCode(digits);
   };
 
   return (
@@ -111,16 +142,44 @@ function SignIn({ pendingSave, initialPlan }: { pendingSave: boolean; initialPla
         <div>
           <div style={{ ...label, marginBottom: 8 }}>2. Your email</div>
           {state === "sent" ? (
-            <p style={{ margin: 0, fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
-              We sent a link to <strong>{email}</strong>. It works once and expires in 15 minutes.
-              {paid
-                ? <> Open it on any device and you'll go straight to secure checkout for <strong>{tier.name}</strong>.</>
-                : <> Open it to finish signing in.</>}
-            </p>
+            <>
+              <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
+                We emailed a 6-digit code to <strong>{email}</strong>. Type it here, or open the link in the email.
+                {paid && <> Then you go straight to secure checkout for <strong>{tier.name}</strong>.</>}
+              </p>
+              <form onSubmit={(e) => { e.preventDefault(); if (typed.length === 6) checkCode(typed); }} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input
+                  autoFocus
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  aria-label="6-digit code"
+                  placeholder="123456"
+                  maxLength={7}
+                  value={typed}
+                  disabled={checking}
+                  onChange={(e) => onCodeChange(e.target.value)}
+                  style={{ ...input, flex: "0 1 160px", fontFamily: "'JetBrains Mono', monospace", fontSize: 20, letterSpacing: "0.3em", textAlign: "center" }}
+                />
+                <button type="submit" disabled={checking || typed.length !== 6} style={{ ...primaryButton, opacity: typed.length === 6 ? 1 : 0.5 }}>
+                  {checking ? "Checking..." : "Sign in"}
+                </button>
+              </form>
+              {error && <p style={errorText}>{error}</p>}
+              <p style={{ margin: "12px 0 0", fontSize: 12, color: "#6b7280" }}>
+                Expires in 15 minutes.{" "}
+                <button
+                  type="button"
+                  onClick={() => { setState("idle"); setError(null); }}
+                  style={{ background: "none", border: 0, padding: 0, color: "#0369a1", cursor: "pointer", font: "inherit", textDecoration: "underline" }}
+                >
+                  Wrong email or no email? Send a new code
+                </button>
+              </p>
+            </>
           ) : (
             <>
               <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
-                We'll email you a sign-in link. No password. New here? The link creates your account.
+                We'll email you a 6-digit code. No password. New here? Signing in creates your account.
                 {paid
                   ? <> Then you go straight to Stripe to pay NZ${tier.priceNzd} a month for <strong>{tier.name}</strong>.</>
                   : <> No card needed.</>}
@@ -136,7 +195,7 @@ function SignIn({ pendingSave, initialPlan }: { pendingSave: boolean; initialPla
                   style={{ ...input, flex: "1 1 220px" }}
                 />
                 <button type="submit" disabled={state === "sending"} style={primaryButton}>
-                  {state === "sending" ? "Sending..." : paid ? `Continue with ${tier.name}` : "Email me a link"}
+                  {state === "sending" ? "Sending..." : paid ? `Continue with ${tier.name}` : "Email me a code"}
                 </button>
               </form>
               {error && <p style={errorText}>{error}</p>}
@@ -151,7 +210,7 @@ function SignIn({ pendingSave, initialPlan }: { pendingSave: boolean; initialPla
 /** The plain-English version of how accounts work, for people who haven't signed up. */
 function HowItWorks() {
   const steps: [string, string][] = [
-    ["Sign in with a link", "Enter your email and click the link we send. No password to remember. The first link creates your account."],
+    ["Sign in with a code", "Enter your email and type the 6-digit code we send. No password to remember. Your first sign-in creates your account."],
     ["Create an API key", "Make a key on this page and send it with each request. Keys never expire; revoke one any time."],
     ["Pay only for more", "Free covers 500 requests a month. Paid plans bill monthly through Stripe and can be changed or cancelled whenever."],
   ];
@@ -685,7 +744,15 @@ export default function Account() {
       ) : (
         // Two short sections need no menu; same section styling as the docs, full width.
         <div className="stagger-in stagger-in--slow doc-layout doc-layout--plain">
-          <SignIn pendingSave={pendingSave} initialPlan={urlPlan ?? "free"} />
+          <SignIn
+            pendingSave={pendingSave}
+            initialPlan={urlPlan ?? "free"}
+            onSignedIn={(plan) => {
+              setPendingPlan(null);
+              if (plan) setCheckoutPlan(plan);
+              reload();
+            }}
+          />
           <HowItWorks />
         </div>
       )}

@@ -54,6 +54,10 @@ export const requestSignInLink = (email: string, plan?: TierId) =>
 export const verifySignInToken = (token: string) =>
   call<{ ok: true }>("/api/auth/verify", { method: "POST", body: JSON.stringify({ token }) });
 
+/** The 6-digit code from the same email, typed into the tab that asked for it. */
+export const verifySignInCode = (email: string, code: string) =>
+  call<{ ok: true }>("/api/auth/verify", { method: "POST", body: JSON.stringify({ email, code }) });
+
 export const signOut = () => call<{ ok: true }>("/api/auth/logout", { method: "POST" });
 
 /** Resolves to null when nobody is signed in. */

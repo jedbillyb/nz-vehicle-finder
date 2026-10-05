@@ -654,22 +654,23 @@ const publicUrl = (process.env.PUBLIC_URL || "https://vehiclefinder.co.nz").repl
 const accounts = createAccounts(accountStore, {
   publicUrl,
   billingEnabled: !!process.env.STRIPE_SECRET_KEY,
-  sendLoginEmail: async (email, link) => {
+  sendLoginEmail: async (email, link, code) => {
     if (!resend || !loginFrom) {
-      // Local development has no mail setup; the link is all you need.
-      console.log(`Sign-in link for ${email}: ${link}`);
+      // Local development has no mail setup; the link or code is all you need.
+      console.log(`Sign-in for ${email}: code ${code}, link ${link}`);
       return;
     }
     const { error } = await resend.emails.send({
       from: loginFrom,
       to: email,
-      subject: "Your NZ Vehicle Finder sign-in link",
+      subject: `${code} is your NZ Vehicle Finder sign-in code`,
       text: [
-        "Sign in to NZ Vehicle Finder:",
+        `Your sign-in code: ${code}`,
         "",
+        "Type it on the page you came from, or open this link:",
         link,
         "",
-        "The link works once and expires in 15 minutes.",
+        "The code and link work once and expire in 15 minutes.",
         "If you did not ask for this, ignore this email.",
       ].join("\n"),
     });

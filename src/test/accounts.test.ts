@@ -16,6 +16,57 @@ beforeEach(() => {
   store = new AccountStore(":memory:");
 });
 
+describe("sign-in codes", () => {
+  it("signs in with the emailed code, once", () => {
+    const { code } = store.createLogin("a@b.nz");
+    expect(code).toMatch(/^\d{6}$/);
+    expect(store.redeemLoginCode("a@b.nz", code)?.user.email).toBe("a@b.nz");
+    expect(store.redeemLoginCode("a@b.nz", code)).toBeNull();
+  });
+
+  it("spending the code also spends the link, and the other way round", () => {
+    const first = store.createLogin("a@b.nz");
+    expect(store.redeemLoginCode("a@b.nz", first.code)).not.toBeNull();
+    expect(store.redeemLoginToken(first.token)).toBeNull();
+    const second = store.createLogin("a@b.nz");
+    expect(store.redeemLoginToken(second.token)).not.toBeNull();
+    expect(store.redeemLoginCode("a@b.nz", second.code)).toBeNull();
+  });
+
+  it("only works for the email it was sent to", () => {
+    const { code } = store.createLogin("a@b.nz");
+    expect(store.redeemLoginCode("c@d.nz", code)).toBeNull();
+  });
+
+  it("burns the code after five wrong guesses", () => {
+    const { code } = store.createLogin("a@b.nz");
+    const wrong = code === "000000" ? "111111" : "000000";
+    for (let i = 0; i < 5; i++) expect(store.redeemLoginCode("a@b.nz", wrong)).toBeNull();
+    expect(store.redeemLoginCode("a@b.nz", code)).toBeNull();
+  });
+
+  it("allows a typo or two", () => {
+    const { code } = store.createLogin("a@b.nz");
+    const wrong = code === "000000" ? "111111" : "000000";
+    store.redeemLoginCode("a@b.nz", wrong);
+    store.redeemLoginCode("a@b.nz", wrong);
+    expect(store.redeemLoginCode("a@b.nz", code)).not.toBeNull();
+  });
+
+  it("expires after 15 minutes", () => {
+    const issued = Date.now();
+    const { code } = store.createLogin("a@b.nz", issued);
+    expect(store.redeemLoginCode("a@b.nz", code, issued + 16 * 60 * 1000)).toBeNull();
+  });
+
+  it("only the newest request is valid", () => {
+    const old = store.createLogin("a@b.nz");
+    const fresh = store.createLogin("a@b.nz");
+    expect(store.redeemLoginToken(old.token)).toBeNull();
+    expect(store.redeemLoginCode("a@b.nz", fresh.code)).not.toBeNull();
+  });
+});
+
 describe("sign-in links", () => {
   it("creates the account on first use and a session that resolves to it", () => {
     const { user, session } = signIn();
