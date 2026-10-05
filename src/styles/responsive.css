@@ -390,8 +390,7 @@
 }
 @media (max-width: 767px) {
   .doc-layout { padding: 0 16px; }
-  /* 28px matches the gap either side of the rule inside the account sign-up. */
-  .doc-section { padding: 28px 0; }
+  .doc-section { padding: 24px 0; }
 }
 .doc-offers {
   display: grid;
