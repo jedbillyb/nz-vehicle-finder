@@ -9,10 +9,15 @@ body {
   overscroll-behavior: none;
 }
 
-/* What shows past the end of the page, like under the iPhone's floating Safari
-   bar, matches the white footer rather than the grey page. */
-html {
-  background: #ffffff;
+/* Safari on iPhone tints the strip under its floating bar from the body's
+   colour, so the body is white like the footer and the grey page colour lives
+   on the app inside it. */
+html,
+body {
+  background: #ffffff !important;
+}
+#root {
+  background: hsl(var(--background));
 }
 
 /* Arial (or a metric twin) scaled to Inter's size, shown until Inter loads. Text keeps
