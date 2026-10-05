@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "local": "scripts/dev-local.sh",
     "build": "vite build && tsx scripts/generate-seo-html.ts",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",

@@ -46,7 +46,19 @@ cd nz-vehicle-finder
 npm install
 ```
 
-Start the API server (defaults to `http://localhost:3001`):
+Run the whole site locally with one command (site on `http://localhost:8080`, API on `:3001`, both reload on save):
+
+```bash
+npm run local
+```
+
+On `/account` a **Local dev** box signs you in as a test user or a test admin, no email needed. It only appears when `DEV_LOGIN=1` and `PUBLIC_URL` is `http://localhost...`, so it can't switch on in production. Analytics are off, Stripe uses the test keys in `.env`, and sign-in codes print in the terminal. Searches need the real `database/vehicles.db` (about 6 GB):
+
+```bash
+rsync -z --partial ubuntu@server.jedbillyb.com:nz-vehicle-finder/database/vehicles.db database/
+```
+
+Or start the two halves yourself. The API server (defaults to `http://localhost:3001`):
 
 ```bash
 npm run server

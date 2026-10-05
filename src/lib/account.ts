@@ -68,7 +68,11 @@ export const setAccountName = (name: string) =>
   call<{ ok: true; name: string }>("/api/account", { method: "PATCH", body: JSON.stringify({ name }) });
 
 /** Which sign-in methods the server has turned on. */
-export const fetchAuthOptions = () => call<{ google: boolean }>("/api/auth/options");
+export const fetchAuthOptions = () => call<{ google: boolean; devLogin?: boolean }>("/api/auth/options");
+
+/** Local development only: the server answers 404 unless DEV_LOGIN is on. */
+export const devSignIn = (as: "user" | "admin") =>
+  call<{ ok: true }>("/api/auth/dev-login", { method: "POST", body: JSON.stringify({ as }) });
 
 /** A full-page navigation, not a fetch: Google's consent screen can't load in the background. */
 export const googleSignInUrl = (plan?: TierId) => `/api/auth/google${plan ? `?plan=${plan}` : ""}`;

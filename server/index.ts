@@ -658,6 +658,8 @@ const accounts = createAccounts(accountStore, {
     ? { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET }
     : null,
   adminEmails: (process.env.ADMIN_EMAILS ?? "").split(","),
+  // Both checks, so a stray DEV_LOGIN in production can't switch it on.
+  devLogin: process.env.DEV_LOGIN === "1" && publicUrl.startsWith("http://localhost"),
   sendLoginEmail: async (email, link, code) => {
     if (!resend || !loginFrom) {
       // Local development has no mail setup; the link or code is all you need.

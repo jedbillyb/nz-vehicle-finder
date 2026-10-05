@@ -565,6 +565,9 @@
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 .google-btn:hover { background: #f9fafb; border-color: #9ca3af; }
+.dev-login { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; padding: 8px 10px; border: 1px dashed #f59e0b; border-radius: 8px; background: #fffbeb; font-size: 12px; color: #92400e; }
+.dev-login span { font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
+.dev-login button { padding: 4px 10px; border: 1px solid #f59e0b; border-radius: 999px; background: #ffffff; color: #92400e; font-size: 12px; font-weight: 600; cursor: pointer; }
 .or-rule { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: #9ca3af; font-size: 12px; }
 .or-rule::before, .or-rule::after { content: ""; flex: 1; height: 1px; background: #e5e7eb; }
 

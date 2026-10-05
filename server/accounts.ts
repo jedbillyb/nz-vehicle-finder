@@ -305,6 +305,11 @@ export class AccountStore {
     return rows.map((r) => ({ ...r, google: !!r.google }));
   }
 
+  /** Local development only: sign in with no email or code. */
+  devSignIn(email: string, name: string | null, now = Date.now()) {
+    return this.startSession(email, now, name);
+  }
+
   /** `name` (from Google) only fills an empty name; it never replaces one the person typed. */
   private startSession(email: string, now: number, name: string | null = null): { user: User; session: string; created: boolean } {
     const created = this.db.prepare("INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)")
@@ -506,6 +511,8 @@ export interface AccountsOptions {
   google?: { clientId: string; clientSecret: string } | null;
   /** Emails that see the list of every account on their account page. */
   adminEmails?: string[];
+  /** Local development only: one-click sign-in as a test account. Never on in production. */
+  devLogin?: boolean;
 }
 
 const OAUTH_COOKIE = "nzvf_oauth";
@@ -606,8 +613,17 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   });
 
   router.get("/auth/options", (_req, res) => {
-    res.json({ google: !!opts.google });
+    res.json({ google: !!opts.google, devLogin: !!opts.devLogin });
   });
+
+  if (opts.devLogin) {
+    router.post("/auth/dev-login", (req, res) => {
+      const admin = req.body?.as === "admin";
+      const result = store.devSignIn(admin ? "admin@dev.local" : "test@dev.local", admin ? "Admin" : "Tester");
+      setSessionCookie(res, result.session);
+      res.json({ ok: true });
+    });
+  }
 
   router.get("/auth/google", (req, res) => {
     if (!opts.google) return res.redirect(`${opts.publicUrl}/account`);

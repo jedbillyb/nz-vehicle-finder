@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
 import { captureEvent, identifyUser, resetUser } from "@/lib/posthog";
 import {
-  createApiKey, deleteSavedSearch, deleteAccount, fetchAccount, fetchAdminAccounts, signOutEverywhere, fetchAuthOptions, googleSignInUrl, setAccountName, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
+  createApiKey, deleteSavedSearch, deleteAccount, fetchAccount, fetchAdminAccounts, signOutEverywhere, fetchAuthOptions, devSignIn, googleSignInUrl, setAccountName, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
   revokeApiKey, saveSearch, setPendingPlan, signOut, startCheckout, syncBilling, takePendingPlan, takePendingSave, verifySignInCode, verifySignInToken,
   type Account as AccountData, type AdminAccount, type SavedSearch,
 } from "@/lib/account";
@@ -80,6 +80,7 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
   const [typed, setTyped] = useState("");
   const [checking, setChecking] = useState(false);
   const [googleOn, setGoogleOn] = useState(false);
+  const [devLogin, setDevLogin] = useState(false);
   /** Seconds until another code can be sent; the server allows one a minute per email. */
   const [cooldown, setCooldown] = useState(0);
   useEffect(() => {
@@ -88,7 +89,7 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
     return () => window.clearTimeout(t);
   }, [cooldown]);
   useEffect(() => {
-    fetchAuthOptions().then((o) => setGoogleOn(o.google)).catch(() => {});
+    fetchAuthOptions().then((o) => { setGoogleOn(o.google); setDevLogin(!!o.devLogin); }).catch(() => {});
   }, []);
   const tier = TIERS[plan];
   const paid = tier.priceNzd > 0;
@@ -230,6 +231,20 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
                   ? <> Then you go straight to Stripe to pay NZ${tier.priceNzd} a month for <strong>{tier.name}</strong>.</>
                   : <> No card needed.</>}
               </p>
+              {devLogin && (
+                <div className="dev-login">
+                  <span>Local dev</span>
+                  {(["user", "admin"] as const).map((as) => (
+                    <button
+                      key={as}
+                      type="button"
+                      onClick={() => devSignIn(as).then(() => onSignedIn(paid ? plan : null)).catch((err) => setError((err as Error).message))}
+                    >
+                      Sign in as test {as}
+                    </button>
+                  ))}
+                </div>
+              )}
               {googleOn && (
                 <>
                   <a
