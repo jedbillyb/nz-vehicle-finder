@@ -28,22 +28,20 @@ function getDistinctId(): string {
 }
 
 /**
- * Whether the footer is on screen on the account page. The pill steps aside
- * there: the page's last buttons sit in its corner, right above the footer,
- * and the footer has its own FEEDBACK link. Other pages keep the pill.
+ * How much of the footer is on screen, in px (0 when it's out of view). The
+ * pill uses it to stay clear of the footer's links.
  */
-function useFooterShowing(active: boolean) {
+function useFooterOverlap(active: boolean) {
   const { pathname } = useLocation();
-  const [showing, setShowing] = useState(false);
-  const watch = active && pathname.startsWith("/account");
+  const [overlap, setOverlap] = useState(0);
   useEffect(() => {
-    if (!watch) { setShowing(false); return; }
+    if (!active) return;
     let frame = 0;
     const update = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const footer = document.querySelector("footer.footer-root");
-        setShowing(!!footer && footer.getBoundingClientRect().top < window.innerHeight);
+        setOverlap(footer ? Math.max(0, window.innerHeight - footer.getBoundingClientRect().top) : 0);
       });
     };
     update();
@@ -58,8 +56,8 @@ function useFooterShowing(active: boolean) {
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [watch, pathname]);
-  return showing;
+  }, [active, pathname]);
+  return overlap;
 }
 
 export function FeedbackWidget() {
@@ -75,9 +73,13 @@ export function FeedbackWidget() {
   const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
   // Toasts take this corner, so the pill ducks out of the way while any are
-  // showing, and at the foot of the account page.
-  const footerShowing = useFooterShowing(!isMobile);
-  const hidePill = useSonner().toasts.length > 0 || footerShowing;
+  // showing. Once the footer scrolls into view the pill rides up with it, 16px
+  // above; on the account page it fades out instead, as riding up would put it
+  // over the Delete account button (the footer has its own FEEDBACK link).
+  const footerOverlap = useFooterOverlap(!isMobile);
+  const onAccount = useLocation().pathname.startsWith("/account");
+  const hidePill = useSonner().toasts.length > 0 || (onAccount && footerOverlap > 0);
+  const pillBottom = onAccount ? 24 : Math.max(24, footerOverlap + 16);
 
   const pagePath = window.location.pathname;
 
@@ -190,7 +192,7 @@ export function FeedbackWidget() {
           style={
             {
               position: "fixed",
-              bottom: 24,
+              bottom: pillBottom,
               right: 24,
               zIndex: 35,
               display: "flex",
