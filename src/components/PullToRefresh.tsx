@@ -50,7 +50,8 @@ export function PullToRefresh() {
     const spinner = el.firstElementChild as HTMLElement;
     let startX = 0;
     let startY = 0;
-    let pull = 0;
+    let pull = 0; // where the page is drawn
+    let target = 0; // where the finger says it should be
     let tracking = false;
     let armed = false;
     let refreshing = false;
@@ -97,8 +98,17 @@ export function PullToRefresh() {
       }, animate ? 400 : 0);
     };
     // Touch events can come faster than the screen draws: draw once a frame.
+    // The page eases toward the finger a frame at a time, so touch updates that
+    // arrive unevenly still draw as one smooth movement.
+    const step = () => {
+      frame = 0;
+      pull += (target - pull) * 0.5;
+      if (Math.abs(target - pull) < 0.3) pull = target;
+      draw(false);
+      if (pull !== target) frame = requestAnimationFrame(step);
+    };
     const drawSoon = () => {
-      if (!frame) frame = requestAnimationFrame(() => { frame = 0; draw(false); });
+      if (!frame) frame = requestAnimationFrame(step);
     };
 
     const refresh = async () => {
@@ -118,7 +128,7 @@ export function PullToRefresh() {
       await new Promise((r) => window.setTimeout(r, 180));
       refreshing = false;
       el.classList.remove("ptr--spin");
-      pull = 0;
+      pull = target = 0;
       draw(true, true);
     };
 
@@ -136,7 +146,7 @@ export function PullToRefresh() {
       if (!tracking) return;
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
-      pull = 0;
+      pull = target = 0;
       armed = false;
       measure();
     };
@@ -145,10 +155,14 @@ export function PullToRefresh() {
       const dx = e.touches[0].clientX - startX;
       const dy = e.touches[0].clientY - startY;
       // A sideways swipe (wide tables) or scrolling down the page isn't a pull.
-      if (pull === 0 && (dy <= 0 || Math.abs(dx) > dy || window.scrollY > 0)) {
+      if (target === 0 && (dy <= 0 || Math.abs(dx) > dy || window.scrollY > 0)) {
         if (Math.abs(dx) > 8 || dy < -8) tracking = false;
         return;
       }
+      // It's a pull: take the gesture from Safari. Left to it, Safari treats
+      // the drag as a scroll and sends far fewer touch updates, which made the
+      // page step down in jumps.
+      if (e.cancelable) e.preventDefault();
       // A small slack before anything moves, so a light touch or the start of
       // a scroll doesn't nudge the page. The pull counts from where the slack
       // ends, so it starts at 0 instead of jumping partway open.
@@ -164,27 +178,33 @@ export function PullToRefresh() {
         return;
       }
       // Heavier the further it goes, like the real thing.
-      pull = Math.max(0, 140 * (1 - Math.exp(-Math.max(0, e.touches[0].clientY - startY) / 220)));
+      target = Math.max(0, 140 * (1 - Math.exp(-Math.max(0, e.touches[0].clientY - startY) / 220)));
       drawSoon();
     };
     const onEnd = () => {
       if (!tracking) return;
       tracking = false;
-      if (pull === 0) return void (page.style.willChange = "");
-      if (pull >= PULL) {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      if (target === 0 && pull === 0) {
+        page.style.willChange = "";
+        el.classList.remove("ptr--spin");
+        return;
+      }
+      if (target >= PULL) {
         refreshing = true;
-        pull = HOLD;
+        pull = target = HOLD;
         el.classList.add("ptr--spin");
         draw(true);
         void refresh();
       } else {
-        pull = 0;
+        pull = target = 0;
         draw(true);
       }
     };
 
     window.addEventListener("touchstart", onStart, { passive: true });
-    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("touchmove", onMove, { passive: false });
     window.addEventListener("touchend", onEnd, { passive: true });
     window.addEventListener("touchcancel", onEnd, { passive: true });
     return () => {
