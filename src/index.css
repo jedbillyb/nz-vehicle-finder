@@ -28,6 +28,13 @@ html[data-end="top"],
 html[data-end="top"] body {
   background: #0ea5e9 !important;
 }
+/* A page that fits the screen (contact, not found) shows its bottom edge all
+   the time, so it keeps the footer's colour there, and has nothing to scroll:
+   no bounce. */
+html[data-short],
+html[data-short] body {
+  overscroll-behavior: none;
+}
 #root {
   background: hsl(var(--background));
 }

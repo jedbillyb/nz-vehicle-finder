@@ -23,12 +23,18 @@
       html.setAttribute("data-end", end);
       function update() {
         var y = window.scrollY, max = html.scrollHeight - window.innerHeight;
-        var next = y <= max - y ? "top" : "bottom";
+        // A page with (almost) nothing to scroll shows its bottom edge all the
+        // time, so it keeps the footer's colour and doesn't bounce (index.css).
+        var short = max < 120;
+        var next = !short && y <= max - y ? "top" : "bottom";
         if (next !== end) { end = next; html.setAttribute("data-end", end); }
+        if (short !== html.hasAttribute("data-short")) html.toggleAttribute("data-short", short);
       }
       addEventListener("scroll", update, { passive: true });
       addEventListener("resize", update);
       addEventListener("load", update);
+      // The page's height changes as it renders and on each route, with no scroll.
+      if (window.ResizeObserver) addEventListener("DOMContentLoaded", function () { new ResizeObserver(update).observe(document.body); });
     })();
   </script>
 

@@ -495,6 +495,12 @@
 
 /* Error pages (NotFound.tsx, public/403.html keeps its own copy): one centred column. */
 .error-page { min-height: 100vh; display: flex; flex-direction: column; background: #ffffff; color: #111827; font-family: 'Inter', 'Inter Fallback', system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+/* Phones: fit the screen with Safari's bar showing, less the mobile nav
+   (SiteNavMobile, 23px) above the page. A page a touch taller than the screen
+   scrolls just enough to bounce, and showed Safari's strip under its bar. */
+@media (max-width: 639px) {
+  .error-page { min-height: calc(100vh - 23px); min-height: calc(100svh - 23px); }
+}
 .error-page__main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 64px 24px; }
 .error-page__code { font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #0ea5e9; margin-bottom: 10px; }
 .error-page__title { font-size: 48px; font-weight: 800; color: #0f172a; letter-spacing: -0.03em; line-height: 1.1; margin: 0 0 12px; }
