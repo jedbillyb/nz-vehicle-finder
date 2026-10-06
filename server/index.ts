@@ -650,6 +650,54 @@ app.post("/api/feedback", async (req, res) => {
 const accountStore = new AccountStore(path.resolve(__dirname, "../database/accounts.db"));
 // vehiclefinder.co.nz is verified in Resend, so any address on it can send.
 const loginFrom = process.env.LOGIN_FROM_EMAIL || "NZ Vehicle Finder <login@vehiclefinder.co.nz>";
+
+/**
+ * The sign-in email: the code large enough to read off a notification, one
+ * button for the link, and the fine print. Tables and inline styles, which is
+ * all that mail clients agree on. `code` is six digits and `link` is ours,
+ * so nothing here needs escaping.
+ */
+function loginEmailHtml(code: string, link: string): string {
+  const font = "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;";
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>${code} is your NZ Vehicle Finder sign-in code</title>
+</head>
+<body style="margin:0; padding:0; background:#f0f9ff;">
+<div style="display:none; max-height:0; overflow:hidden; opacity:0;">Your sign-in code is ${code}. It works once and expires in 15 minutes.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f9ff;">
+<tr><td align="center" style="padding:32px 16px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:440px;">
+    <tr><td style="padding:0 0 14px; ${font} font-size:12px; font-weight:700; letter-spacing:0.16em; color:#0369a1;">NZ VEHICLE FINDER</td></tr>
+    <tr><td style="background:#ffffff; border:1px solid #bae6fd; border-radius:12px; padding:28px 28px 24px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="${font} font-size:20px; font-weight:700; color:#0f172a; padding:0 0 8px;">Your sign-in code</td></tr>
+        <tr><td style="${font} font-size:14px; line-height:1.6; color:#374151; padding:0 0 20px;">Type it on the page you came from.</td></tr>
+        <tr><td align="center" style="background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px; padding:18px 12px;">
+          <span style="font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace; font-size:34px; font-weight:700; letter-spacing:0.28em; margin-right:-0.28em; color:#0f172a;">${code}</span>
+        </td></tr>
+        <tr><td style="${font} font-size:14px; line-height:1.6; color:#374151; padding:22px 0 14px;">Or sign in on this device:</td></tr>
+        <tr><td>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+            <tr><td style="background:#0ea5e9; border-radius:8px;">
+              <a href="${link}" style="display:inline-block; padding:12px 22px; ${font} font-size:15px; font-weight:700; color:#ffffff; text-decoration:none;">Sign in to NZ Vehicle Finder</a>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="${font} font-size:12px; line-height:1.6; color:#6b7280; padding:22px 0 0;">The code and link work once and expire in 15 minutes. If you did not ask for this, ignore this email.</td></tr>
+      </table>
+    </td></tr>
+    <tr><td style="${font} font-size:12px; line-height:1.6; color:#6b7280; padding:14px 0 0;">Questions? Reply to this email or write to <a href="mailto:${CONTACT_EMAIL.support}" style="color:#0369a1;">${CONTACT_EMAIL.support}</a>.</td></tr>
+  </table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
 const publicUrl = (process.env.PUBLIC_URL || "https://vehiclefinder.co.nz").replace(/\/+$/, "");
 const accounts = createAccounts(accountStore, {
   publicUrl,
@@ -672,6 +720,7 @@ const accounts = createAccounts(accountStore, {
       // login@ has no inbox; a reply to the sign-in email should reach a person.
       replyTo: CONTACT_EMAIL.support,
       subject: `${code} is your NZ Vehicle Finder sign-in code`,
+      html: loginEmailHtml(code, link),
       text: [
         `Your sign-in code: ${code}`,
         "",
