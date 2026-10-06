@@ -51,6 +51,7 @@ export function PullToRefresh() {
     let startY = 0;
     let pull = 0;
     let tracking = false;
+    let armed = false;
     let refreshing = false;
     let settle = 0;
     let frame = 0;
@@ -126,6 +127,7 @@ export function PullToRefresh() {
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       pull = 0;
+      armed = false;
       // Ready the page to move now, so the first frame of the pull isn't a hitch.
       page.style.willChange = "transform";
     };
@@ -138,8 +140,16 @@ export function PullToRefresh() {
         if (Math.abs(dx) > 8 || dy < -8) tracking = false;
         return;
       }
+      // Phones only send the first move after the finger has already travelled
+      // a few px. Count the pull from there, so it starts at 0 instead of
+      // jumping partway open on the first frame.
+      if (pull === 0 && !armed) {
+        armed = true;
+        startY = e.touches[0].clientY;
+        return;
+      }
       // Heavier the further it goes, like the real thing.
-      pull = Math.max(0, 140 * (1 - Math.exp(-dy / 220)));
+      pull = Math.max(0, 140 * (1 - Math.exp(-Math.max(0, e.touches[0].clientY - startY) / 220)));
       drawSoon();
     };
     const onEnd = () => {
