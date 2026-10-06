@@ -6,6 +6,7 @@ const HOLD = 56; // px the page rests at while it refreshes
 const MIN_SPIN = 700; // ms the spinner shows, so a quick refresh still reads as one
 const SLACK = 12; // px the finger moves before the page starts to follow
 const SPOKES = 12;
+const SPINNER_ROOM = 26; // px of pull before the spinner starts to show
 const REFRESH = "app:refresh";
 
 /** A number that goes up on each pull to refresh. Key the page by it to remount it. */
@@ -47,7 +48,6 @@ export function PullToRefresh() {
     const page = document.getElementById("root");
     if (!el || !page) return;
     const spinner = el.firstElementChild as HTMLElement;
-    const spokes = [...el.querySelectorAll<SVGLineElement>("line")];
     let startX = 0;
     let startY = 0;
     let pull = 0;
@@ -56,7 +56,6 @@ export function PullToRefresh() {
     let refreshing = false;
     let settle = 0;
     let frame = 0;
-    let lit = -1;
     // Top of the nav text and the notch/island inset, measured at the start of
     // each pull, so the spinner sits midway in the blue the user actually sees.
     let gapTop = 0;
@@ -85,20 +84,16 @@ export function PullToRefresh() {
       // The spinner stays in the middle of the blue that's showing, growing
       // in as it comes into view, and shrinks away before the page goes back.
       const t = refreshing ? 1 : Math.min(1, pull / PULL);
-      spinner.style.opacity = hideSpinner ? "0" : String(t);
+      // Hidden until there's room for it above the nav, so it never peeks out from behind it.
+      const shown = refreshing ? 1 : Math.min(1, Math.max(0, (pull - SPINNER_ROOM) / 20));
+      spinner.style.opacity = hideSpinner ? "0" : String(shown);
       spinner.style.transform = `translate3d(0, ${(gapTop + gapBottom - pull) / 2}px, 0) scale(${hideSpinner ? 0.5 : 0.6 + 0.4 * t})`;
       el.style.visibility = "visible";
-      const now = refreshing ? SPOKES + 1 : Math.round(t * SPOKES);
-      if (now !== lit) {
-        lit = now;
-        // Spinning, the spokes fade around the circle and the whole thing turns
-        // a spoke at a time (CSS), which keeps going even while the page is busy.
-        spokes.forEach((s, i) => (s.style.opacity = String(refreshing ? 0.25 + (0.75 * i) / (SPOKES - 1) : i < lit ? 1 : 0.25)));
-      }
       // Back at rest, drop the transform: it would pin fixed elements to #root.
       if (pull === 0) settle = window.setTimeout(() => {
         page.style.transform = page.style.transition = page.style.willChange = "";
         el.style.visibility = "hidden";
+        el.classList.remove("ptr--spin");
       }, animate ? 400 : 0);
     };
     // Touch events can come faster than the screen draws: draw once a frame.
@@ -163,6 +158,9 @@ export function PullToRefresh() {
         startY = e.touches[0].clientY;
         // Ready the page to move only now, so plain taps never touch its layer.
         page.style.willChange = "transform";
+        // It spins the whole time it's out, held or refreshing (CSS, a spoke at
+        // a time, so it keeps going even while the page is busy).
+        el.classList.add("ptr--spin");
         return;
       }
       // Heavier the further it goes, like the real thing.
@@ -204,7 +202,7 @@ export function PullToRefresh() {
       <div className="ptr__spinner">
         <svg viewBox="0 0 28 28" width="22" height="22">
           {Array.from({ length: SPOKES }, (_, i) => (
-            <line key={i} x1="14" y1="3" x2="14" y2="8.5" transform={`rotate(${i * 30} 14 14)`} />
+            <line key={i} x1="14" y1="3" x2="14" y2="8.5" transform={`rotate(${i * 30} 14 14)`} opacity={0.25 + (0.75 * i) / (SPOKES - 1)} />
           ))}
         </svg>
       </div>
