@@ -1,0 +1,2 @@
+- [ ] Stop stats/region pages jumping while data loads
+- [ ] Polish the phone loading spinner (hopping/buggy)
