@@ -253,6 +253,18 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
     // Six digits is the whole code: check it without waiting for a click.
     if (digits.length === 6) checkCode(digits);
   };
+  /** Copied from the email, the code often comes with a line break or the words around it: keep the digits. */
+  const digitsOf = (text: string) => text.replace(/\D/g, "").slice(0, 6);
+  /** Reads the clipboard for people who can't find the long-press paste; the phone asks once. */
+  const pasteCode = async () => {
+    try {
+      const digits = digitsOf(await navigator.clipboard.readText());
+      if (digits.length < 6) throw new Error("no code");
+      onCodeChange(digits);
+    } catch {
+      setError("Copy the 6-digit code from the email first, or long-press the boxes and tap Paste.");
+    }
+  };
 
   return (
     <DocSection id="sign-in" title="Create an account or sign in">
@@ -338,6 +350,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                   value={typed}
                   disabled={checking}
                   onChange={onCodeChange}
+                  pasteTransformer={digitsOf}
                   containerClassName="otp"
                 >
                   <InputOTPGroup className="otp__group">
@@ -350,7 +363,12 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                   ? <span style={{ color: "#0369a1", fontWeight: 600 }}>Checking<LoadingDots label="Checking code" /></span>
                   : error
                   ? <span style={{ color: "#b91c1c" }}>{error}</span>
-                  : <span>Expires in 15 minutes.</span>}
+                  : <span>
+                      Expires in 15 minutes.{" "}
+                      {typeof navigator !== "undefined" && !!navigator.clipboard?.readText && (
+                        <button type="button" onClick={pasteCode} className="otp-resend">Paste code</button>
+                      )}
+                    </span>}
               </div>
               <div className="otp-status">
                 Didn't get it?{" "}
