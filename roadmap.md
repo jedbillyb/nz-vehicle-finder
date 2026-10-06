@@ -1,1 +1,1 @@
-- [ ] Polish the phone loading spinner (hopping/buggy)
+- [x] Polish the phone loading spinner (hopping/buggy)
