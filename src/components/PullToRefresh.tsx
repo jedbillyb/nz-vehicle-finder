@@ -155,14 +155,19 @@ export function PullToRefresh() {
       if (!tracking) return;
       const dx = e.touches[0].clientX - startX;
       const dy = e.touches[0].clientY - startY;
-      // A sideways swipe (wide tables) or scrolling down the page isn't a pull.
-      if (target === 0 && (dy <= 0 || Math.abs(dx) > dy || window.scrollY > 0)) {
-        if (Math.abs(dx) > 8 || dy < -8) tracking = false;
-        return;
+      if (target === 0) {
+        // A sideways swipe (wide tables) or scrolling down the page isn't a pull.
+        if (window.scrollY > 0 || dy < -8 || (Math.abs(dx) > 8 && Math.abs(dx) > dy)) {
+          tracking = false;
+          return;
+        }
+        // Not moving down yet: leave it to Safari.
+        if (dy <= 0) return;
       }
-      // It's a pull: take the gesture from Safari. Left to it, Safari treats
-      // the drag as a scroll and sends far fewer touch updates, which made the
-      // page step down in jumps.
+      // Moving down at the top: take the gesture from Safari on its very first
+      // move, before it's clear whether it's a pull. Let through, Safari treats
+      // the drag as a scroll, won't give it back, and sends far fewer touch
+      // updates after that, so the page stepped down in jumps.
       if (e.cancelable) e.preventDefault();
       // A small slack before anything moves, so a light touch or the start of
       // a scroll doesn't nudge the page. The pull counts from where the slack
