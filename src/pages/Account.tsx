@@ -138,13 +138,14 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   // The grid's height eases to the new step's too, so the sections below glide instead of jumping.
   const stepRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
-  const from = useRef<{ left: number; height: number } | null>(null);
+  const from = useRef<{ left: number; top: number; height: number } | null>(null);
   /** Side by side (wide screens), the later steps keep the email step's height and sit
    *  centred in it, so the rule below the section never moves. */
   const [heldHeight, setHeldHeight] = useState<number | null>(null);
   useEffect(() => {
     if (leaving && stepRef.current && gridRef.current) {
-      from.current = { left: stepRef.current.getBoundingClientRect().left, height: gridRef.current.offsetHeight };
+      const at = stepRef.current.getBoundingClientRect();
+      from.current = { left: at.left, top: at.top, height: gridRef.current.offsetHeight };
       if (shown === "email" && window.matchMedia("(min-width: 900px)").matches) setHeldHeight(gridRef.current.offsetHeight);
     }
     else if (shown === "email") setHeldHeight(null);
@@ -158,6 +159,15 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
     const timing = { duration: 450, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" };
     const dx = was.left - el.getBoundingClientRect().left;
     if (Math.abs(dx) >= 2) el.animate([{ transform: `translateX(${dx}px)` }, { transform: "none" }], timing);
+    // Stacked (phones), the next step takes the plan picker's place higher up
+    // the page, out of sight above the keyboard. Scroll the page so it stays
+    // where the step before it was, and slide the rest of the way where the
+    // page can't scroll that far (at the top).
+    if (!window.matchMedia("(min-width: 900px)").matches) {
+      window.scrollBy({ top: el.getBoundingClientRect().top - was.top, behavior: "instant" as ScrollBehavior });
+      const dy = was.top - el.getBoundingClientRect().top;
+      if (Math.abs(dy) >= 2) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], timing);
+    }
     const height = grid.offsetHeight;
     if (Math.abs(height - was.height) >= 2) {
       grid.animate([{ height: `${was.height}px`, overflow: "hidden" }, { height: `${height}px`, overflow: "hidden" }], timing);
