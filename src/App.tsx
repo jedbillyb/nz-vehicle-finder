@@ -18,7 +18,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import { AnalyticsTracker } from "./components/AnalyticsTracker";
 import { FeedbackWidget } from "./components/FeedbackWidget";
-import { PullToRefresh } from "./components/PullToRefresh";
+import { PullToRefresh, useRefreshKey } from "./components/PullToRefresh";
 import { SiteNavMobile } from "./components/SiteChrome";
 
 const queryClient = new QueryClient();
@@ -33,6 +33,26 @@ function PerPath({ children }: { children: ReactNode }) {
   return <Fragment key={pathname}>{children}</Fragment>;
 }
 
+/** The pages, remounted (so they refetch) on each pull to refresh. */
+function Pages() {
+  return (
+    <Routes key={useRefreshKey()}>
+      <Route path="/" element={<Index />} />
+      <Route path="/stats/:make" element={<PerPath><MakeStats /></PerPath>} />
+      <Route path="/stats/:make/:model" element={<PerPath><ModelStats /></PerPath>} />
+      <Route path="/nz-fleet" element={<FleetOverview />} />
+      <Route path="/region/:tla" element={<PerPath><RegionStats /></PerPath>} />
+      <Route path="/account" element={<Account />} />
+      <Route path="/developers" element={<Developers />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -45,20 +65,7 @@ const App = () => (
         <FeedbackWidget />
         <PullToRefresh />
         <SiteNavMobile />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/stats/:make" element={<PerPath><MakeStats /></PerPath>} />
-          <Route path="/stats/:make/:model" element={<PerPath><ModelStats /></PerPath>} />
-          <Route path="/nz-fleet" element={<FleetOverview />} />
-          <Route path="/region/:tla" element={<PerPath><RegionStats /></PerPath>} />
-          <Route path="/account" element={<Account />} />
-          <Route path="/developers" element={<Developers />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <Pages />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
