@@ -197,9 +197,9 @@ export class AccountStore {
    * spends both. Only the newest request per email is valid, so a code can't
    * be guessed across several live ones.
    */
-  createLogin(email: string, now = Date.now()): { token: string; code: string } {
+  createLogin(email: string, now = Date.now(), fixedCode?: string): { token: string; code: string } {
     const raw = token();
-    const code = sixDigits();
+    const code = fixedCode ?? sixDigits();
     this.db.prepare("DELETE FROM login_tokens WHERE expires_at < ? OR email = ?").run(now, email);
     this.db.prepare("INSERT INTO login_tokens (token_hash, email, expires_at, code_hash) VALUES (?, ?, ?, ?)")
       .run(sha256(raw), email, now + LOGIN_TOKEN_TTL_MS, codeHash(email, code));
@@ -557,6 +557,9 @@ function paidPlanFrom(raw: unknown): string | null {
   return typeof raw === "string" && Object.prototype.hasOwnProperty.call(TIERS, raw) && raw !== "free" ? raw : null;
 }
 
+/** The sign-in code for every email when DEV_LOGIN is on (localhost only). */
+const DEV_LOGIN_CODE = "123456";
+
 export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   const secureCookies = !opts.publicUrl.startsWith("http://");
   const admins = new Set((opts.adminEmails ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean));
@@ -572,10 +575,11 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   router.post("/auth/request-link", async (req, res) => {
     const email = normaliseEmail(req.body?.email);
     if (!email) return res.status(400).json({ error: "Enter a valid email address" });
-    if (!perIp(clientIp(req)) || !perEmail(email)) {
+    // Local dev: no rate limit and a fixed code, so onboarding can be retested quickly.
+    if (!opts.devLogin && (!perIp(clientIp(req)) || !perEmail(email))) {
       return res.status(429).json({ error: "Too many sign-in attempts. Wait a minute and try again." });
     }
-    const { token: raw, code } = store.createLogin(email);
+    const { token: raw, code } = store.createLogin(email, undefined, opts.devLogin ? DEV_LOGIN_CODE : undefined);
     // A paid plan picked before signing up rides along in the link, so the
     // account page can go straight to checkout even on another device.
     const plan = paidPlanFrom(req.body?.plan);
