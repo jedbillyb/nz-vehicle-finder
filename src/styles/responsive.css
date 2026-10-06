@@ -696,3 +696,24 @@
 .stagger-in--after-greeting > :nth-child(5) { animation-delay: 680ms; }
 .stagger-in--after-greeting > :nth-child(n+6) { animation-delay: 780ms; }
 @media (prefers-reduced-motion: reduce) { .leave-fade { animation: none; } }
+
+/* Pull to refresh (PullToRefresh): an iOS-style spinner in a small white disc. */
+.ptr {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 50%;
+  z-index: 60;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18);
+  transform: translate(-50%, -48px);
+  opacity: 0;
+  pointer-events: none;
+}
+.ptr line { stroke: #475569; stroke-width: 2.4; stroke-linecap: round; }
+.ptr--spin line { animation: ptr-spoke 1s linear infinite; }
+@keyframes ptr-spoke { from { opacity: 1; } to { opacity: 0.15; } }
