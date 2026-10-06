@@ -14,12 +14,12 @@
 }
 
 /* Safari on iPhone paints the gap a bounce past the end of the page opens
-   (and the strip under its floating bar) with the html/body colour, and
-   nothing drawn on the page reaches it. So the colour follows whichever end
-   is nearer, set by the script in index.html: the footer's pale blue
-   (SiteFooter) for the bottom, the nav's blue for the top, so Safari's pull
-   to refresh shows blue however hard the flick. The grey page colour lives
-   on the app inside. */
+   with the html/body colour, and nothing drawn on the page reaches it. It
+   also tints the area around its bar from the same colour. So the colour is
+   the footer's pale blue (SiteFooter), and the nav's blue only while the page
+   is bounced past its top (set by the script in index.html), so Safari's pull
+   to refresh shows blue however hard the flick. The grey page colour lives on
+   the app inside. */
 html,
 body {
   background: #f0f9ff !important;
