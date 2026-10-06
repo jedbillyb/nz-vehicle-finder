@@ -68,7 +68,9 @@ export function DocLayout({ label, groups, onNav, navTop, children }: {
 export function DocSection({ id, title, children }: { id: string; title?: ReactNode; children: ReactNode }) {
   return (
     <section id={id} className="doc-section">
-      {title && <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 0 14px", letterSpacing: "-0.01em" }}>{title}</h2>}
+      {/* 8px, not more: most sections open on a paragraph, whose line spacing
+          already adds a few px above the first line. */}
+      {title && <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 0 8px", letterSpacing: "-0.01em" }}>{title}</h2>}
       {children}
     </section>
   );

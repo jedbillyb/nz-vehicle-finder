@@ -390,7 +390,7 @@ Pick a plan and you go straight from sign-in to checkout. Card payments by Strip
       </Section>
 
       <Section id="custom" title="Custom reports and data">
-        <p style={p}>
+        <p style={{ ...p, margin: "0 0 16px" }}>
           Don't want to write code? Tell us what you need and we'll pull it for you, as a PDF report, a spreadsheet or both.
           Faster than a data request to NZTA, and you only pay for what you ask for.
         </p>
