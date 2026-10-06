@@ -159,14 +159,19 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
     const timing = { duration: 450, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" };
     const dx = was.left - el.getBoundingClientRect().left;
     if (Math.abs(dx) >= 2) el.animate([{ transform: `translateX(${dx}px)` }, { transform: "none" }], timing);
-    // Stacked (phones), the next step takes the plan picker's place higher up
-    // the page, out of sight above the keyboard. Scroll the page so it stays
-    // where the step before it was, and slide the rest of the way where the
-    // page can't scroll that far (at the top).
+    // Stacked (phones), the next step would take the plan picker's place higher
+    // up the page, out of sight. Scroll the page to put it in the middle of
+    // what's on screen (the keyboard takes the bottom when it's up), and slide
+    // it there from where the step before it was.
     if (!window.matchMedia("(min-width: 900px)").matches) {
-      window.scrollBy({ top: el.getBoundingClientRect().top - was.top, behavior: "instant" as ScrollBehavior });
+      const vv = window.visualViewport;
+      const seenTop = vv?.offsetTop ?? 0;
+      const seenHeight = vv?.height ?? window.innerHeight;
+      const at = el.getBoundingClientRect();
+      const want = Math.max(seenTop + 48, seenTop + (seenHeight - at.height) / 2);
+      window.scrollBy({ top: at.top - want, behavior: "instant" as ScrollBehavior });
       const dy = was.top - el.getBoundingClientRect().top;
-      if (Math.abs(dy) >= 2) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], timing);
+      if (Math.abs(dy) >= 2 && Math.abs(dy) <= seenHeight) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], timing);
     }
     const height = grid.offsetHeight;
     if (Math.abs(height - was.height) >= 2) {
@@ -197,13 +202,14 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
     }
     setState("sending");
     try {
-      await requestSignInLink(email, paid ? plan : undefined);
+      const { reused } = await requestSignInLink(email, paid ? plan : undefined);
       setPendingPlan(paid ? plan : null);
       captureEvent("api_signin_requested", { plan });
       setSentTo(email.trim().toLowerCase());
       setTyped("");
       setCooldown(60);
       setState("sent");
+      if (reused) toast("Use the code we already emailed you.");
     } catch (err) {
       setError((err as Error).message);
       setState("idle");
@@ -215,10 +221,10 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
     setError(null);
     setCooldown(60);
     try {
-      await requestSignInLink(email, paid ? plan : undefined);
+      const { reused } = await requestSignInLink(email, paid ? plan : undefined);
       captureEvent("signin_code_resent");
       setTyped("");
-      toast.success("New code sent. Use the newest email.");
+      toast.success(reused ? "The code we already emailed you still works." : "New code sent. Use the newest email.");
     } catch (err) {
       setError((err as Error).message);
     }
@@ -403,7 +409,9 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                   onChange={(e) => setEmail(e.target.value)}
                   style={{ ...input, width: "100%", height: 42, boxSizing: "border-box" }}
                 />
-                <button type="submit" disabled={state === "sending"} style={{ ...primaryButton, width: "100%", height: 42 }}>
+                {/* The tap doesn't take focus off the email box, so the phone keyboard
+                    stays up and carries over to the code boxes (they focus as they appear). */}
+                <button type="submit" disabled={state === "sending"} onMouseDown={(e) => e.preventDefault()} style={{ ...primaryButton, width: "100%", height: 42 }}>
                   {submitLabel}
                 </button>
               </form>

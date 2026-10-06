@@ -167,6 +167,16 @@ describe("sign-in codes", () => {
     expect(store.redeemLoginToken(old.token)).toBeNull();
     expect(store.redeemLoginCode("a@b.nz", fresh.code)).not.toBeNull();
   });
+
+  it("knows how long ago the live code was sent, so asking again within a minute reuses it", () => {
+    const issued = Date.now();
+    expect(store.loginAgeMs("a@b.nz", issued)).toBeNull();
+    const { code } = store.createLogin("a@b.nz", issued);
+    expect(store.loginAgeMs("a@b.nz", issued + 20 * 1000)).toBe(20 * 1000);
+    expect(store.loginAgeMs("a@b.nz", issued + 16 * 60 * 1000)).toBeNull();
+    store.redeemLoginCode("a@b.nz", code, issued + 1000);
+    expect(store.loginAgeMs("a@b.nz", issued + 2000)).toBeNull();
+  });
 });
 
 describe("sign-in links", () => {

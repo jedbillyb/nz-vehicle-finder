@@ -54,8 +54,9 @@ export interface Account {
 }
 
 /** `plan` is a paid plan picked before signing up; the emailed link carries it to checkout. */
+/** `reused`: a code sent within the last minute still works, so no new email went out. */
 export const requestSignInLink = (email: string, plan?: TierId) =>
-  call<{ ok: true }>("/api/auth/request-link", { method: "POST", body: JSON.stringify({ email, plan }) });
+  call<{ ok: true; reused?: boolean }>("/api/auth/request-link", { method: "POST", body: JSON.stringify({ email, plan }) });
 
 export const verifySignInToken = (token: string) =>
   call<{ ok: true }>("/api/auth/verify", { method: "POST", body: JSON.stringify({ token }) });

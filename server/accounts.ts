@@ -206,6 +206,14 @@ export class AccountStore {
     return { token: raw, code };
   }
 
+  /** How long ago the live sign-in code for this email was sent, or null if there isn't one. */
+  loginAgeMs(email: string, now = Date.now()): number | null {
+    const row = this.db.prepare("SELECT expires_at FROM login_tokens WHERE email = ? AND code_hash IS NOT NULL").get(email) as
+      | { expires_at: number } | undefined;
+    if (!row || row.expires_at < now) return null;
+    return LOGIN_TOKEN_TTL_MS - (row.expires_at - now);
+  }
+
   createLoginToken(email: string, now = Date.now()): string {
     return this.createLogin(email, now).token;
   }
@@ -581,6 +589,10 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   router.post("/auth/request-link", async (req, res) => {
     const email = loginEmail(req.body?.email);
     if (!email) return res.status(400).json({ error: "Enter a valid email address" });
+    // Asked again within a minute (Back, then the same email): the code already
+    // sent still works, so say so instead of sending another or refusing.
+    const age = opts.devLogin ? null : store.loginAgeMs(email);
+    if (age !== null && age < 60 * 1000) return res.json({ ok: true, reused: true });
     // Local dev: no rate limit and a fixed code, so onboarding can be retested quickly.
     if (!opts.devLogin && !perIp(clientIp(req))) {
       return res.status(429).json({ error: "Too many sign-in attempts. Wait a few minutes and try again." });
