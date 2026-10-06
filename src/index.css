@@ -217,3 +217,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .loading-dots > span, .dot-fill > span, .fade-in, .bar-grow, .rows-in > tr, .text-skeleton, .stagger-in > *, .fade-late, .skeleton-late { animation: none; }
 }
+/* Loading ring: fixed box, transform-only spin on its own layer so it stays centred and smooth. */
+.spinner { display: inline-block; flex: none; box-sizing: border-box; border-style: solid; border-color: currentColor; border-right-color: transparent; border-radius: 9999px; opacity: 0.9; will-change: transform; animation: spinner-turn 0.7s linear infinite; }
+@keyframes spinner-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.6s; } }

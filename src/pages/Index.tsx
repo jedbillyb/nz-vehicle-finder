@@ -26,7 +26,8 @@ import { sharePage } from "@/lib/share";
 import { Vehicle } from "@/lib/mockData";
 import { resultColumns } from "@/lib/resultColumns";
 import { toast } from "sonner";
-import { Search, RotateCcw, Download, Share2, LoaderCircle, ChevronDown, BarChart3 } from "lucide-react";
+import { Search, RotateCcw, Download, Share2, ChevronDown, BarChart3 } from "lucide-react";
+import { Spinner } from "@/components/Spinner";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { POPULAR_MAKES } from "@/lib/popularMakes";
 import { LinkTiles } from "@/components/LinkTiles";
@@ -571,7 +572,7 @@ export default function Index() {
                     disabled={loading}
                     style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 18px", background: loading ? "#bae6fd" : "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, cursor: loading ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.02em", fontWeight: 700, whiteSpace: "nowrap" }}
                   >
-                    {loading ? <LoaderCircle size={11} className="animate-spin" /> : <Search size={11} />}
+                    {loading ? <Spinner size={11} /> : <Search size={11} />}
                     {loading ? "Searching…" : "Run search"}
                   </button>
                 </div>
@@ -741,7 +742,7 @@ export default function Index() {
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             {/* A first search (e.g. opened from a link) has no total yet, so say it's running rather than asking for filters. */}
             <div style={{ marginBottom: 16, display: "flex", justifyContent: "center" }}>
-              {loading ? <LoaderCircle size={36} color="#0ea5e9" className="animate-spin" /> : <Search size={36} color="#94a3b8" />}
+              {loading ? <Spinner size={36} color="#0ea5e9" /> : <Search size={36} color="#94a3b8" />}
             </div>
             <h2 style={{ fontSize: 14, color: "#374151", letterSpacing: 0, margin: "0 0 8px", fontWeight: 500 }}>
               {loading ? "Searching the register..." : "Use the filters above to search"}
