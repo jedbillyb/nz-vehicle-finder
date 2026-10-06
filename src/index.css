@@ -23,17 +23,18 @@ body {
 #root {
   background: hsl(var(--background));
 }
-/* The nav's blue, fixed behind the top half of the screen. The page covers
-   it, but when Safari bounces past the top of the page (a quick scroll back
-   up, or a pull to refresh) the gap shows blue under the nav instead of a
-   pale strip. The bottom half stays the footer colour for a bounce there. */
+/* The nav's blue, fixed behind the top half of the screen and a full screen
+   above it. The page covers it, but when Safari bounces past the top of the
+   page (a hard flick back up, or a pull to refresh) the gap shows blue under
+   the nav instead of a pale strip, however far it goes. The bottom half
+   stays the footer colour for a bounce there. */
 body::before {
   content: "";
   position: fixed;
-  top: 0;
+  top: -100vh;
   left: 0;
   right: 0;
-  height: 50vh;
+  height: 150vh;
   background: #0ea5e9;
   z-index: -1;
   pointer-events: none;

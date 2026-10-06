@@ -169,6 +169,11 @@
     .footer-root { padding-bottom: env(safe-area-inset-bottom, 0px) !important; }
   }
 }
+/* Opened from the home screen there's no Safari bar under the page, so on
+   every phone clear the home indicator, plus the usual gap. */
+@media (display-mode: standalone) and (max-width: 767px) {
+  .footer-root { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important; }
+}
 .footer-links {
   flex-wrap: wrap !important;
   justify-content: center;
