@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 const PULL = 64; // px the page must come down to arm a refresh
 const HOLD = 56; // px the page rests at while it refreshes
 const MIN_SPIN = 700; // ms the spinner shows, so a quick refresh still reads as one
+const SLACK = 12; // px the finger moves before the page starts to follow
 const SPOKES = 12;
 const REFRESH = "app:refresh";
 
@@ -143,8 +144,6 @@ export function PullToRefresh() {
       pull = 0;
       armed = false;
       measure();
-      // Ready the page to move now, so the first frame of the pull isn't a hitch.
-      page.style.willChange = "transform";
     };
     const onMove = (e: TouchEvent) => {
       if (!tracking) return;
@@ -155,12 +154,15 @@ export function PullToRefresh() {
         if (Math.abs(dx) > 8 || dy < -8) tracking = false;
         return;
       }
-      // Phones only send the first move after the finger has already travelled
-      // a few px. Count the pull from there, so it starts at 0 instead of
-      // jumping partway open on the first frame.
-      if (pull === 0 && !armed) {
+      // A small slack before anything moves, so a light touch or the start of
+      // a scroll doesn't nudge the page. The pull counts from where the slack
+      // ends, so it starts at 0 instead of jumping partway open.
+      if (!armed) {
+        if (dy < SLACK) return;
         armed = true;
         startY = e.touches[0].clientY;
+        // Ready the page to move only now, so plain taps never touch its layer.
+        page.style.willChange = "transform";
         return;
       }
       // Heavier the further it goes, like the real thing.
