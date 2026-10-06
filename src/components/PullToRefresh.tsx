@@ -85,7 +85,7 @@ export function PullToRefresh() {
       // in as it comes into view, and shrinks away before the page goes back.
       const t = refreshing ? 1 : Math.min(1, pull / PULL);
       spinner.style.opacity = hideSpinner ? "0" : String(t);
-      spinner.style.transform = `translate3d(0, ${(gapTop + gapBottom - pull) / 2 - 2}px, 0) scale(${hideSpinner ? 0.5 : 0.6 + 0.4 * t})`;
+      spinner.style.transform = `translate3d(0, ${(gapTop + gapBottom - pull) / 2}px, 0) scale(${hideSpinner ? 0.5 : 0.6 + 0.4 * t})`;
       el.style.visibility = "visible";
       const now = refreshing ? SPOKES + 1 : Math.round(t * SPOKES);
       if (now !== lit) {
