@@ -582,8 +582,11 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     const email = loginEmail(req.body?.email);
     if (!email) return res.status(400).json({ error: "Enter a valid email address" });
     // Local dev: no rate limit and a fixed code, so onboarding can be retested quickly.
-    if (!opts.devLogin && (!perIp(clientIp(req)) || !perEmail(email))) {
-      return res.status(429).json({ error: "Too many sign-in attempts. Wait a minute and try again." });
+    if (!opts.devLogin && !perIp(clientIp(req))) {
+      return res.status(429).json({ error: "Too many sign-in attempts. Wait a few minutes and try again." });
+    }
+    if (!opts.devLogin && !perEmail(email)) {
+      return res.status(429).json({ error: "We emailed you a code less than a minute ago. Use that one, or wait a minute for a new one." });
     }
     const { token: raw, code } = store.createLogin(email, undefined, opts.devLogin ? DEV_LOGIN_CODE : undefined);
     // A paid plan picked before signing up rides along in the link, so the

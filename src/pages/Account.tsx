@@ -96,6 +96,8 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   const [devLogin, setDevLogin] = useState(false);
   /** Seconds until another code can be sent; the server allows one a minute per email. */
   const [cooldown, setCooldown] = useState(0);
+  /** Where the last code went, so Back and the same email again doesn't ask for another inside the minute. */
+  const [sentTo, setSentTo] = useState("");
   useEffect(() => {
     if (cooldown <= 0) return;
     const t = window.setTimeout(() => setCooldown((c) => c - 1), 1000);
@@ -173,12 +175,22 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setState("sending");
     setError(null);
+    // Back, then the same email again within the minute: the code already
+    // sent still works, and the server would refuse to send another anyway.
+    if (cooldown > 0 && email.trim().toLowerCase() === sentTo) {
+      setPendingPlan(paid ? plan : null);
+      setTyped("");
+      setState("sent");
+      toast("Use the code we already emailed you.");
+      return;
+    }
+    setState("sending");
     try {
       await requestSignInLink(email, paid ? plan : undefined);
       setPendingPlan(paid ? plan : null);
       captureEvent("api_signin_requested", { plan });
+      setSentTo(email.trim().toLowerCase());
       setTyped("");
       setCooldown(60);
       setState("sent");
