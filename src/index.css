@@ -13,29 +13,24 @@
   }
 }
 
-/* Safari on iPhone paints the gap a bounce past the end of the page opens
-   with the html/body colour, and nothing drawn on the page reaches it. It
-   also tints the area around its bar from the same colour. So the colour is
-   the footer's pale blue (SiteFooter), and the nav's blue only while the page
-   is bounced past its top (set by the script in index.html), so Safari's pull
-   to refresh shows blue however hard the flick. The grey page colour lives on
-   the app inside. */
+/* Safari on iPhone tints the strip under its floating bar from the html/body
+   colour, so the body matches the footer (SiteFooter) and the grey page
+   colour lives on the app inside it. The colour never changes: Safari also
+   tints the area around its bar from it, which flashed blue when it did. */
 html,
 body {
   background: #f0f9ff !important;
 }
-html[data-end="top"],
-html[data-end="top"] body {
-  background: #0ea5e9 !important;
-}
 #root {
   background: hsl(var(--background));
 }
-/* The nav's blue, fixed behind the top half of the screen and a full screen
-   above it. The page covers it, but when Safari bounces past the top of the
-   page (a hard flick back up, or a pull to refresh) the gap shows blue under
-   the nav instead of a pale strip, however far it goes. The bottom half
-   stays the footer colour for a bounce there. */
+/* The nav's blue, fixed behind the top half of the screen. The page covers
+   it, but when Safari bounces past the top of the page (a flick back up, or
+   a pull to refresh) the gap shows blue under the nav instead of a pale
+   strip. While the page is bounced past its top (index.html sets data-end)
+   it grows to the whole screen, so a hard flick is blue however far it goes;
+   the rest of the time the bottom half stays clear, so a bounce at the
+   bottom shows the footer colour. */
 body::before {
   content: "";
   position: fixed;
@@ -46,6 +41,9 @@ body::before {
   background: #0ea5e9;
   z-index: -1;
   pointer-events: none;
+}
+html[data-end="top"] body::before {
+  height: 200vh;
 }
 
 /* Arial (or a metric twin) scaled to Inter's size, shown until Inter loads. Text keeps
