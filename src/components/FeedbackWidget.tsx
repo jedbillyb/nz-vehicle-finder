@@ -27,27 +27,48 @@ function getDistinctId(): string {
   return id;
 }
 
+/** An element's top in the page, from layout, so slide-in transforms don't count. */
+function layoutTop(el: HTMLElement) {
+  let y = 0;
+  for (let e: HTMLElement | null = el; e; e = e.offsetParent as HTMLElement | null) y += e.offsetTop;
+  return y;
+}
+
 /**
- * How much of the footer is on screen, in px (0 when it's out of view). The
- * pill uses it to stay clear of the footer's links.
+ * How much of the footer is on screen, in px (0 when it's out of view), and
+ * how far above the footer the pill should sit. The gap is 16px, unless the
+ * page marks an element with `data-feedback-clear` (the account page's Delete
+ * account button): then the pill centres in the space between that element
+ * and the footer, so it never covers it.
  */
 function useFooterOverlap(active: boolean) {
   const { pathname } = useLocation();
   const [overlap, setOverlap] = useState(0);
+  const [gap, setGap] = useState(16);
   useEffect(() => {
     if (!active) return;
     let frame = 0;
     const update = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        const footer = document.querySelector("footer.footer-root");
-        setOverlap(footer ? Math.max(0, window.innerHeight - footer.getBoundingClientRect().top) : 0);
+        const footer = document.querySelector<HTMLElement>("footer.footer-root");
+        const footerTop = footer?.getBoundingClientRect().top;
+        setOverlap(footerTop === undefined ? 0 : Math.max(0, window.innerHeight - footerTop));
+        // Measured from layout, not the screen: the account sections slide up
+        // 6px as they appear, and following that would make the pill jiggle.
+        const clear = document.querySelector<HTMLElement>("[data-feedback-clear]");
+        const pill = document.querySelector<HTMLElement>("[data-feedback-pill]");
+        setGap(footer && clear && pill
+          ? Math.max(0, Math.round((layoutTop(footer) - layoutTop(clear) - clear.offsetHeight - pill.offsetHeight) / 2))
+          : 16);
       });
     };
     update();
     // Each page mounts its own footer, and pages grow as their data loads.
+    // Late fonts change the pill's height, so measure again once they're in.
     const ro = new ResizeObserver(update);
     ro.observe(document.body);
+    document.fonts?.ready.then(update);
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
     return () => {
@@ -57,7 +78,7 @@ function useFooterOverlap(active: boolean) {
       window.removeEventListener("resize", update);
     };
   }, [active, pathname]);
-  return overlap;
+  return { overlap, gap };
 }
 
 export function FeedbackWidget() {
@@ -73,13 +94,11 @@ export function FeedbackWidget() {
   const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
   // Toasts take this corner, so the pill ducks out of the way while any are
-  // showing. Once the footer scrolls into view the pill rides up with it, 16px
-  // above; on the account page it fades out instead, as riding up would put it
-  // over the Delete account button (the footer has its own FEEDBACK link).
-  const footerOverlap = useFooterOverlap(!isMobile);
-  const onAccount = useLocation().pathname.startsWith("/account");
-  const hidePill = useSonner().toasts.length > 0 || (onAccount && footerOverlap > 0);
-  const pillBottom = onAccount ? 24 : Math.max(24, footerOverlap + 16);
+  // showing. Once the footer scrolls into view the pill rides up with it,
+  // `footer.gap` above (see useFooterOverlap).
+  const footer = useFooterOverlap(!isMobile);
+  const hidePill = useSonner().toasts.length > 0;
+  const pillBottom = Math.max(24, footer.overlap + footer.gap);
 
   const pagePath = window.location.pathname;
 
@@ -187,6 +206,7 @@ export function FeedbackWidget() {
         <button
           onClick={handleOpen}
           aria-label="Give feedback"
+          data-feedback-pill
           aria-hidden={hidePill}
           tabIndex={hidePill ? -1 : 0}
           style={

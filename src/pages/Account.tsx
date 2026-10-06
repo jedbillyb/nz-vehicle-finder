@@ -720,6 +720,7 @@ function Settings({ account, reload }: { account: AccountData; reload: () => voi
           {confirmDelete === null && (
             <button
               type="button"
+              data-feedback-clear
               style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13, color: "#b91c1c", borderColor: "#fecaca" }}
               onClick={() => setConfirmDelete("")}
             >
