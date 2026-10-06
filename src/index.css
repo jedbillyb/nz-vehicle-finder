@@ -23,6 +23,21 @@ body {
 #root {
   background: hsl(var(--background));
 }
+/* The nav's blue, fixed behind the top half of the screen. The page covers
+   it, but when Safari bounces past the top of the page (a quick scroll back
+   up, or a pull to refresh) the gap shows blue under the nav instead of a
+   pale strip. The bottom half stays the footer colour for a bounce there. */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50vh;
+  background: #0ea5e9;
+  z-index: -1;
+  pointer-events: none;
+}
 
 /* Arial (or a metric twin) scaled to Inter's size, shown until Inter loads. Text keeps
    the same line lengths when Inter swaps in, so headings don't rewrap and jump. */

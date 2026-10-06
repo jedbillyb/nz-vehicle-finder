@@ -18,7 +18,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import { AnalyticsTracker } from "./components/AnalyticsTracker";
 import { FeedbackWidget } from "./components/FeedbackWidget";
-import { NoBottomBounce, PullToRefresh, useRefreshKey } from "./components/PullToRefresh";
+import { PullToRefresh, useRefreshKey } from "./components/PullToRefresh";
 import { SiteNavMobile } from "./components/SiteChrome";
 
 const queryClient = new QueryClient();
@@ -64,7 +64,6 @@ const App = () => (
         <AnalyticsTracker />
         <FeedbackWidget />
         <PullToRefresh />
-        <NoBottomBounce />
         <SiteNavMobile />
         <Pages />
       </BrowserRouter>
