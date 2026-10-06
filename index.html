@@ -24,11 +24,9 @@
       function update() {
         var y = window.scrollY, max = html.scrollHeight - window.innerHeight;
         // A page with (almost) nothing to scroll shows its bottom edge all the
-        // time, so it keeps the footer's colour and doesn't bounce (index.css).
-        var short = max < 120;
-        var next = !short && y <= max - y ? "top" : "bottom";
+        // time, so it keeps the footer's colour.
+        var next = max >= 120 && y <= max - y ? "top" : "bottom";
         if (next !== end) { end = next; html.setAttribute("data-end", end); }
-        if (short !== html.hasAttribute("data-short")) html.toggleAttribute("data-short", short);
       }
       addEventListener("scroll", update, { passive: true });
       addEventListener("resize", update);
