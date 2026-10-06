@@ -571,9 +571,15 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   const burst = burstLimiter(BURST_PER_SECOND);
 
   const sessionUser = (req: Request) => store.userForSession(readCookie(req, SESSION_COOKIE));
+  // Local dev takes any text, so "bob" signs in as bob@dev.local.
+  const loginEmail = (raw: unknown) => {
+    const email = normaliseEmail(raw);
+    if (email || !opts.devLogin || typeof raw !== "string" || !raw.trim()) return email;
+    return `${raw.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, "-")}@dev.local`;
+  };
 
   router.post("/auth/request-link", async (req, res) => {
-    const email = normaliseEmail(req.body?.email);
+    const email = loginEmail(req.body?.email);
     if (!email) return res.status(400).json({ error: "Enter a valid email address" });
     // Local dev: no rate limit and a fixed code, so onboarding can be retested quickly.
     if (!opts.devLogin && (!perIp(clientIp(req)) || !perEmail(email))) {
@@ -596,10 +602,10 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
 
   router.post("/auth/verify", (req, res) => {
     const raw = typeof req.body?.token === "string" ? req.body.token : "";
-    const email = normaliseEmail(req.body?.email);
+    const email = loginEmail(req.body?.email);
     const code = typeof req.body?.code === "string" ? req.body.code.replace(/\s/g, "") : "";
     const byCode = !raw && !!email && !!code;
-    if (byCode && !codeGuesses(clientIp(req))) {
+    if (byCode && !opts.devLogin && !codeGuesses(clientIp(req))) {
       return res.status(429).json({ error: "Too many wrong codes. Wait a few minutes and try again." });
     }
     const result = raw ? store.redeemLoginToken(raw) : byCode ? store.redeemLoginCode(email, code) : null;
@@ -611,6 +617,8 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
           : "This sign-in link has expired or was already used.",
       });
     }
+    // Local dev: forget the name on every sign-in, so the name step can be retested with one email.
+    if (opts.devLogin) store.setName(result.user.id, null);
     const id = analyticsId(result.user.id);
     if (result.created) track("account_created", id, { $set_once: { signed_up_at: result.user.created_at } });
     track("signed_in", id, { method: byCode ? "code" : "link", new_account: result.created, $set: { tier: result.user.tier } });
@@ -627,6 +635,13 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
       const admin = req.body?.as === "admin";
       const result = store.devSignIn(admin ? "admin@dev.local" : "test@dev.local", admin ? "Admin" : "Tester");
       setSessionCookie(res, result.session, secureCookies);
+      res.json({ ok: true });
+    });
+    // Clears the signed-in account's name, so the name step and its hand-off can be replayed.
+    router.post("/auth/dev-forget-name", (req, res) => {
+      const user = sessionUser(req);
+      if (!user) return res.status(401).json({ error: "Not signed in" });
+      store.setName(user.id, null);
       res.json({ ok: true });
     });
   }

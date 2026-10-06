@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
 import { captureEvent, identifyUser, resetUser } from "@/lib/posthog";
 import {
-  createApiKey, deleteSavedSearch, deleteAccount, fetchAccount, fetchAdminAccounts, signOutEverywhere, fetchAuthOptions, devSignIn, googleSignInUrl, setAccountName, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
+  createApiKey, deleteSavedSearch, deleteAccount, fetchAccount, fetchAdminAccounts, signOutEverywhere, fetchAuthOptions, devSignIn, devForgetName, googleSignInUrl, setAccountName, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
   revokeApiKey, saveSearch, setPendingPlan, signOut, startCheckout, syncBilling, takePendingPlan, takePendingSave, verifySignInCode, verifySignInToken,
   type Account as AccountData, type AdminAccount, type SavedSearch,
 } from "@/lib/account";
@@ -12,11 +12,13 @@ import { DocSection, Split } from "@/components/DocLayout";
 import { code, input, label, primaryButton, secondaryButton } from "@/lib/pageStyles";
 import { BURST_PER_SECOND, TIERS, TIER_ORDER, type Tier, type TierId } from "../../shared/apiTiers";
 import { MAX_SAVED_SEARCH_NAME, MAX_SAVED_SEARCHES } from "../../shared/savedSearch";
-import { LogOut, Star } from "lucide-react";
+import { ChevronLeft, LogOut, Star } from "lucide-react";
 import { toast } from "sonner";
 import { LoadingDots } from "@/components/LoadingDots";
 import { SkeletonBlock } from "@/components/SkeletonRows";
 import { AnimatedNumber } from "@/components/NumberSlot";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 
 const SIGNED_IN_KEY = "nzvf_signed_in";
 
@@ -29,6 +31,9 @@ const errorText: React.CSSProperties = { color: "#b91c1c", fontSize: 13, margin:
 const fmtRequests = (t: Tier) => `${t.monthlyRequests.toLocaleString("en-NZ")} requests a month`;
 
 /** One plan as a selectable row: name and allowance on the left, price on the right. */
+/** Main form buttons: as tall as the input beside them and wide enough to read. */
+const wideButton = { minWidth: 120, fontSize: 14, alignSelf: "stretch" } as const;
+
 function PlanOption({ tier, selected, onSelect }: { tier: Tier; selected: boolean; onSelect: () => void }) {
   return (
     <button
@@ -67,11 +72,17 @@ function GoogleMark() {
   );
 }
 
-function SignIn({ pendingSave, initialPlan, onSignedIn }: {
+function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignOut }: {
   pendingSave: boolean;
   initialPlan: TierId;
+  /** Signed in for the first time and no name yet: step 2 becomes step 3, the name. */
+  naming: boolean;
   /** Called after a typed code signs this tab in, with the paid plan picked here (if any). */
   onSignedIn: (plan: TierId | null) => void;
+  /** Called once the name is saved, with the paid plan picked here (if any). */
+  onNamed: (plan: TierId | null) => void;
+  /** Back from the name step: the account exists by then, so going back means signing out. */
+  onSignOut: () => Promise<void>;
 }) {
   const [email, setEmail] = useState("");
   const [plan, setPlan] = useState<TierId>(initialPlan);
@@ -79,6 +90,8 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
   const [error, setError] = useState<string | null>(null);
   const [typed, setTyped] = useState("");
   const [checking, setChecking] = useState(false);
+  /** Bumped on a wrong code, so the boxes shake (and clear) each time. */
+  const [rejected, setRejected] = useState(0);
   const [googleOn, setGoogleOn] = useState(false);
   const [devLogin, setDevLogin] = useState(false);
   /** Seconds until another code can be sent; the server allows one a minute per email. */
@@ -93,6 +106,69 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
   }, []);
   const tier = TIERS[plan];
   const paid = tier.priceNzd > 0;
+  const [name, setName] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const saveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingName(true);
+    setError(null);
+    try {
+      await setAccountName(name);
+      captureEvent("name_saved");
+      onNamed(paid ? plan : null);
+    } catch (err) {
+      setError((err as Error).message);
+      setSavingName(false);
+    }
+  };
+  // The step on screen trails the real one by a short fade-out, so the plans
+  // column can leave (or come back) before the layout changes width.
+  const step = naming ? "name" : state === "sent" ? "code" : "email";
+  const [shown, setShown] = useState(step);
+  const leaving = shown !== step;
+  useEffect(() => {
+    if (step === shown) return;
+    const t = window.setTimeout(() => setShown(step), 180);
+    return () => window.clearTimeout(t);
+  }, [step, shown]);
+  // When the step column moves (beside the plans, or alone in the middle), slide it
+  // from where it was to where it lands instead of jumping.
+  // The grid's height eases to the new step's too, so the sections below glide instead of jumping.
+  const stepRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const from = useRef<{ left: number; height: number } | null>(null);
+  /** Side by side (wide screens), the later steps keep the email step's height and sit
+   *  centred in it, so the rule below the section never moves. */
+  const [heldHeight, setHeldHeight] = useState<number | null>(null);
+  useEffect(() => {
+    if (leaving && stepRef.current && gridRef.current) {
+      from.current = { left: stepRef.current.getBoundingClientRect().left, height: gridRef.current.offsetHeight };
+      if (shown === "email" && window.matchMedia("(min-width: 900px)").matches) setHeldHeight(gridRef.current.offsetHeight);
+    }
+    else if (shown === "email") setHeldHeight(null);
+  }, [leaving, shown]);
+  useLayoutEffect(() => {
+    const el = stepRef.current;
+    const grid = gridRef.current;
+    const was = from.current;
+    from.current = null;
+    if (!el || !grid || !was || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timing = { duration: 450, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" };
+    const dx = was.left - el.getBoundingClientRect().left;
+    if (Math.abs(dx) >= 2) el.animate([{ transform: `translateX(${dx}px)` }, { transform: "none" }], timing);
+    const height = grid.offsetHeight;
+    if (Math.abs(height - was.height) >= 2) {
+      grid.animate([{ height: `${was.height}px`, overflow: "hidden" }, { height: `${height}px`, overflow: "hidden" }], timing);
+    }
+  }, [shown]);
+  const back = async () => {
+    if (naming) await onSignOut();
+    setChecking(false);
+    setState("idle");
+    setError(null);
+    setTyped("");
+  };
+
   const submitLabel = state === "sending" ? "Sending..." : paid ? `Continue with ${tier.name}` : "Email me a code";
 
   const submit = async (e: React.FormEvent) => {
@@ -138,6 +214,7 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
       captureEvent("signin_code_entered", { result: "rejected" });
       setError((err as Error).message);
       setTyped("");
+      setRejected((n) => n + 1);
       setChecking(false);
     }
   };
@@ -151,14 +228,14 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
 
   return (
     <DocSection id="sign-in" title="Create an account or sign in">
-      {pendingSave && state !== "sent" && (
+      {pendingSave && state !== "sent" && !naming && (
         <div style={{ ...panel, marginBottom: 12, background: "#fffbeb", borderColor: "#fcd34d", fontSize: 14, color: "#92400e", display: "flex", gap: 8, alignItems: "center" }}>
           <Star size={14} fill="#f59e0b" color="#f59e0b" style={{ flexShrink: 0 }} />
           Sign in to save your search. It's saved to your account as soon as you're in.
         </div>
       )}
-      <div className="signup-grid">
-        <div>
+      <div ref={gridRef} style={shown !== "email" && heldHeight ? { minHeight: heldHeight, alignContent: "center" } : undefined} className={`signup-grid${shown === "email" ? "" : " signup-grid--single"}${leaving ? " is-leaving" : ""}`}>
+        {shown === "email" && <div className="fade-in">
           <div style={{ ...label, marginBottom: 8 }}>1. Pick a plan</div>
           <div role="radiogroup" aria-label="Plan" className="stagger-in stagger-in--slow" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {TIER_ORDER.map((id) => (
@@ -177,52 +254,82 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
           <p style={{ fontSize: 12, color: "#6b7280", margin: "10px 0 0" }}>
             Every plan gets every endpoint and filter. Change or cancel any time.
           </p>
-        </div>
+        </div>}
 
-        <div>
-          <div style={{ ...label, marginBottom: 8 }}>2. Your email</div>
-          {state === "sent" ? (
+        {/* Keyed by step, so each step's lines cascade in when it takes over. */}
+        <div key={shown} ref={stepRef} className="stagger-in stagger-in--step">
+          {shown !== "email" && (
+            <button type="button" onClick={back} disabled={shown === "code" ? checking : savingName} className="signup-back">
+              <ChevronLeft size={14} aria-hidden />
+              Back
+            </button>
+          )}
+          <div style={{ ...label, marginBottom: 8 }}>
+            {shown === "name" ? "3. Your name" : shown === "code" ? "2. Check your email" : "2. Your email"}
+          </div>
+          {shown === "name" ? (
+            <>
+              <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
+                You're in. What should we call you? You can change it later in Settings.
+                {paid && <> Then you go straight to secure checkout for <strong>{tier.name}</strong>.</>}
+              </p>
+              <form onSubmit={saveName} className="signup-name" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input
+                  autoFocus
+                  required
+                  autoComplete="given-name"
+                  aria-label="First name"
+                  placeholder="First name"
+                  maxLength={40}
+                  value={name}
+                  disabled={savingName}
+                  onChange={(e) => setName(e.target.value)}
+                  style={{ ...input, flex: "1 1 180px", height: 42, boxSizing: "border-box" }}
+                />
+                <button type="submit" disabled={savingName || !name.trim()} style={{ ...primaryButton, ...wideButton, opacity: name.trim() ? 1 : 0.5 }}>
+                  {savingName ? "Saving..." : "Continue"}
+                </button>
+              </form>
+              {error && <p style={errorText}>{error}</p>}
+            </>
+          ) : shown === "code" ? (
             <>
               <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
                 We emailed a 6-digit code to <strong>{email}</strong>. Type it here, or open the link in the email.
                 {paid && <> Then you go straight to secure checkout for <strong>{tier.name}</strong>.</>}
               </p>
-              <form onSubmit={(e) => { e.preventDefault(); if (typed.length === 6) checkCode(typed); }} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <input
+              {/* Six boxes, no button: the sixth digit checks the code. */}
+              <div key={rejected} className={rejected ? "otp-shake" : undefined}>
+                <InputOTP
                   autoFocus
+                  maxLength={6}
+                  pattern={REGEXP_ONLY_DIGITS}
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   aria-label="6-digit code"
-                  placeholder="123456"
-                  maxLength={7}
                   value={typed}
                   disabled={checking}
-                  onChange={(e) => onCodeChange(e.target.value)}
-                  style={{ ...input, flex: "0 1 160px", fontFamily: "'JetBrains Mono', monospace", fontSize: 20, letterSpacing: "0.3em", textAlign: "center" }}
-                />
-                <button type="submit" disabled={checking || typed.length !== 6} style={{ ...primaryButton, opacity: typed.length === 6 ? 1 : 0.5 }}>
-                  {checking ? "Checking..." : "Sign in"}
-                </button>
-              </form>
-              {error && <p style={errorText}>{error}</p>}
-              <p style={{ margin: "12px 0 0", fontSize: 12, color: "#6b7280", display: "flex", gap: 14, flexWrap: "wrap" }}>
-                <span>Expires in 15 minutes.</span>
-                <button
-                  type="button"
-                  disabled={cooldown > 0 || checking}
-                  onClick={resend}
-                  style={{ ...linkButton, fontWeight: 400, textDecoration: cooldown > 0 ? "none" : "underline", color: cooldown > 0 ? "#9ca3af" : "#0369a1", cursor: cooldown > 0 ? "default" : "pointer" }}
+                  onChange={onCodeChange}
+                  containerClassName="otp"
                 >
-                  {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+                  <InputOTPGroup className="otp__group">
+                    {[0, 1, 2, 3, 4, 5].map((i) => <InputOTPSlot key={i} index={i} className="otp__slot" />)}
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <div className="otp-status">
+                {checking
+                  ? <span style={{ color: "#0369a1", fontWeight: 600 }}>Checking<LoadingDots label="Checking code" /></span>
+                  : error
+                  ? <span style={{ color: "#b91c1c" }}>{error}</span>
+                  : <span>Expires in 15 minutes.</span>}
+              </div>
+              <div className="otp-status">
+                Didn't get it?{" "}
+                <button type="button" disabled={cooldown > 0 || checking} onClick={resend} className="otp-resend">
+                  {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => { setState("idle"); setError(null); }}
-                  style={{ ...linkButton, fontWeight: 400, textDecoration: "underline" }}
-                >
-                  Use a different email
-                </button>
-              </p>
+              </div>
             </>
           ) : (
             <>
@@ -266,7 +373,7 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
                   doesn't change size with each plan's label. */}
               <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <input
-                  type="email"
+                  type={devLogin ? "text" : "email"}
                   required
                   autoComplete="email"
                   placeholder="you@example.co.nz"
@@ -293,9 +400,9 @@ function SignIn({ pendingSave, initialPlan, onSignedIn }: {
 
 /** The plain-English version of how accounts work, for people who haven't signed up. */
 function HowItWorks() {
-  const steps: [string, string][] = [
+  const steps: [string, React.ReactNode][] = [
     ["Sign in with a code", "Enter your email and type the 6-digit code we send. No password to remember. Your first sign-in creates your account."],
-    ["Create an API key", "Make a key on this page and send it with each request. Keys never expire; revoke one any time."],
+    ["Create an API key and save searches", <>Make a key here and send it with each request (see the <Link to="/developers" style={{ color: "#0369a1" }}>API docs</Link>). Keys never expire. Save up to {MAX_SAVED_SEARCHES} searches to rerun any time.</>],
     ["Pay only for more", "Free covers 500 requests a month. Paid plans bill monthly through Stripe and can be changed or cancelled whenever."],
   ];
   return (
@@ -311,17 +418,14 @@ function HowItWorks() {
           </div>
         ))}
       </div>
-      <p style={{ fontSize: 13, color: "#6b7280", margin: "16px 0 0" }}>
-        Your account also keeps your saved searches. See the <Link to="/developers" style={{ color: "#0369a1" }}>API docs</Link> for endpoints and examples.
-      </p>
     </DocSection>
   );
 }
 
 /** Top right of the heading when signed in: who you are, and the way out. */
-function SignedInAs({ account, reload }: { account: AccountData; reload: () => void }) {
+function SignedInAs({ account, reload, animate }: { account: AccountData; reload: () => void; animate: boolean }) {
   return (
-    <div className="acct-who">
+    <div className={animate ? "acct-who fade-in" : "acct-who"}>
       <div className="acct-who__text">
         <div className="acct-who__label">Signed in as</div>
         <div className="acct-who__email">{account.email}</div>
@@ -343,7 +447,7 @@ function SignedInAs({ account, reload }: { account: AccountData; reload: () => v
   );
 }
 
-function Dashboard({ account, reload }: { account: AccountData; reload: () => void }) {
+function Dashboard({ account, reload, greeted }: { account: AccountData; reload: () => void; greeted: boolean }) {
   // Once per visit: tie this browser to the account, then record what the account looks like.
   useEffect(() => {
     identifyUser(account.analyticsId, { tier: account.tier.id });
@@ -449,8 +553,7 @@ function Dashboard({ account, reload }: { account: AccountData; reload: () => vo
   const p = { fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 12px" } as const;
 
   return (
-    <div className="stagger-in stagger-in--slow doc-layout doc-layout--plain">
-      {!account.name && <NamePrompt reload={reload} />}
+    <div className={`stagger-in${greeted ? " stagger-in--slow stagger-in--rise stagger-in--after-greeting" : ""} doc-layout doc-layout--plain`}>
       <DocSection id="overview" title="Overview">
         <div className="acct-usage">
           <div className="acct-usage__top">
@@ -658,19 +761,22 @@ function Settings({ account, reload }: { account: AccountData; reload: () => voi
     }
   };
 
-  const row = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "12px 0", borderTop: "1px solid #f1f5f9", fontSize: 14 } as const;
+  const row = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "12px 0", borderTop: "1px solid #f1f5f9", fontSize: 14 } as const;
+  // Text takes the room and wraps; the action button keeps its line beside it.
+  const text = { flex: "1 1 0", minWidth: 0 } as const;
+  const action = { flexShrink: 0, whiteSpace: "nowrap" } as const;
   const muted = { color: "#6b7280", fontSize: 13 } as const;
 
   return (
     <DocSection id="settings" title="Settings">
       <div>
-        <div style={{ ...row, borderTop: 0 }}>
-          <div>
+        <div style={{ ...row, borderTop: 0, flexWrap: editingName === null ? "nowrap" : "wrap" }}>
+          <div style={editingName === null ? text : undefined}>
             <div style={{ fontWeight: 600 }}>First name</div>
             {editingName === null && <div style={muted}>{account.name ?? "Not set"}</div>}
           </div>
           {editingName === null ? (
-            <button type="button" style={linkButton} onClick={() => setEditingName(account.name ?? "")}>Change</button>
+            <button type="button" style={{ ...linkButton, ...action }} onClick={() => setEditingName(account.name ?? "")}>Change</button>
           ) : (
             <form onSubmit={saveName} style={{ display: "flex", gap: 8, flex: "1 1 280px", justifyContent: "flex-end" }}>
               <input autoFocus required autoComplete="given-name" aria-label="First name" maxLength={40} value={editingName} onChange={(e) => setEditingName(e.target.value)} style={{ ...input, flex: "1 1 160px", padding: "6px 10px" }} />
@@ -681,15 +787,15 @@ function Settings({ account, reload }: { account: AccountData; reload: () => voi
         </div>
 
         <div style={row}>
-          <div>
+          <div style={text}>
             <div style={{ fontWeight: 600 }}>Sign out everywhere</div>
             <div style={muted}>Ends every session on every device, including this one.</div>
           </div>
-          <button type="button" style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13 }} disabled={busy} onClick={everywhere}>Sign out everywhere</button>
+          <button type="button" style={{ ...secondaryButton, ...action, padding: "6px 14px", fontSize: 13 }} disabled={busy} onClick={everywhere}>Sign out everywhere</button>
         </div>
 
         <div style={row}>
-          <div style={{ flex: "1 1 300px" }}>
+          <div style={text}>
             <div style={{ fontWeight: 600, color: "#b91c1c" }}>Delete account</div>
             <div style={muted}>
               Deletes your account, API keys, usage and saved searches for good. Keys stop working straight away.
@@ -720,8 +826,7 @@ function Settings({ account, reload }: { account: AccountData; reload: () => voi
           {confirmDelete === null && (
             <button
               type="button"
-              data-feedback-clear
-              style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13, color: "#b91c1c", borderColor: "#fecaca" }}
+              style={{ ...secondaryButton, ...action, padding: "6px 14px", fontSize: 13, color: "#b91c1c", borderColor: "#fecaca" }}
               onClick={() => setConfirmDelete("")}
             >
               Delete account
@@ -730,44 +835,6 @@ function Settings({ account, reload }: { account: AccountData; reload: () => voi
         </div>
         {confirmDelete !== null && <p style={{ ...p, ...muted, margin: "4px 0 0" }}>Type your email address above to confirm.</p>}
       </div>
-    </DocSection>
-  );
-}
-
-/** Shown once, straight after the first sign-in, until a name is saved. */
-function NamePrompt({ reload }: { reload: () => void }) {
-  const [name, setName] = useState("");
-  const [saving, setSaving] = useState(false);
-  const save = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await setAccountName(name);
-      captureEvent("name_saved");
-      reload();
-    } catch (err) {
-      toast.error((err as Error).message);
-      setSaving(false);
-    }
-  };
-  return (
-    <DocSection id="name" title="What should we call you?">
-      <form onSubmit={save} style={{ display: "flex", gap: 8, flexWrap: "wrap", maxWidth: 520 }}>
-        <input
-          autoFocus
-          required
-          autoComplete="given-name"
-          aria-label="First name"
-          placeholder="First name"
-          maxLength={40}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={{ ...input, flex: "1 1 220px" }}
-        />
-        <button type="submit" disabled={saving || !name.trim()} style={{ ...primaryButton, opacity: name.trim() ? 1 : 0.5 }}>
-          {saving ? "Saving..." : "Save"}
-        </button>
-      </form>
     </DocSection>
   );
 }
@@ -954,7 +1021,30 @@ export default function Account() {
       else localStorage.removeItem(SIGNED_IN_KEY);
     } catch { /* storage blocked: fall back to the signed-out heading */ }
   }, [account, loading]);
-  const showAccount = account || (loading && wasSignedIn);
+  // An account with no name yet is still finishing sign-up, on the sign-in screen.
+  // Finishing sign-in from this page, the sign-in screen fades out before the account
+  // builds in; arriving already signed in, the account shows straight away.
+  const wantDashboard = !!account?.name;
+  const [dashboardShown, setDashboardShown] = useState(false);
+  const handoff = useRef(false);
+  /** Arrived by finishing sign-in: the greeting lands first, then the account below it. */
+  const [greeted, setGreeted] = useState(false);
+  useLayoutEffect(() => {
+    if (wantDashboard === dashboardShown) return;
+    if (!wantDashboard || !handoff.current) {
+      setGreeted(false);
+      return setDashboardShown(wantDashboard);
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    const t = window.setTimeout(() => { handoff.current = false; setGreeted(true); setDashboardShown(true); }, 500);
+    return () => window.clearTimeout(t);
+  }, [wantDashboard, dashboardShown]);
+  const leavingSignIn = wantDashboard && !dashboardShown;
+  const [devLogin, setDevLogin] = useState(false);
+  useEffect(() => {
+    fetchAuthOptions().then((o) => setDevLogin(!!o.devLogin)).catch(() => {});
+  }, []);
+  const showDashboard = account ? dashboardShown : loading && wasSignedIn;
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   /** A paid plan to send the browser to checkout for, once the account has loaded. */
@@ -1023,7 +1113,7 @@ export default function Account() {
 
   // Signed in with a paid plan waiting: open Stripe checkout for it.
   useEffect(() => {
-    if (!account || !checkoutPlan) return;
+    if (!account?.name || !checkoutPlan) return;
     const tier = TIERS[checkoutPlan];
     setCheckoutPlan(null);
     if (window.location.search) window.history.replaceState(null, "", "/account");
@@ -1047,13 +1137,16 @@ export default function Account() {
       source="account_page"
       subtitle="Your account"
       crumb="Account"
-      title={showAccount ? "Your account" : "Get an API key"}
-      intro={
-        showAccount
+      // Keyed, so a new heading fades up instead of swapping in place.
+      title={<span key={showDashboard ? "in" : "out"} className={leavingSignIn ? "leave-fade" : showDashboard && !greeted ? undefined : "fade-in fade-in--slow"} style={{ display: "block" }}>
+        {showDashboard ? (account?.name ? `Hey, ${account.name}` : "Your account") : "Get an API key"}
+      </span>}
+      intro={<span key={showDashboard ? "in" : "out"} className={leavingSignIn ? "leave-fade" : showDashboard && !greeted ? undefined : "fade-in fade-in--slow"} style={{ display: "block", animationDelay: leavingSignIn ? "0ms" : "120ms" }}>
+        {showDashboard
           ? "Your API usage, keys, saved searches and plan."
-          : "Start free with 500 requests a month, or pick a paid plan and go straight to checkout."
-      }
-      aside={account ? <SignedInAs account={account} reload={reload} /> : false}
+          : "Start free with 500 requests a month, or pick a paid plan and go straight to checkout."}
+      </span>}
+      aside={account && showDashboard ? <SignedInAs account={account} reload={reload} animate={greeted} /> : false}
     >
       {notice && (
         <div className="page-band" style={{ padding: "10px 24px", background: "#f0f9ff", borderBottom: "1px solid #bae6fd", color: "#0369a1", fontSize: 13, fontWeight: 600 }}>{notice}</div>
@@ -1063,17 +1156,43 @@ export default function Account() {
       )}
       {loading ? (
         <div className="skeleton-late page-band" aria-busy="true" style={{ padding: "24px", display: "grid", gap: 16 }}><SkeletonBlock height={120} /><SkeletonBlock height={260} /></div>
-      ) : account ? (
-        <Dashboard account={account} reload={reload} />
+      ) : account && dashboardShown ? (
+        <>
+          {devLogin && (
+            <div className="page-band" style={{ padding: "12px 24px 0" }}>
+              <div className="dev-login" style={{ margin: 0 }}>
+                <span>Local dev</span>
+                <button type="button" onClick={() => devForgetName().then(reload).catch((err) => setError((err as Error).message))}>
+                  Replay name step
+                </button>
+              </div>
+            </div>
+          )}
+          <Dashboard account={account} reload={reload} greeted={greeted} />
+        </>
       ) : (
         // Two short sections need no menu; same section styling as the docs, full width.
-        <div className="stagger-in stagger-in--slow doc-layout doc-layout--plain">
+        <div className={`stagger-in stagger-in--slow doc-layout doc-layout--plain${leavingSignIn ? " is-leaving-all" : ""}`}>
           <SignIn
             pendingSave={pendingSave}
-            initialPlan={urlPlan ?? "free"}
+            initialPlan={checkoutPlan ?? urlPlan ?? "free"}
+            naming={!!account}
             onSignedIn={(plan) => {
+              handoff.current = true;
               setPendingPlan(null);
               if (plan) setCheckoutPlan(plan);
+              reload();
+            }}
+            onNamed={(plan) => {
+              handoff.current = true;
+              setCheckoutPlan(plan);
+              reload();
+            }}
+            onSignOut={async () => {
+              captureEvent("signup_back_from_name");
+              await signOut();
+              resetUser();
+              setCheckoutPlan(null);
               reload();
             }}
           />

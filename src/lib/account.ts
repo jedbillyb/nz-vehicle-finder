@@ -74,6 +74,9 @@ export const fetchAuthOptions = () => call<{ google: boolean; devLogin?: boolean
 export const devSignIn = (as: "user" | "admin") =>
   call<{ ok: true }>("/api/auth/dev-login", { method: "POST", body: JSON.stringify({ as }) });
 
+/** Local development only: forget the account's name so the name step shows again. */
+export const devForgetName = () => call<{ ok: true }>("/api/auth/dev-forget-name", { method: "POST" });
+
 /** A full-page navigation, not a fetch: Google's consent screen can't load in the background. */
 export const googleSignInUrl = (plan?: TierId) => `/api/auth/google${plan ? `?plan=${plan}` : ""}`;
 

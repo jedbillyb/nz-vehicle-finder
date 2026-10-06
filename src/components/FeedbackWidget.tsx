@@ -27,24 +27,15 @@ function getDistinctId(): string {
   return id;
 }
 
-/** An element's top in the page, from layout, so slide-in transforms don't count. */
-function layoutTop(el: HTMLElement) {
-  let y = 0;
-  for (let e: HTMLElement | null = el; e; e = e.offsetParent as HTMLElement | null) y += e.offsetTop;
-  return y;
-}
-
 /**
- * How much of the footer is on screen, in px (0 when it's out of view), and
- * how far above the footer the pill should sit. The gap is 16px, unless the
- * page marks an element with `data-feedback-clear` (the account page's Delete
- * account button): then the pill centres in the space between that element
- * and the footer, so it never covers it.
+ * Where the pill sits. It floats 24px from the bottom right corner, and as
+ * the footer scrolls into view it eases down into it, ending centred in the
+ * footer with the same gap above, below and to its right. It's moved with
+ * the CSS `translate` property, set straight on the element every frame, so
+ * it tracks the scroll in sub-pixel steps without re-rendering.
  */
-function useFooterOverlap(active: boolean) {
+function useFooterDock(active: boolean) {
   const { pathname } = useLocation();
-  const [overlap, setOverlap] = useState(0);
-  const [gap, setGap] = useState(16);
   useEffect(() => {
     if (!active) return;
     let frame = 0;
@@ -52,15 +43,14 @@ function useFooterOverlap(active: boolean) {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const footer = document.querySelector<HTMLElement>("footer.footer-root");
-        const footerTop = footer?.getBoundingClientRect().top;
-        setOverlap(footerTop === undefined ? 0 : Math.max(0, window.innerHeight - footerTop));
-        // Measured from layout, not the screen: the account sections slide up
-        // 6px as they appear, and following that would make the pill jiggle.
-        const clear = document.querySelector<HTMLElement>("[data-feedback-clear]");
         const pill = document.querySelector<HTMLElement>("[data-feedback-pill]");
-        setGap(footer && clear && pill
-          ? Math.max(0, Math.round((layoutTop(footer) - layoutTop(clear) - clear.offsetHeight - pill.offsetHeight) / 2))
-          : 16);
+        if (!pill) return;
+        if (!footer) return void (pill.style.translate = "");
+        const height = footer.offsetHeight;
+        const gap = Math.max(8, Math.round((height - pill.offsetHeight) / 2));
+        const shown = Math.min(height, Math.max(0, window.innerHeight - footer.getBoundingClientRect().top));
+        const move = (24 - gap) * (shown / height);
+        pill.style.translate = `${move}px ${move}px`;
       });
     };
     update();
@@ -78,7 +68,6 @@ function useFooterOverlap(active: boolean) {
       window.removeEventListener("resize", update);
     };
   }, [active, pathname]);
-  return { overlap, gap };
 }
 
 export function FeedbackWidget() {
@@ -94,11 +83,9 @@ export function FeedbackWidget() {
   const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
   // Toasts take this corner, so the pill ducks out of the way while any are
-  // showing. Once the footer scrolls into view the pill rides up with it,
-  // `footer.gap` above (see useFooterOverlap).
-  const footer = useFooterOverlap(!isMobile);
+  // showing. Near the bottom of the page it docks into the footer (see useFooterDock).
+  useFooterDock(!isMobile);
   const hidePill = useSonner().toasts.length > 0;
-  const pillBottom = Math.max(24, footer.overlap + footer.gap);
 
   const pagePath = window.location.pathname;
 
@@ -212,7 +199,7 @@ export function FeedbackWidget() {
           style={
             {
               position: "fixed",
-              bottom: pillBottom,
+              bottom: 24,
               right: 24,
               zIndex: 35,
               display: "flex",

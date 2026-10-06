@@ -178,6 +178,8 @@
 .footer-group { display: contents; }
 .footer-feedback { display: none; }
 @media (max-width: 767px) { .footer-feedback { display: contents; } }
+/* Desktop: room on both sides for the Feedback pill when it docks in the footer. */
+@media (min-width: 768px) { .footer-root { padding-left: 156px !important; padding-right: 156px !important; } }
 /* Phones: one centred row per group, dotted inside a row but not between
    rows, so no line starts or ends on a dot. */
 @media (max-width: 767px) {
@@ -535,7 +537,7 @@
   font: inherit;
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: #374151;
   background: none;
   border: 0;
   border-left: 1px solid #e5e7eb;
@@ -543,7 +545,7 @@
   cursor: pointer;
 }
 .acct-who__signout:hover { color: #0f172a; }
-.acct-usage { border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px 20px; background: #ffffff; }
+.acct-usage { border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px 20px; background: #ffffff; font-variant-numeric: tabular-nums; }
 .acct-usage__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; }
 .acct-usage__num { font-size: 28px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
 .acct-usage__of { font-size: 14px; color: #4b5563; }
@@ -634,3 +636,63 @@
 @media (prefers-reduced-motion: reduce) {
   .table-scroll__hint.is-on { animation: none; }
 }
+
+/* Sign-in steps: a step swapping in cascades faster than a whole page. */
+.stagger-in--step > * { animation-duration: 0.35s; }
+.stagger-in--step > :nth-child(2) { animation-delay: 50ms; }
+.stagger-in--step > :nth-child(3) { animation-delay: 100ms; }
+.stagger-in--step > :nth-child(n+4) { animation-delay: 150ms; }
+
+/* The 6-digit sign-in code: one box per digit. */
+.otp { gap: 0; }
+.otp__group { gap: 8px; }
+.otp .otp__slot {
+  width: 46px; height: 54px; border: 1px solid #d1d5db; border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 600; color: #0f172a;
+  background: #ffffff; transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.otp .otp__slot:first-child, .otp .otp__slot:last-child { border-radius: 8px; border-left-width: 1px; }
+.otp .otp__slot.ring-2 { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18); --tw-ring-shadow: 0 0 #0000; }
+.otp .otp__slot[data-filled] { animation: otp-pop 0.18s ease-out; }
+@keyframes otp-pop { 50% { transform: scale(1.08); } }
+.otp-shake { animation: otp-shake 0.4s ease-in-out; }
+@keyframes otp-shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+@media (max-width: 400px) { .otp .otp__slot { width: 42px; height: 50px; } .otp__group { gap: 6px; } }
+@media (prefers-reduced-motion: reduce) { .otp .otp__slot, .otp-shake { animation: none !important; } }
+
+/* Past the email step the plans step aside and the sign-in takes one column. */
+.signup-grid--single { grid-template-columns: minmax(0, 460px); justify-content: center; text-align: center; }
+.signup-grid--single .otp, .signup-grid--single .signup-name { justify-content: center; }
+.signup-grid--single .signup-back { display: flex; width: fit-content; }
+.signup-grid.is-leaving > * { animation: fade-out 0.18s ease-in forwards; }
+.signup-back {
+  display: inline-flex; align-items: center; gap: 2px; margin: 0 0 12px -4px; padding: 4px 8px 4px 4px;
+  border: 0; border-radius: 999px; background: none; color: #4b5563; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.signup-back:hover { background: #f1f5f9; color: #0f172a; }
+.otp-status { margin-top: 10px; min-height: 20px; font-size: 13px; color: #6b7280; }
+.otp-status + .otp-status { margin-top: 4px; }
+.otp-resend { padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: #0369a1; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.otp-resend:disabled { color: #9ca3af; text-decoration: none; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .signup-grid.is-leaving > * { animation: none; } }
+
+/* Sign-in done: the whole sign-in screen fades out before the account builds in. */
+.is-leaving-all > * { animation: leave-up 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards !important; animation-delay: 0s !important; }
+@keyframes leave-up { to { opacity: 0; transform: translateY(-16px); } }
+/* The account rises into the space the sign-in left, a beat per section. */
+.stagger-in--rise > * { animation-name: rise-in; animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1); }
+@keyframes rise-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .is-leaving-all > * { animation: none !important; } }
+.fade-in--slow { animation-duration: 0.6s; animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+/* The old heading leaves with the sign-in screen. */
+.leave-fade { animation: leave-nudge 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+@keyframes leave-nudge { to { opacity: 0; transform: translateY(-5px); } }
+/* After sign-in the greeting lands first; the account follows a beat later. */
+.stagger-in--after-greeting > :nth-child(1) { animation-delay: 280ms; }
+.stagger-in--after-greeting > :nth-child(2) { animation-delay: 380ms; }
+.stagger-in--after-greeting > :nth-child(3) { animation-delay: 480ms; }
+.stagger-in--after-greeting > :nth-child(4) { animation-delay: 580ms; }
+.stagger-in--after-greeting > :nth-child(5) { animation-delay: 680ms; }
+.stagger-in--after-greeting > :nth-child(n+6) { animation-delay: 780ms; }
+@media (prefers-reduced-motion: reduce) { .leave-fade { animation: none; } }
