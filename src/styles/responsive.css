@@ -697,23 +697,22 @@
 .stagger-in--after-greeting > :nth-child(n+6) { animation-delay: 780ms; }
 @media (prefers-reduced-motion: reduce) { .leave-fade { animation: none; } }
 
-/* Pull to refresh (PullToRefresh): an iOS-style spinner in a small white disc. */
+/* Pull to refresh (PullToRefresh): the nav's blue shows above the page as it
+   slides down, with a white iOS-style spinner in the middle of it. */
 .ptr {
   position: fixed;
-  top: env(safe-area-inset-top);
-  left: 50%;
-  z-index: 60;
-  width: 36px;
-  height: 36px;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  height: 0;
   display: grid;
   place-items: center;
-  border-radius: 999px;
-  background: #ffffff;
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18);
-  transform: translate(-50%, -48px);
-  opacity: 0;
+  overflow: hidden;
+  background: #0ea5e9;
+  visibility: hidden;
   pointer-events: none;
 }
-.ptr line { stroke: #475569; stroke-width: 2.4; stroke-linecap: round; }
+.ptr line { stroke: #ffffff; stroke-width: 2.4; stroke-linecap: round; }
 .ptr--spin line { animation: ptr-spoke 1s linear infinite; }
-@keyframes ptr-spoke { from { opacity: 1; } to { opacity: 0.15; } }
+@keyframes ptr-spoke { from { opacity: 1; } to { opacity: 0.25; } }

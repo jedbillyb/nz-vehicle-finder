@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
-const PULL = 72; // px of (damped) pull that arms a refresh
+const PULL = 64; // px the page must come down to arm a refresh
+const HOLD = 56; // px the page rests at while it reloads
 const SPOKES = 12;
 
 /**
@@ -9,9 +11,11 @@ const SPOKES = 12;
  * refresh to that bounce, so this brings it back without the bounce. It also
  * works when the site is opened from the home screen, which has no reload.
  *
- * The iOS-style spinner fills a spoke at a time as you pull, then spins and
- * the page reloads. Positions are set straight on the element, so it follows
- * the finger without re-rendering.
+ * Like the standard one, the whole page (nav and all) slides down and shows
+ * the nav's blue behind it, with an iOS-style spinner that fills a spoke at a
+ * time as you pull, then spins while the page reloads. Positions are set
+ * straight on the elements, so it follows the finger without re-rendering.
+ * The blue sits outside #root (a portal), since #root is what moves.
  */
 export function PullToRefresh() {
   const ref = useRef<HTMLDivElement>(null);
@@ -19,20 +23,30 @@ export function PullToRefresh() {
   useEffect(() => {
     if (!window.matchMedia("(pointer: coarse)").matches) return;
     const el = ref.current;
-    if (!el) return;
+    const page = document.getElementById("root");
+    if (!el || !page) return;
     const spokes = [...el.querySelectorAll<SVGLineElement>("line")];
     let startX = 0;
     let startY = 0;
     let pull = 0;
     let tracking = false;
     let refreshing = false;
+    let settle = 0;
 
     const draw = (animate: boolean) => {
-      el.style.transition = animate ? "transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.2s ease" : "none";
-      el.style.transform = `translate(-50%, ${Math.min(pull, PULL + 24) - 48}px)`;
-      el.style.opacity = pull > 4 ? "1" : "0";
+      window.clearTimeout(settle);
+      const ease = animate ? "0.35s cubic-bezier(0.2, 0.7, 0.2, 1)" : "0s";
+      page.style.transition = el.style.transition = `transform ${ease}, height ${ease}`;
+      page.style.transform = `translateY(${pull}px)`;
+      el.style.height = `${pull}px`;
+      el.style.visibility = "visible";
       const lit = Math.round((pull / PULL) * SPOKES);
-      spokes.forEach((s, i) => (s.style.opacity = refreshing ? "" : i < lit ? "1" : "0.15"));
+      spokes.forEach((s, i) => (s.style.opacity = refreshing ? "" : i < lit ? "1" : "0.25"));
+      // Back at rest, drop the transform: it would pin fixed elements to #root.
+      if (pull === 0) settle = window.setTimeout(() => {
+        page.style.transform = page.style.transition = "";
+        el.style.visibility = "hidden";
+      }, animate ? 350 : 0);
     };
 
     // Not while a popup or sheet holds the page still, or inside something that scrolls itself.
@@ -60,7 +74,8 @@ export function PullToRefresh() {
         if (Math.abs(dx) > 8 || dy < -8) tracking = false;
         return;
       }
-      pull = Math.max(0, dy * 0.5);
+      // Heavier the further it goes, like the real thing.
+      pull = Math.max(0, 140 * (1 - Math.exp(-dy / 220)));
       draw(false);
     };
     const onEnd = () => {
@@ -68,10 +83,10 @@ export function PullToRefresh() {
       tracking = false;
       if (pull >= PULL) {
         refreshing = true;
-        pull = PULL;
+        pull = HOLD;
         el.classList.add("ptr--spin");
         draw(true);
-        window.setTimeout(() => window.location.reload(), 350);
+        window.setTimeout(() => window.location.reload(), 450);
       } else {
         pull = 0;
         draw(true);
@@ -83,6 +98,7 @@ export function PullToRefresh() {
     window.addEventListener("touchend", onEnd, { passive: true });
     window.addEventListener("touchcancel", onEnd, { passive: true });
     return () => {
+      window.clearTimeout(settle);
       window.removeEventListener("touchstart", onStart);
       window.removeEventListener("touchmove", onMove);
       window.removeEventListener("touchend", onEnd);
@@ -90,13 +106,14 @@ export function PullToRefresh() {
     };
   }, []);
 
-  return (
+  return createPortal(
     <div ref={ref} className="ptr" aria-hidden>
       <svg viewBox="0 0 28 28" width="22" height="22">
         {Array.from({ length: SPOKES }, (_, i) => (
           <line key={i} x1="14" y1="3" x2="14" y2="8.5" transform={`rotate(${i * 30} 14 14)`} style={{ animationDelay: `${(i - SPOKES) / SPOKES}s` }} />
         ))}
       </svg>
-    </div>
+    </div>,
+    document.body,
   );
 }
