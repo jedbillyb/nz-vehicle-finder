@@ -3,10 +3,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* No rubber-band bounce when scrolling past the top or bottom. */
-html,
-body {
-  overscroll-behavior: none;
+/* Opened from the home screen: no rubber-band bounce, and PullToRefresh does
+   the pull to refresh. In the browser the bounce stays, because Safari's own
+   pull to refresh (smoother than any script) only works with it. */
+@media (display-mode: standalone) {
+  html,
+  body {
+    overscroll-behavior: none;
+  }
 }
 
 /* Safari on iPhone tints the strip under its floating bar from the body's

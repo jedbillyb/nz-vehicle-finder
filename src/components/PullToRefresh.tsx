@@ -24,10 +24,9 @@ export function useRefreshKey() {
 const bundleOf = (html: string) => html.match(/\/assets\/index-[\w-]+\.js/)?.[0];
 
 /**
- * Pull down at the top of the page to refresh, on touch screens. The page
- * turns off the rubber-band bounce (index.css), and Safari ties its own pull
- * to refresh to that bounce, so this brings it back without the bounce. It
- * also works when the site is opened from the home screen, which has no reload.
+ * Pull down at the top of the page to refresh, when the site is opened from
+ * the home screen: that has no browser pull to refresh, and no bounce either
+ * (index.css). In the browser this stays off and Safari's own one is used.
  *
  * Like the standard one, the whole page (nav and all) slides down over the
  * nav's blue, with an iOS-style spinner that fills a spoke at a time. Let go
@@ -43,7 +42,9 @@ export function PullToRefresh() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!window.matchMedia("(pointer: coarse)").matches) return;
+    // Only from the home screen. In the browser, Safari's own pull to refresh does the job.
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true;
+    if (!standalone || !window.matchMedia("(pointer: coarse)").matches) return;
     const el = ref.current;
     const page = document.getElementById("root");
     if (!el || !page) return;
