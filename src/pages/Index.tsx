@@ -758,7 +758,8 @@ export default function Index() {
 
             <SavedSearchLinks />
             <h3 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Popular Searches</h3>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+            {/* Same tiles as Browse by Make below, but plain <a> so the search reloads with the new filters. */}
+            <div className="link-tiles link-tiles--white" style={{ marginBottom: 24 }}>
               {[
                 ["Toyota vehicles", "?MAKE=TOYOTA"],
                 ["Ford vehicles", "?MAKE=FORD"],
@@ -769,10 +770,8 @@ export default function Index() {
                 ["Utes in NZ", "?BODY_TYPE=UTILITY"],
                 ["Japanese imports", "?ORIGINAL_COUNTRY=JAPAN"],
               ].map(([label, params]) => (
-                <a key={label} href={params}
-                  style={{ fontSize: 11, color: "#0ea5e9", textDecoration: "none", padding: "4px 10px", border: "1px solid #bae6fd", borderRadius: 999, letterSpacing: "0.08em" }}
-                >
-                  {label}
+                <a key={label} href={params} className="link-tile" title={label}>
+                  <span className="link-tile__label">{label}</span>
                 </a>
               ))}
             </div>
@@ -791,16 +790,16 @@ export default function Index() {
             </div>
 
             <h3 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Frequently Asked Questions</h3>
-            {[
+            {([
               ["Is this free?", "Yes, completely free. The data is publicly available from Waka Kotahi and this tool is open source."],
               ["How current is the data?", "The dataset is updated periodically from Waka Kotahi's public data releases."],
               ["Can I filter by import status?", "Yes - use the Import Status field to filter between vehicles registered new in New Zealand and used imports."],
               ["Can I search by region?", "Yes - use the Registered Region field to filter by Territorial Local Authority (TLA)."],
               ["Can I export results?", "Yes - after running a search, use the Export CSV button to download your results."],
-              ["Is there an API?", "Yes - the NZ Vehicle Register API gives you the same data as JSON for your own apps and spreadsheets. The free plan includes 500 requests a month; see vehiclefinder.co.nz/developers."],
+              ["Is there an API?", <>Yes - the NZ Vehicle Register API gives you the same data as JSON for your own apps and spreadsheets. The free plan includes 500 requests a month; <Link to="/developers" onClick={() => captureEvent("api_docs_link_clicked", { location: "home_faq", source: "index" })} style={{ color: "#0ea5e9" }}>see the API docs</Link>.</>],
               ["Can I share a search?", "Yes - use the Share button to send a link with your current filters applied (or copy it, on a computer)."],
               ["How many vehicles are in the register?", "The register currently contains 5.9 million vehicle records covering all registered vehicles in New Zealand."],
-            ].map(([q, a]) => (
+            ] as [string, React.ReactNode][]).map(([q, a]) => (
               <div key={q} style={{ marginBottom: 12 }}>
                 <strong style={{ color: "#111827" }}>{q}</strong> {a}
               </div>
