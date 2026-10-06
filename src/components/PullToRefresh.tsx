@@ -56,6 +56,20 @@ export function PullToRefresh() {
     let settle = 0;
     let frame = 0;
     let lit = -1;
+    // Top of the nav text and the notch/island inset, measured at the start of
+    // each pull, so the spinner sits midway in the blue the user actually sees.
+    let gapTop = 0;
+    let gapBottom = 0;
+    const measure = () => {
+      const probe = document.createElement("div");
+      probe.style.cssText = "position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none";
+      document.body.appendChild(probe);
+      gapTop = probe.getBoundingClientRect().height;
+      probe.remove();
+      const text = document.querySelector<HTMLElement>(".header-topbar a, .header-topbar span");
+      const rootTop = page.getBoundingClientRect().top - pull;
+      gapBottom = text ? Math.max(gapTop, text.getBoundingClientRect().top - pull - rootTop) : gapTop;
+    };
 
     const EASE = "0.4s cubic-bezier(0.2, 0.7, 0.2, 1)";
     const draw = (animate: boolean, hideSpinner = false) => {
@@ -71,7 +85,7 @@ export function PullToRefresh() {
       // in as it comes into view, and shrinks away before the page goes back.
       const t = refreshing ? 1 : Math.min(1, pull / PULL);
       spinner.style.opacity = hideSpinner ? "0" : String(t);
-      spinner.style.transform = `translate3d(0, ${-pull / 2}px, 0) scale(${hideSpinner ? 0.5 : 0.6 + 0.4 * t})`;
+      spinner.style.transform = `translate3d(0, ${(gapTop + gapBottom - pull) / 2 - 2}px, 0) scale(${hideSpinner ? 0.5 : 0.6 + 0.4 * t})`;
       el.style.visibility = "visible";
       const now = refreshing ? SPOKES + 1 : Math.round(t * SPOKES);
       if (now !== lit) {
@@ -128,6 +142,7 @@ export function PullToRefresh() {
       startY = e.touches[0].clientY;
       pull = 0;
       armed = false;
+      measure();
       // Ready the page to move now, so the first frame of the pull isn't a hitch.
       page.style.willChange = "transform";
     };
