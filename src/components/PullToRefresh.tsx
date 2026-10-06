@@ -53,22 +53,41 @@ export function PullToRefresh() {
     let tracking = false;
     let refreshing = false;
     let settle = 0;
+    let frame = 0;
+    let lit = -1;
 
-    const draw = (animate: boolean) => {
+    const EASE = "0.4s cubic-bezier(0.2, 0.7, 0.2, 1)";
+    const draw = (animate: boolean, hideSpinner = false) => {
       window.clearTimeout(settle);
-      const ease = animate ? "transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1)" : "none";
-      page.style.transition = spinner.style.transition = ease;
-      page.style.transform = `translateY(${pull}px)`;
-      // The spinner stays in the middle of the blue that's showing.
-      spinner.style.transform = `translateY(${-pull / 2}px)`;
+      cancelAnimationFrame(frame);
+      frame = 0;
+      page.style.transition = animate ? `transform ${EASE}` : "none";
+      spinner.style.transition = hideSpinner
+        ? "transform 0.2s ease-in, opacity 0.2s ease-in"
+        : animate ? `transform ${EASE}, opacity ${EASE}` : "none";
+      page.style.transform = `translate3d(0, ${pull}px, 0)`;
+      // The spinner stays in the middle of the blue that's showing, growing
+      // in as it comes into view, and shrinks away before the page goes back.
+      const t = refreshing ? 1 : Math.min(1, pull / PULL);
+      spinner.style.opacity = hideSpinner ? "0" : String(t);
+      spinner.style.transform = `translate3d(0, ${-pull / 2}px, 0) scale(${hideSpinner ? 0.5 : 0.6 + 0.4 * t})`;
       el.style.visibility = "visible";
-      const lit = Math.round((pull / PULL) * SPOKES);
-      spokes.forEach((s, i) => (s.style.opacity = refreshing ? "" : i < lit ? "1" : "0.25"));
+      const now = refreshing ? SPOKES + 1 : Math.round(t * SPOKES);
+      if (now !== lit) {
+        lit = now;
+        // Spinning, the spokes fade around the circle and the whole thing turns
+        // a spoke at a time (CSS), which keeps going even while the page is busy.
+        spokes.forEach((s, i) => (s.style.opacity = String(refreshing ? 0.25 + (0.75 * i) / (SPOKES - 1) : i < lit ? 1 : 0.25)));
+      }
       // Back at rest, drop the transform: it would pin fixed elements to #root.
       if (pull === 0) settle = window.setTimeout(() => {
-        page.style.transform = page.style.transition = "";
+        page.style.transform = page.style.transition = page.style.willChange = "";
         el.style.visibility = "hidden";
       }, animate ? 400 : 0);
+    };
+    // Touch events can come faster than the screen draws: draw once a frame.
+    const drawSoon = () => {
+      if (!frame) frame = requestAnimationFrame(() => { frame = 0; draw(false); });
     };
 
     const refresh = async () => {
@@ -84,10 +103,12 @@ export function PullToRefresh() {
       await queryClient.invalidateQueries();
       window.dispatchEvent(new Event(REFRESH));
       await new Promise((r) => window.setTimeout(r, Math.max(0, MIN_SPIN - (Date.now() - started))));
+      draw(false, true);
+      await new Promise((r) => window.setTimeout(r, 180));
       refreshing = false;
       el.classList.remove("ptr--spin");
       pull = 0;
-      draw(true);
+      draw(true, true);
     };
 
     // Not while a popup or sheet holds the page still, or inside something that scrolls itself.
@@ -105,6 +126,8 @@ export function PullToRefresh() {
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       pull = 0;
+      // Ready the page to move now, so the first frame of the pull isn't a hitch.
+      page.style.willChange = "transform";
     };
     const onMove = (e: TouchEvent) => {
       if (!tracking) return;
@@ -117,11 +140,12 @@ export function PullToRefresh() {
       }
       // Heavier the further it goes, like the real thing.
       pull = Math.max(0, 140 * (1 - Math.exp(-dy / 220)));
-      draw(false);
+      drawSoon();
     };
     const onEnd = () => {
       if (!tracking) return;
       tracking = false;
+      if (pull === 0) return void (page.style.willChange = "");
       if (pull >= PULL) {
         refreshing = true;
         pull = HOLD;
@@ -140,6 +164,7 @@ export function PullToRefresh() {
     window.addEventListener("touchcancel", onEnd, { passive: true });
     return () => {
       window.clearTimeout(settle);
+      cancelAnimationFrame(frame);
       window.removeEventListener("touchstart", onStart);
       window.removeEventListener("touchmove", onMove);
       window.removeEventListener("touchend", onEnd);
@@ -152,7 +177,7 @@ export function PullToRefresh() {
       <div className="ptr__spinner">
         <svg viewBox="0 0 28 28" width="22" height="22">
           {Array.from({ length: SPOKES }, (_, i) => (
-            <line key={i} x1="14" y1="3" x2="14" y2="8.5" transform={`rotate(${i * 30} 14 14)`} style={{ animationDelay: `${(i - SPOKES) / SPOKES}s` }} />
+            <line key={i} x1="14" y1="3" x2="14" y2="8.5" transform={`rotate(${i * 30} 14 14)`} />
           ))}
         </svg>
       </div>

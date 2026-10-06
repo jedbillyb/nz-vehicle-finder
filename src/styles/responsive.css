@@ -713,5 +713,5 @@
 .ptr__spinner { position: absolute; left: 50%; bottom: -9px; width: 22px; height: 22px; margin-left: -11px; }
 .ptr__spinner svg { display: block; }
 .ptr line { stroke: #ffffff; stroke-width: 2.4; stroke-linecap: round; }
-.ptr--spin line { animation: ptr-spoke 1s linear infinite; }
-@keyframes ptr-spoke { from { opacity: 1; } to { opacity: 0.25; } }
+.ptr--spin svg { animation: ptr-turn 1s steps(12) infinite; }
+@keyframes ptr-turn { to { transform: rotate(360deg); } }
