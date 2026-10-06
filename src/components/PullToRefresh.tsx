@@ -112,19 +112,30 @@ export function PullToRefresh() {
       if (!frame) frame = requestAnimationFrame(step);
     };
 
+    // The page rests at HOLD for this long at most, or until the user scrolls
+    // away: held down, the nav and all sit a step too low wherever they are.
+    const hold = (ms: number) => new Promise<void>((resolve) => {
+      const done = () => { window.clearTimeout(t); window.removeEventListener("scroll", onScroll); resolve(); };
+      const onScroll = () => { if (window.scrollY > 8) done(); };
+      const t = window.setTimeout(done, ms);
+      window.addEventListener("scroll", onScroll, { passive: true });
+    });
     const refresh = async () => {
       const started = Date.now();
       try {
-        const res = await fetch(window.location.pathname, { cache: "no-store" });
+        // A slow connection mustn't keep the page held down: give up on the check after a moment.
+        const res = await fetch(window.location.pathname, { cache: "no-store", signal: AbortSignal.timeout(1500) });
         const live = bundleOf(await res.text());
         const mine = bundleOf(document.documentElement.innerHTML);
         if (live && mine && live !== mine) return window.location.reload();
       } catch {
-        // Offline: refresh what's here anyway.
+        // Offline, or too slow: refresh what's here anyway.
       }
-      await queryClient.invalidateQueries();
+      // The refetch runs in the background; each part of the page shows its own
+      // loading state, and the hold doesn't wait on the network.
+      void queryClient.invalidateQueries();
       window.dispatchEvent(new Event(REFRESH));
-      await new Promise((r) => window.setTimeout(r, Math.max(0, MIN_SPIN - (Date.now() - started))));
+      await hold(Math.max(0, MIN_SPIN - (Date.now() - started)));
       draw(false, true);
       await new Promise((r) => window.setTimeout(r, 180));
       refreshing = false;
