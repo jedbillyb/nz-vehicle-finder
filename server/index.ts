@@ -665,10 +665,10 @@ function loginEmailHtml(code: string, link: string): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>${code} is your NZ Vehicle Finder sign-in code</title>
+<title>Your NZ Vehicle Finder verification code is ${code}</title>
 </head>
 <body style="margin:0; padding:0; background:#f0f9ff;">
-<div style="display:none; max-height:0; overflow:hidden; opacity:0;">Your sign-in code is ${code}. It works once and expires in 15 minutes.</div>
+<div style="display:none; max-height:0; overflow:hidden; opacity:0;">Your verification code is ${code}. It works once and expires in 15 minutes.</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f9ff;">
 <tr><td align="center" style="padding:32px 16px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:440px;">
@@ -727,10 +727,10 @@ const accounts = createAccounts(accountStore, {
       to: email,
       // login@ has no inbox; a reply to the sign-in email should reach a person.
       replyTo: CONTACT_EMAIL.support,
-      subject: `${code} is your NZ Vehicle Finder sign-in code`,
+      subject: `Your NZ Vehicle Finder verification code is ${code}`,
       html: loginEmailHtml(code, link),
       text: [
-        `Your sign-in code: ${code}`,
+        `Your verification code is ${code}`,
         "",
         "Type it on the page you came from, or open this link:",
         link,
