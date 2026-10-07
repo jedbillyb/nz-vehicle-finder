@@ -34,7 +34,6 @@ const fmtRequests = (t: Tier) => `${t.monthlyRequests.toLocaleString("en-NZ")} r
 
 /** One plan as a selectable row: name and allowance on the left, price on the right. */
 /** Main form buttons: as tall as the input beside them and wide enough to read. */
-const wideButton = { minWidth: 120, fontSize: 14, alignSelf: "stretch" } as const;
 
 function PlanOption({ tier, selected, onSelect }: { tier: Tier; selected: boolean; onSelect: () => void }) {
   return (
@@ -150,10 +149,13 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
     if (leaving && stepRef.current && gridRef.current) {
       const at = stepRef.current.getBoundingClientRect();
       from.current = { left: at.left, top: at.top, height: gridRef.current.offsetHeight, bottom: gridRef.current.getBoundingClientRect().bottom };
-      if (shown === "email" && window.matchMedia("(min-width: 900px)").matches) setHeldHeight(gridRef.current.offsetHeight);
+      const wide = window.matchMedia("(min-width: 900px)").matches;
+      // Stacked (phones), the name step is shorter than the code step before it:
+      // the page would shrink under it and drag it down. Keep the room instead.
+      if ((shown === "email" && wide) || (shown === "code" && step === "name" && !wide)) setHeldHeight(gridRef.current.offsetHeight);
     }
     else if (shown === "email") setHeldHeight(null);
-  }, [leaving, shown]);
+  }, [leaving, shown, step]);
   useLayoutEffect(() => {
     const el = stepRef.current;
     const grid = gridRef.current;
@@ -306,7 +308,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
           Sign in to save your search. It's saved to your account as soon as you're in.
         </div>
       )}
-      <div ref={gridRef} style={shown !== "email" && heldHeight ? { minHeight: heldHeight, alignContent: "center" } : undefined} className={`signup-grid${shown === "email" ? "" : " signup-grid--single"}${leaving ? " is-leaving" : ""}`}>
+      <div ref={gridRef} style={shown !== "email" && heldHeight ? { minHeight: heldHeight, alignContent: phone ? "start" : "center" } : undefined} className={`signup-grid${shown === "email" ? "" : " signup-grid--single"}${leaving ? " is-leaving" : ""}`}>
         {shown === "email" && <div className="fade-in">
           <div style={{ ...label, marginBottom: 8 }}>1. Pick a plan</div>
           <div role="radiogroup" aria-label="Plan" className="stagger-in stagger-in--slow" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -345,7 +347,8 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                 You're in. What should we call you? You can change it later in Settings.
                 {paid && <> Then you go straight to secure checkout for <strong>{tier.name}</strong>.</>}
               </p>
-              <form onSubmit={saveName} className="signup-name" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {/* Stacked and full width, like the email step. */}
+              <form onSubmit={saveName} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <input
                   autoFocus
                   required
@@ -356,9 +359,10 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                   value={name}
                   disabled={savingName}
                   onChange={(e) => setName(e.target.value)}
-                  style={{ ...input, flex: "1 1 180px", height: 42, boxSizing: "border-box" }}
+                  className="signup-input"
+                  style={{ ...input, width: "100%", height: 42, boxSizing: "border-box" }}
                 />
-                <button type="submit" disabled={savingName || !name.trim()} style={{ ...primaryButton, ...wideButton, opacity: name.trim() ? 1 : 0.5 }}>
+                <button type="submit" disabled={savingName || !name.trim()} style={{ ...primaryButton, width: "100%", height: 42, opacity: name.trim() ? 1 : 0.5 }}>
                   {savingName ? "Saving..." : "Continue"}
                 </button>
               </form>
@@ -457,6 +461,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                   placeholder="you@example.co.nz"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="signup-input"
                   style={{ ...input, width: "100%", height: 42, boxSizing: "border-box" }}
                 />
                 {/* The keyboard goes down with the tap, on purpose: the code box takes
