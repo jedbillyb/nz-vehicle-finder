@@ -450,7 +450,7 @@ function SignIn({ options, pendingSave, initialPlan, naming, onSignedIn, onNamed
               <form onSubmit={submit} noValidate style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ position: "relative" }}>
                   <input
-                    type={testLogin ? "text" : "email"}
+                    type="email"
                     required
                     autoComplete="email"
                     placeholder="you@example.co.nz"

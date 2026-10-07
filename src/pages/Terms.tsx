@@ -22,6 +22,7 @@ export default function Terms() {
   return (
     <PageShell
       source="terms_page"
+      aside={false}
       subtitle="Terms"
       crumb="Terms"
       title="Terms"

@@ -25,6 +25,7 @@ export default function Privacy() {
   return (
     <PageShell
       source="privacy_page"
+      aside={false}
       subtitle="Privacy"
       crumb="Privacy"
       title="Privacy"
