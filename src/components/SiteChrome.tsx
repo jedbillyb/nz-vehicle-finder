@@ -70,7 +70,6 @@ export function SiteTopbar({ right }: { right?: ReactNode }) {
 export function SiteNavMobile() {
   return (
     <div className="site-nav-mobile" style={{ background: "#0ea5e9", padding: "0 16px 8px", justifyContent: "center" }}>
-      <div className="site-nav-mobile-edge" aria-hidden="true" />
       <NavLinks location="topbar_mobile" gap={18} />
     </div>
   );
