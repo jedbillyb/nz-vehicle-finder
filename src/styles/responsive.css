@@ -691,7 +691,7 @@
 @media (prefers-reduced-motion: reduce) { .otp .otp__slot, .otp-shake { animation: none !important; } }
 
 /* Past the email step the plans step aside and the sign-in takes one column. */
-.signup-grid--single { grid-template-columns: minmax(0, 460px); justify-content: center; text-align: center; }
+.signup-grid--single { grid-template-columns: minmax(0, 520px); justify-content: center; text-align: center; }
 .signup-grid--single .otp { justify-content: center; }
 /* The sign-in fields turn blue when typed in, not with the browser's own ring. */
 .signup-input { transition: border-color 0.15s ease; }
