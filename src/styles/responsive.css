@@ -635,6 +635,15 @@
 .admin-table td { padding: 8px 12px; border-top: 1px solid #f1f5f9; color: #1f2937; white-space: nowrap; }
 .admin-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .admin-table .muted { color: #9ca3af; }
+.admin-table__sort { all: unset; cursor: pointer; }
+.admin-table__sort:focus-visible { outline: 2px solid #0ea5e9; outline-offset: 2px; border-radius: 2px; }
+.admin-table__row { cursor: pointer; }
+.admin-table__row:hover td, .admin-table__row.is-open td { background: #f0f9ff; }
+.admin-table__detail td { background: #f8fafc; white-space: normal; padding: 12px 16px; }
+.admin-table__detail dl { position: sticky; left: 16px; max-width: calc(100vw - 64px); display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+.admin-table__detail dt { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6b7280; padding-top: 2px; }
+.admin-table__detail dd { margin: 0; word-break: break-word; }
+.admin-table__detail a { color: #0284c7; text-decoration: underline; }
 
 /* ── Results table scroll box: edge fades and a "Swipe" hint ── */
 .table-scroll { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }

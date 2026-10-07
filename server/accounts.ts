@@ -67,6 +67,13 @@ export interface AdminAccountRow {
   keys: number;
   searches: number;
   requests_this_month: number;
+  requests_last_month: number;
+  requests_total: number;
+  last_api_use: string | null;
+  sessions: number;
+  stripe_customer_id: string | null;
+  key_list: string | null;
+  search_list: string | null;
 }
 
 export const MAX_NAME_LENGTH = 40;
@@ -302,14 +309,22 @@ export class AccountStore {
 
   /** Every account, newest first, with enough to see who is using what. */
   listAllAccounts(now = new Date()): AdminAccountRow[] {
+    const lastMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
     const rows = this.db.prepare(
       `SELECT u.id, u.email, u.name, u.tier, u.created_at, u.last_signin_at, u.google_sub IS NOT NULL AS google,
-         u.subscription_status,
+         u.subscription_status, u.stripe_customer_id,
          (SELECT COUNT(*) FROM api_keys k WHERE k.user_id = u.id AND k.revoked_at IS NULL) AS keys,
          (SELECT COUNT(*) FROM saved_searches s WHERE s.user_id = u.id) AS searches,
-         COALESCE((SELECT count FROM usage g WHERE g.user_id = u.id AND g.month = ?), 0) AS requests_this_month
+         COALESCE((SELECT count FROM usage g WHERE g.user_id = u.id AND g.month = ?), 0) AS requests_this_month,
+         COALESCE((SELECT count FROM usage g WHERE g.user_id = u.id AND g.month = ?), 0) AS requests_last_month,
+         COALESCE((SELECT SUM(count) FROM usage g WHERE g.user_id = u.id), 0) AS requests_total,
+         (SELECT MAX(last_used_at) FROM api_keys k WHERE k.user_id = u.id) AS last_api_use,
+         (SELECT COUNT(*) FROM sessions x WHERE x.user_id = u.id AND x.expires_at > ?) AS sessions,
+         (SELECT GROUP_CONCAT(COALESCE(k.name, k.prefix || '…') || CASE WHEN k.revoked_at IS NULL THEN '' ELSE ' (revoked)' END, char(10))
+            FROM api_keys k WHERE k.user_id = u.id) AS key_list,
+         (SELECT GROUP_CONCAT(s.name, char(10)) FROM saved_searches s WHERE s.user_id = u.id) AS search_list
        FROM users u ORDER BY u.id DESC`
-    ).all(monthOf(now)) as (Omit<AdminAccountRow, "google"> & { google: number })[];
+    ).all(monthOf(now), monthOf(lastMonth), now.getTime()) as (Omit<AdminAccountRow, "google"> & { google: number })[];
     return rows.map((r) => ({ ...r, google: !!r.google }));
   }
 

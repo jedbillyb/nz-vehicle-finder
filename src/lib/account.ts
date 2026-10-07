@@ -94,6 +94,15 @@ export interface AdminAccount {
   keys: number;
   searches: number;
   requests_this_month: number;
+  requests_last_month: number;
+  requests_total: number;
+  last_api_use: string | null;
+  sessions: number;
+  stripe_customer_id: string | null;
+  /** One per line: each key's name (or prefix), revoked ones marked. */
+  key_list: string | null;
+  /** One per line: each saved search's name. */
+  search_list: string | null;
 }
 
 export const fetchAdminAccounts = () => call<{ accounts: AdminAccount[] }>("/api/admin/accounts");

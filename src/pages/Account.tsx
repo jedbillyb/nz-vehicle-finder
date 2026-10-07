@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
 import { captureEvent, identifyUser, resetUser } from "@/lib/posthog";
@@ -991,18 +991,53 @@ function Settings({ account, reload }: { account: AccountData; reload: () => voi
 const shortDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "2-digit" }) : "never";
 
+type AdminSort = "id" | "name" | "email" | "tier" | "created_at" | "last_signin_at" | "last_api_use" | "searches" | "keys" | "requests_this_month" | "requests_total";
+
+const ADMIN_COLUMNS: { key: AdminSort; label: string; num?: boolean }[] = [
+  { key: "id", label: "#", num: true },
+  { key: "name", label: "First name" },
+  { key: "email", label: "Email" },
+  { key: "tier", label: "Plan" },
+  { key: "created_at", label: "Joined" },
+  { key: "last_signin_at", label: "Last in" },
+  { key: "last_api_use", label: "Last API call" },
+  { key: "searches", label: "Searches", num: true },
+  { key: "keys", label: "Keys", num: true },
+  { key: "requests_this_month", label: "This month", num: true },
+  { key: "requests_total", label: "All time", num: true },
+];
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const withinWeek = (iso: string | null) => !!iso && Date.now() - new Date(iso).getTime() < WEEK_MS;
+
 /** Every account on the site, for whoever is listed in ADMIN_EMAILS. */
 function AdminAccounts() {
   const [rows, setRows] = useState<AdminAccount[] | null>(null);
   const [filter, setFilter] = useState("");
+  const [sort, setSort] = useState<{ key: AdminSort; desc: boolean }>({ key: "id", desc: true });
+  const [open, setOpen] = useState<number | null>(null);
   useEffect(() => {
     fetchAdminAccounts().then((r) => setRows(r.accounts)).catch((err) => toast.error((err as Error).message));
   }, []);
 
   const q = filter.trim().toLowerCase();
-  const shown = (rows ?? []).filter((r) => !q || r.email.includes(q) || (r.name ?? "").toLowerCase().includes(q));
-  const paid = (rows ?? []).filter((r) => r.tier !== "free").length;
-  const requests = (rows ?? []).reduce((n, r) => n + r.requests_this_month, 0);
+  const shown = (rows ?? [])
+    .filter((r) => !q || r.email.includes(q) || (r.name ?? "").toLowerCase().includes(q) || r.tier.includes(q))
+    .sort((a, b) => {
+      const x = a[sort.key] ?? "", y = b[sort.key] ?? "";
+      const c = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y));
+      return sort.desc ? -c : c;
+    });
+  const all = rows ?? [];
+  const paid = all.filter((r) => r.tier !== "free").length;
+  const requests = all.reduce((n, r) => n + r.requests_this_month, 0);
+  const lastMonth = all.reduce((n, r) => n + r.requests_last_month, 0);
+  const newThisWeek = all.filter((r) => withinWeek(r.created_at)).length;
+  const activeThisWeek = all.filter((r) => withinWeek(r.last_signin_at) || withinWeek(r.last_api_use)).length;
+  const google = all.filter((r) => r.google).length;
+
+  const sortBy = (key: AdminSort) =>
+    setSort((s) => (s.key === key ? { key, desc: !s.desc } : { key, desc: !["name", "email", "tier"].includes(key) }));
 
   return (
     <DocSection id="all-accounts" title="All accounts">
@@ -1012,11 +1047,15 @@ function AdminAccounts() {
         <>
           <div className="acct-usage__facts" style={{ marginBottom: 12 }}>
             <span><strong><AnimatedNumber value={rows.length} /></strong> accounts</span>
+            <span><strong><AnimatedNumber value={newThisWeek} /></strong> new this week</span>
+            <span><strong><AnimatedNumber value={activeThisWeek} /></strong> active this week</span>
             <span><strong><AnimatedNumber value={paid} /></strong> paying</span>
+            <span><strong><AnimatedNumber value={google} /></strong> use Google</span>
             <span><strong><AnimatedNumber value={requests} /></strong> API requests this month</span>
+            <span><strong><AnimatedNumber value={lastMonth} /></strong> last month</span>
           </div>
           <input
-            placeholder="Filter by name or email"
+            placeholder="Filter by name, email or plan"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             style={{ ...input, maxWidth: 320, marginBottom: 12 }}
@@ -1025,25 +1064,58 @@ function AdminAccounts() {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>First name</th><th>Email</th><th>Plan</th><th>Sign-in</th><th>Joined</th><th>Last in</th>
-                  <th className="num">Keys</th><th className="num">Requests</th>
+                  {ADMIN_COLUMNS.map((c) => (
+                    <th key={c.key} className={c.num ? "num" : undefined} aria-sort={sort.key === c.key ? (sort.desc ? "descending" : "ascending") : undefined}>
+                      <button type="button" className="admin-table__sort" onClick={() => sortBy(c.key)}>
+                        {c.label}{sort.key === c.key ? (sort.desc ? " ↓" : " ↑") : ""}
+                      </button>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {shown.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.name ?? <span className="muted">no name yet</span>}</td>
-                    <td>{r.email}</td>
-                    <td>{TIERS[r.tier as TierId]?.name ?? r.tier}{r.subscription_status && r.subscription_status !== "active" ? ` (${r.subscription_status})` : ""}</td>
-                    <td>{r.google ? "Google" : "Email"}</td>
-                    <td>{shortDate(r.created_at)}</td>
-                    <td>{shortDate(r.last_signin_at)}</td>
-                    <td className="num">{r.keys}</td>
-                    <td className="num">{r.requests_this_month.toLocaleString("en-NZ")}</td>
-                  </tr>
+                  <Fragment key={r.id}>
+                    <tr className={`admin-table__row${open === r.id ? " is-open" : ""}`} onClick={() => setOpen(open === r.id ? null : r.id)}>
+                      <td className="num muted">{r.id}</td>
+                      <td>{r.name ?? <span className="muted">no name yet</span>}</td>
+                      <td>{r.email}</td>
+                      <td>{TIERS[r.tier as TierId]?.name ?? r.tier}{r.subscription_status && r.subscription_status !== "active" ? ` (${r.subscription_status})` : ""}</td>
+                      <td>{shortDate(r.created_at)}</td>
+                      <td>{shortDate(r.last_signin_at)}</td>
+                      <td>{shortDate(r.last_api_use)}</td>
+                      <td className="num">{r.searches}</td>
+                      <td className="num">{r.keys}</td>
+                      <td className="num">{r.requests_this_month.toLocaleString("en-NZ")}</td>
+                      <td className="num">{r.requests_total.toLocaleString("en-NZ")}</td>
+                    </tr>
+                    {open === r.id && (
+                      <tr className="admin-table__detail">
+                        <td colSpan={ADMIN_COLUMNS.length}>
+                          <dl>
+                            <dt>Signs in with</dt><dd>{r.google ? "Google and email" : "Email"}</dd>
+                            <dt>Signed in on</dt><dd>{r.sessions} {r.sessions === 1 ? "device" : "devices"}</dd>
+                            <dt>Joined</dt><dd>{new Date(r.created_at).toLocaleString("en-NZ")}</dd>
+                            <dt>Last in</dt><dd>{r.last_signin_at ? new Date(r.last_signin_at).toLocaleString("en-NZ") : "never"}</dd>
+                            <dt>Last API call</dt><dd>{r.last_api_use ? new Date(r.last_api_use).toLocaleString("en-NZ") : "never"}</dd>
+                            <dt>Requests</dt><dd>{r.requests_this_month.toLocaleString("en-NZ")} this month, {r.requests_last_month.toLocaleString("en-NZ")} last month, {r.requests_total.toLocaleString("en-NZ")} all time</dd>
+                            <dt>Subscription</dt><dd>{r.subscription_status ?? "none"}</dd>
+                            <dt>Stripe</dt>
+                            <dd>
+                              {r.stripe_customer_id
+                                ? <a href={`https://dashboard.stripe.com/customers/${r.stripe_customer_id}`} target="_blank" rel="noreferrer">{r.stripe_customer_id}</a>
+                                : <span className="muted">no customer</span>}
+                            </dd>
+                            <dt>API keys</dt><dd>{r.key_list ? r.key_list.split("\n").join(", ") : <span className="muted">none</span>}</dd>
+                            <dt>Saved searches</dt><dd>{r.search_list ? r.search_list.split("\n").join(", ") : <span className="muted">none</span>}</dd>
+                          </dl>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
                 {shown.length === 0 && (
-                  <tr><td colSpan={8} className="muted">No accounts match.</td></tr>
+                  <tr><td colSpan={ADMIN_COLUMNS.length} className="muted">No accounts match.</td></tr>
                 )}
               </tbody>
             </table>
