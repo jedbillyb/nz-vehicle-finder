@@ -210,12 +210,10 @@
   }
 }
 @media (max-width: 767px) {
-  /* --keyboard-shift (set in main.tsx): with the keyboard up, iOS slides what's
-     on screen down the page, past the top the strip would stick to. */
   .site-nav-mobile,
   .header-topbar {
     position: sticky;
-    top: var(--keyboard-shift, 0px);
+    top: 0;
     z-index: 40;
   }
 }
