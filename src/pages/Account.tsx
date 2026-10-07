@@ -162,18 +162,25 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
     const dx = was.left - el.getBoundingClientRect().left;
     if (Math.abs(dx) >= 2) el.animate([{ transform: `translateX(${dx}px)` }, { transform: "none" }], timing);
     // Stacked (phones), the next step would take the plan picker's place higher
-    // up the page, out of sight. Scroll the page to put it in the middle of
-    // what's on screen (the keyboard takes the bottom when it's up), and slide
-    // it there from where the step before it was.
+    // up the page, out of sight. Scroll the page to put it near the top of
+    // what's on screen, clear of the keyboard, which takes the bottom half
+    // when it's up (and the page can't always tell), and slide it there from
+    // where the step before it was. The phone scrolls the focused box into
+    // view on its own a moment later, usually to just above the keyboard, so
+    // the place is set again after it has.
     if (!window.matchMedia("(min-width: 900px)").matches) {
-      const vv = window.visualViewport;
-      const seenTop = vv?.offsetTop ?? 0;
-      const seenHeight = vv?.height ?? window.innerHeight;
-      const at = el.getBoundingClientRect();
-      const want = Math.max(seenTop + 48, seenTop + (seenHeight - at.height) / 2);
-      window.scrollBy({ top: at.top - want, behavior: "instant" as ScrollBehavior });
+      const place = () => {
+        const vv = window.visualViewport;
+        const seenTop = vv?.offsetTop ?? 0;
+        const seenHeight = vv?.height ?? window.innerHeight;
+        const want = seenTop + Math.max(48, Math.round(seenHeight * 0.1));
+        window.scrollBy({ top: el.getBoundingClientRect().top - want, behavior: "instant" as ScrollBehavior });
+      };
+      place();
       const dy = was.top - el.getBoundingClientRect().top;
-      if (Math.abs(dy) >= 2 && Math.abs(dy) <= seenHeight) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], timing);
+      if (Math.abs(dy) >= 2 && Math.abs(dy) <= window.innerHeight) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], timing);
+      const again = [80, 350].map((ms) => window.setTimeout(place, ms));
+      return () => again.forEach(window.clearTimeout);
     }
     const height = grid.offsetHeight;
     if (Math.abs(height - was.height) >= 2) {
