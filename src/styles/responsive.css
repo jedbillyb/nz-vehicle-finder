@@ -669,6 +669,19 @@
 .otp-shake { animation: otp-shake 0.4s ease-in-out; }
 @keyframes otp-shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
 @media (max-width: 400px) { .otp .otp__slot { width: 42px; height: 50px; } .otp__group { gap: 6px; } }
+/* Phones: one plain input over six drawn boxes (CodeInputPhone in Account.tsx).
+   Monospace digits are 0.6em wide, so the spacing puts one in each box. */
+.otp-phone { --cell: 46px; --gap: 8px; --box: 54px; position: relative; display: inline-flex; gap: var(--gap); vertical-align: top; }
+.otp-phone__cell { width: var(--cell); height: var(--box); border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff; transition: border-color 0.15s, box-shadow 0.15s; }
+.otp-phone__cell.is-active { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18); }
+.otp-phone__input {
+  position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; margin: 0; overflow: hidden;
+  padding: 0 0 0 calc((var(--cell) - 0.6em) / 2); border: 0; outline: 0; border-radius: 8px; background: transparent;
+  font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 22px; font-weight: 600; line-height: var(--box); color: #0f172a;
+  letter-spacing: calc(var(--cell) + var(--gap) - 0.6em); caret-color: #0ea5e9;
+}
+.otp-phone__input:disabled { opacity: 0.5; }
+@media (max-width: 400px) { .otp-phone { --cell: 42px; --gap: 6px; --box: 50px; } }
 @media (prefers-reduced-motion: reduce) { .otp .otp__slot, .otp-shake { animation: none !important; } }
 
 /* Past the email step the plans step aside and the sign-in takes one column. */

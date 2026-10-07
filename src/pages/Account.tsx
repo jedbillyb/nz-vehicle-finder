@@ -92,6 +92,8 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   const [checking, setChecking] = useState(false);
   /** Bumped on a wrong code, so the boxes shake (and clear) each time. */
   const [rejected, setRejected] = useState(0);
+  /** Phones get one plain input drawn as six boxes (CodeInputPhone); the library boxes stay on desktop. */
+  const phone = typeof window !== "undefined" && window.matchMedia("(max-width: 899px)").matches;
   const [googleOn, setGoogleOn] = useState(false);
   const [devLogin, setDevLogin] = useState(false);
   /** Seconds until another code can be sent; the server allows one a minute per email. */
@@ -340,7 +342,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
               </p>
               {/* Six boxes, no button: the sixth digit checks the code. */}
               <div key={rejected} className={rejected ? "otp-shake" : undefined}>
-                <InputOTP
+                {phone ? <CodeInputPhone value={typed} disabled={checking} onChange={onCodeChange} /> : <InputOTP
                   autoFocus
                   maxLength={6}
                   pattern={REGEXP_ONLY_DIGITS}
@@ -356,7 +358,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                   <InputOTPGroup className="otp__group">
                     {[0, 1, 2, 3, 4, 5].map((i) => <InputOTPSlot key={i} index={i} className="otp__slot" />)}
                   </InputOTPGroup>
-                </InputOTP>
+                </InputOTP>}
               </div>
               <div className="otp-status">
                 {checking
@@ -443,6 +445,46 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
         </div>
       </div>
     </DocSection>
+  );
+}
+
+/**
+ * The code boxes on phones: one ordinary input, with six boxes drawn behind it
+ * and the digits spaced to land one in each. The desktop boxes (input-otp)
+ * hide a doctored input behind them, and the phone never offered the code
+ * from the sign-in email for it; an ordinary input is what every other site
+ * has, and what the phone's autofill is built for. Pasting keeps the digits
+ * whatever came with them.
+ */
+function CodeInputPhone({ value, disabled, onChange }: { value: string; disabled: boolean; onChange: (raw: string) => void }) {
+  const [focused, setFocused] = useState(false);
+  const active = Math.min(value.length, 5);
+  return (
+    <div className="otp-phone">
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <span key={i} aria-hidden className={`otp-phone__cell${focused && i === active ? " is-active" : ""}`} />
+      ))}
+      <input
+        className="otp-phone__input"
+        type="text"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        autoFocus
+        aria-label="6-digit code"
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        // Tapped while already focused (the keyboard came over from the email
+        // box): open the keyboard again for this box, so the phone offers the
+        // code from the email the way it does for a box you tapped into.
+        onClick={(e) => {
+          const el = e.currentTarget;
+          if (document.activeElement === el) { el.blur(); el.focus(); }
+        }}
+      />
+    </div>
   );
 }
 
