@@ -30,6 +30,7 @@ body {
   background: #f0f9ff !important;
 }
 #root {
+  min-height: 100vh;
   background: hsl(var(--background));
 }
 /* Still loading, the app has drawn nothing yet: cover the screen in the page
@@ -59,6 +60,34 @@ body {
 }
 html[data-end="top"] #top-blue {
   height: 200vh;
+}
+
+/* In Safari on a phone (not the home screen app, which has no bounce): the
+   page colour follows the half of the page you're in (index.html sets
+   data-half), so the gap a pull opens at the top is blue and at the bottom
+   is pale. The page itself covers the body, so the change never shows.
+   Safari would also tint the strip under its bottom bar from the page colour,
+   so #bottom-edge gives it a pale pinned element to take the colour from
+   instead: Safari looks a few px inside the bottom edge for a pinned element
+   with a plain background colour, about the full width of the screen. */
+#bottom-edge {
+  display: none;
+}
+@media (pointer: coarse) and (display-mode: browser) {
+  html[data-half="top"],
+  html[data-half="top"] body {
+    background: #0ea5e9 !important;
+  }
+  #bottom-edge {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 12px;
+    background: #f0f9ff;
+    z-index: 30;
+  }
 }
 
 /* Arial (or a metric twin) scaled to Inter's size, shown until Inter loads. Text keeps
