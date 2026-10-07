@@ -111,6 +111,8 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   }, []);
   const tier = TIERS[plan];
   const paid = tier.priceNzd > 0;
+  /** The plans only matter for API use past the free 500 a month, so they wait behind a link. */
+  const [showPlans, setShowPlans] = useState(initialPlan !== "free");
   const [name, setName] = useState("");
   const [savingName, setSavingName] = useState(false);
   const saveName = async (e: React.FormEvent) => {
@@ -130,6 +132,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   // column can leave (or come back) before the layout changes width.
   const step = naming ? "name" : state === "sent" ? "code" : "email";
   const [shown, setShown] = useState(step);
+  const withPlans = shown === "email" && showPlans;
   const leaving = shown !== step;
   useEffect(() => {
     if (step === shown) return;
@@ -301,34 +304,14 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   };
 
   return (
-    <DocSection id="sign-in" title="Create an account or sign in">
+    <DocSection id="sign-in" title="Sign in or create an account">
       {pendingSave && state !== "sent" && !naming && (
         <div style={{ ...panel, marginBottom: 12, background: "#fffbeb", borderColor: "#fcd34d", fontSize: 14, color: "#92400e", display: "flex", gap: 8, alignItems: "center" }}>
           <Star size={14} fill="#f59e0b" color="#f59e0b" style={{ flexShrink: 0 }} />
           Sign in to save your search. It's saved to your account as soon as you're in.
         </div>
       )}
-      <div ref={gridRef} style={shown !== "email" && heldHeight ? { minHeight: heldHeight, alignContent: phone ? "start" : "center" } : undefined} className={`signup-grid${shown === "email" ? "" : " signup-grid--single"}${leaving ? " is-leaving" : ""}`}>
-        {shown === "email" && <div className="fade-in">
-          <div style={{ ...label, marginBottom: 8 }}>1. Pick a plan</div>
-          <div role="radiogroup" aria-label="Plan" className="stagger-in stagger-in--slow" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {TIER_ORDER.map((id) => (
-              <PlanOption
-                key={id}
-                tier={TIERS[id]}
-                selected={id === plan}
-                onSelect={() => {
-                  if (state === "sent") return;
-                  setPlan(id);
-                  captureEvent("plan_selected", { plan: id, source: "signup" });
-                }}
-              />
-            ))}
-          </div>
-          <p style={{ fontSize: 12, color: "#6b7280", margin: "10px 0 0" }}>
-            Every plan gets every endpoint and filter. Change or cancel any time.
-          </p>
-        </div>}
+      <div ref={gridRef} style={shown !== "email" && heldHeight ? { minHeight: heldHeight, alignContent: phone ? "start" : "center" } : undefined} className={`signup-grid${withPlans ? "" : " signup-grid--single"}${leaving ? " is-leaving" : ""}`}>
 
         {/* Keyed by step, so each step's lines cascade in when it takes over. */}
         <div key={shown} ref={stepRef} className="stagger-in stagger-in--step">
@@ -339,7 +322,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
             </button>
           )}
           <div style={{ ...label, marginBottom: 8 }}>
-            {shown === "name" ? "3. Your name" : shown === "code" ? "2. Check your email" : "2. Your email"}
+            {shown === "name" ? "Your name" : shown === "code" ? "Check your email" : "Your email"}
           </div>
           {shown === "name" ? (
             <>
@@ -416,7 +399,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
           ) : (
             <>
               <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
-                We'll email you a 6-digit code. No password. New here? Signing in creates your account.
+                We'll email you a 6-digit code. No password. New here? Signing in creates your free account.
                 {paid
                   ? <> Then you go straight to Stripe to pay NZ${tier.priceNzd} a month for <strong>{tier.name}</strong>.</>
                   : <> No card needed.</>}
@@ -473,6 +456,12 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                 </button>
               </form>
               {error && <p style={errorText}>{error}</p>}
+              {!showPlans && (
+                <p style={{ fontSize: 13, color: "#6b7280", margin: "14px 0 0" }}>
+                  Free covers saved searches and 500 API requests a month.{" "}
+                  <button type="button" className="otp-resend" onClick={() => { setShowPlans(true); captureEvent("plans_opened", { source: "signup" }); }}>Need more? See plans</button>
+                </p>
+              )}
               <p style={{ margin: "12px 0 0", fontSize: 12, color: "#6b7280" }}>
                 By continuing you agree to the <Link to="/terms" style={{ color: "#0369a1" }}>Terms</Link> and{" "}
                 <Link to="/privacy" style={{ color: "#0369a1" }}>Privacy Policy</Link>.
@@ -480,6 +469,28 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
             </>
           )}
         </div>
+
+        {withPlans && <div className="fade-in">
+          <div style={{ ...label, marginBottom: 8 }}>API plans</div>
+          <div role="radiogroup" aria-label="Plan" className="stagger-in stagger-in--slow" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {TIER_ORDER.map((id) => (
+              <PlanOption
+                key={id}
+                tier={TIERS[id]}
+                selected={id === plan}
+                onSelect={() => {
+                  if (state === "sent") return;
+                  setPlan(id);
+                  captureEvent("plan_selected", { plan: id, source: "signup" });
+                }}
+              />
+            ))}
+          </div>
+          <p style={{ fontSize: 12, color: "#6b7280", margin: "10px 0 0" }}>
+            Every plan gets every endpoint and filter. Change or cancel any time.{" "}
+            <button type="button" className="otp-resend" onClick={() => { setShowPlans(false); setPlan("free"); }}>Hide plans</button>
+          </p>
+        </div>}
       </div>
     </DocSection>
   );
@@ -529,8 +540,8 @@ function CodeInputPhone({ value, disabled, onChange }: { value: string; disabled
 function HowItWorks() {
   const steps: [string, React.ReactNode][] = [
     ["Sign in with a code", "Enter your email and type the 6-digit code we send. No password to remember. Your first sign-in creates your account."],
-    ["Create an API key and save searches", <>Make a key here and send it with each request (see the <Link to="/developers" style={{ color: "#0369a1" }}>API docs</Link>). Keys never expire. Save up to {MAX_SAVED_SEARCHES} searches to rerun any time.</>],
-    ["Pay only for more", "Free covers 500 requests a month. Paid plans bill monthly through Stripe and can be changed or cancelled whenever."],
+    ["Save searches", `Star a search to keep it. Save up to ${MAX_SAVED_SEARCHES} and rerun any of them from here.`],
+    ["Use the API if you want", <>Make a key here and send it with each request (see the <Link to="/developers" style={{ color: "#0369a1" }}>API docs</Link>). Free covers 500 requests a month; paid plans cover more.</>],
   ];
   return (
     <DocSection id="how-it-works" title="How accounts work">
@@ -1137,7 +1148,7 @@ export default function Account() {
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
   // While the session check runs, the heading uses last visit's answer, so signed-out
-  // visitors don't see "Your account" flash before it flips to "Get an API key".
+  // visitors don't see "Your account" flash before it flips to "Sign in".
   const [wasSignedIn] = useState(() => {
     try { return localStorage.getItem(SIGNED_IN_KEY) === "1"; } catch { return false; }
   });
@@ -1281,12 +1292,12 @@ export default function Account() {
       crumb="Account"
       // Keyed, so a new heading fades up instead of swapping in place.
       title={<span key={showDashboard ? "in" : "out"} className={leavingSignIn ? "leave-fade" : showDashboard && !greeted ? undefined : "fade-in fade-in--slow"} style={{ display: "block" }}>
-        {showDashboard ? (account?.name || (!account && lastName) ? `Hey, ${account?.name ?? lastName}` : "Your account") : "Get an API key"}
+        {showDashboard ? (account?.name || (!account && lastName) ? `Hey, ${account?.name ?? lastName}` : "Your account") : "Sign in"}
       </span>}
       intro={<span key={showDashboard ? "in" : "out"} className={leavingSignIn ? "leave-fade" : showDashboard && !greeted ? undefined : "fade-in fade-in--slow"} style={{ display: "block", animationDelay: leavingSignIn ? "0ms" : "120ms" }}>
         {showDashboard
           ? "Your API usage, keys, saved searches and plan."
-          : "Start free with 500 requests a month, or pick a paid plan and go straight to checkout."}
+          : "Save searches to rerun any time, and get API keys. Free to start."}
       </span>}
       aside={account && showDashboard ? <SignedInAs account={account} reload={reload} animate={greeted} /> : false}
     >

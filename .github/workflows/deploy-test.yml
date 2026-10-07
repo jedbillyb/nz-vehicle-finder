@@ -1,0 +1,29 @@
+name: Deploy test
+
+# The "test" branch builds to https://test.vehiclefinder.co.nz, a preview that
+# shares the live API. Front end only: the API is not restarted.
+on:
+  push:
+    branches: [test]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: Test
+      url: https://test.vehiclefinder.co.nz
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: server.jedbillyb.com
+          username: ubuntu
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            # A worktree of the live checkout, sharing its node_modules (the disk is tight).
+            cd /home/ubuntu/nz-vehicle-finder-test
+            git fetch origin test
+            git checkout --detach origin/test
+            cp /home/ubuntu/nz-vehicle-finder/public/autocomplete.json public/autocomplete.json
+            npm run build
+            cp -r dist/. /var/www/html/nz-vehicle-finder-test/
