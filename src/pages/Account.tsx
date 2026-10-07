@@ -1280,7 +1280,7 @@ export default function Account() {
       intro={<span key={showDashboard ? "in" : "out"} className={leavingSignIn ? "leave-fade" : showDashboard && !greeted ? undefined : "fade-in fade-in--slow"} style={{ display: "block", animationDelay: leavingSignIn ? "0ms" : "120ms" }}>
         {showDashboard
           ? "Your API usage, keys, saved searches and plan."
-          : "Your saved searches and API keys."}
+          : "Your home for saved searches and API keys."}
       </span>}
       aside={account && showDashboard ? <SignedInAs account={account} reload={reload} animate={greeted} /> : false}
     >
