@@ -829,6 +829,26 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     res.json({ accounts: store.listAllAccounts() });
   });
 
+  router.delete("/admin/accounts/:id", (req, res) => {
+    const user = sessionUser(req);
+    if (!user) return res.status(401).json({ error: "Not signed in" });
+    if (!admins.has(user.email)) return res.status(404).json({ error: "Not found" });
+    const id = Number(req.params.id);
+    const target = store.listAllAccounts().find((a) => a.id === id);
+    if (!target) return res.status(404).json({ error: "No such account" });
+    if (target.id === user.id) return res.status(400).json({ error: "Delete your own account from Settings instead." });
+    const { subscriptionId, subscriptionStatus } = store.billingFor(id);
+    if (subscriptionId && subscriptionStatus !== "canceled") {
+      return res.status(409).json({ error: "This account has a live subscription. Cancel it in Stripe first." });
+    }
+    if (normaliseEmail(req.body?.confirmEmail) !== target.email) {
+      return res.status(400).json({ error: "Type the account's email to confirm." });
+    }
+    store.deleteAccount(id);
+    track("account_deleted", analyticsId(id), { tier: target.tier, by_admin: true });
+    res.json({ ok: true });
+  });
+
   const keyNameFrom = (req: Request) =>
     typeof req.body?.name === "string" ? req.body.name.trim().slice(0, 60) || null : null;
 

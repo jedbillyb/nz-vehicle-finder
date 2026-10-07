@@ -644,6 +644,8 @@
 .admin-table__detail dt { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6b7280; padding-top: 2px; }
 .admin-table__detail dd { margin: 0; word-break: break-word; }
 .admin-table__detail a { color: #0284c7; text-decoration: underline; }
+.admin-table__delete { display: flex; flex-wrap: wrap; gap: 8px; max-width: 460px; }
+.admin-table__delete input { flex: 1 1 220px; }
 
 /* ── Results table scroll box: edge fades and a "Swipe" hint ── */
 .table-scroll { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }

@@ -106,6 +106,8 @@ export interface AdminAccount {
 }
 
 export const fetchAdminAccounts = () => call<{ accounts: AdminAccount[] }>("/api/admin/accounts");
+export const adminDeleteAccount = (id: number, confirmEmail: string) =>
+  call<{ ok: true }>(`/api/admin/accounts/${id}`, { method: "DELETE", body: JSON.stringify({ confirmEmail }) });
 
 export const signOutEverywhere = () => call<{ ok: true }>("/api/auth/logout-all", { method: "POST" });
 

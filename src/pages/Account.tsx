@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { applySeo } from "@/lib/seo";
 import { captureEvent, identifyUser, resetUser } from "@/lib/posthog";
 import {
-  createApiKey, deleteSavedSearch, deleteAccount, fetchAccount, fetchAdminAccounts, signOutEverywhere, fetchAuthOptions, devSignIn, devForgetName, googleSignInUrl, setAccountName, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
+  createApiKey, deleteSavedSearch, deleteAccount, fetchAccount, fetchAdminAccounts, adminDeleteAccount, signOutEverywhere, fetchAuthOptions, devSignIn, devForgetName, googleSignInUrl, setAccountName, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
   revokeApiKey, saveSearch, setPendingPlan, signOut, startCheckout, syncBilling, takePendingPlan, takePendingSave, verifySignInCode, verifySignInToken,
   type Account as AccountData, type AdminAccount, type SavedSearch,
   type AuthOptions,
@@ -919,21 +919,28 @@ function Settings({ account, reload }: { account: AccountData; reload: () => voi
   return (
     <DocSection id="settings" title="Settings">
       <div>
-        <div style={{ ...row, borderTop: 0, flexWrap: editingName === null ? "nowrap" : "wrap" }}>
-          <div style={editingName === null ? text : undefined}>
+        {/* Editing swaps the name for a box and Change for Save/Cancel in the same
+            spots, both a fixed height, so the row never grows or shrinks. */}
+        <form onSubmit={saveName} style={{ ...row, borderTop: 0 }}>
+          <div style={text}>
             <div style={{ fontWeight: 600 }}>First name</div>
-            {editingName === null && <div style={muted}>{account.name ?? "Not set"}</div>}
+            <div style={{ height: 30, paddingTop: 4, boxSizing: "border-box", display: "flex", alignItems: "center" }}>
+              {editingName === null ? (
+                <span style={muted}>{account.name ?? "Not set"}</span>
+              ) : (
+                <input autoFocus required autoComplete="given-name" aria-label="First name" maxLength={40} value={editingName} onChange={(e) => setEditingName(e.target.value)} className="signup-input" style={{ ...input, height: 26, padding: "0 8px", margin: "0 0 0 -9px", fontSize: 13, maxWidth: 220 }} />
+              )}
+            </div>
           </div>
           {editingName === null ? (
             <button type="button" style={{ ...linkButton, ...action }} onClick={() => setEditingName(account.name ?? "")}>Change</button>
           ) : (
-            <form onSubmit={saveName} style={{ display: "flex", gap: 8, flex: "1 1 280px", justifyContent: "flex-end" }}>
-              <input autoFocus required autoComplete="given-name" aria-label="First name" maxLength={40} value={editingName} onChange={(e) => setEditingName(e.target.value)} style={{ ...input, flex: "1 1 160px", padding: "6px 10px" }} />
-              <button type="submit" style={{ ...primaryButton, padding: "6px 14px", fontSize: 13 }}>Save</button>
-              <button type="button" style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13 }} onClick={() => setEditingName(null)}>Cancel</button>
-            </form>
+            <div style={{ ...action, display: "flex", gap: 8 }}>
+              <button type="submit" style={{ ...primaryButton, padding: "0 12px", height: 26, fontSize: 13 }}>Save</button>
+              <button type="button" style={{ ...secondaryButton, padding: "0 12px", height: 26, fontSize: 13 }} onClick={() => setEditingName(null)}>Cancel</button>
+            </div>
           )}
-        </div>
+        </form>
 
         <div style={row}>
           <div style={text}>
@@ -1016,9 +1023,23 @@ function AdminAccounts() {
   const [filter, setFilter] = useState("");
   const [sort, setSort] = useState<{ key: AdminSort; desc: boolean }>({ key: "id", desc: true });
   const [open, setOpen] = useState<number | null>(null);
-  useEffect(() => {
+  const [confirm, setConfirm] = useState("");
+  const load = useCallback(() => {
     fetchAdminAccounts().then((r) => setRows(r.accounts)).catch((err) => toast.error((err as Error).message));
   }, []);
+  useEffect(load, [load]);
+
+  const remove = async (r: AdminAccount) => {
+    try {
+      await adminDeleteAccount(r.id, confirm);
+      toast.success(`Deleted ${r.email}`);
+      setOpen(null);
+      setConfirm("");
+      load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
 
   const q = filter.trim().toLowerCase();
   const shown = (rows ?? [])
@@ -1076,7 +1097,7 @@ function AdminAccounts() {
               <tbody>
                 {shown.map((r) => (
                   <Fragment key={r.id}>
-                    <tr className={`admin-table__row${open === r.id ? " is-open" : ""}`} onClick={() => setOpen(open === r.id ? null : r.id)}>
+                    <tr className={`admin-table__row${open === r.id ? " is-open" : ""}`} onClick={() => { setOpen(open === r.id ? null : r.id); setConfirm(""); }}>
                       <td className="num muted">{r.id}</td>
                       <td>{r.name ?? <span className="muted">no name yet</span>}</td>
                       <td>{r.email}</td>
@@ -1108,6 +1129,22 @@ function AdminAccounts() {
                             </dd>
                             <dt>API keys</dt><dd>{r.key_list ? r.key_list.split("\n").join(", ") : <span className="muted">none</span>}</dd>
                             <dt>Saved searches</dt><dd>{r.search_list ? r.search_list.split("\n").join(", ") : <span className="muted">none</span>}</dd>
+                            <dt>Delete</dt>
+                            <dd>
+                              <form className="admin-table__delete" onSubmit={(e) => { e.preventDefault(); remove(r); }}>
+                                <input
+                                  type="email"
+                                  placeholder={`Type ${r.email} to confirm`}
+                                  aria-label="Type the account's email to confirm"
+                                  value={confirm}
+                                  onChange={(e) => setConfirm(e.target.value)}
+                                  style={{ ...input, padding: "6px 10px", fontSize: 13 }}
+                                />
+                                <button type="submit" disabled={confirm.trim().toLowerCase() !== r.email} style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13, color: "#b91c1c", borderColor: "#fca5a5" }}>
+                                  Delete account
+                                </button>
+                              </form>
+                            </dd>
                           </dl>
                         </td>
                       </tr>
