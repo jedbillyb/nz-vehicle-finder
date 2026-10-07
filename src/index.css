@@ -24,6 +24,11 @@ body {
 #root {
   background: hsl(var(--background));
 }
+/* Still loading, the app has drawn nothing yet: cover the screen in the page
+   colour, or the blue below shows as a huge block for the length of a refresh. */
+#root:empty {
+  min-height: 100vh;
+}
 /* The nav's blue, fixed behind the top half of the screen. The page covers
    it, but when Safari bounces past the top of the page (a flick back up, or
    a pull to refresh) the gap shows blue under the nav instead of a pale
