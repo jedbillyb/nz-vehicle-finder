@@ -573,6 +573,17 @@ function paidPlanFrom(raw: unknown): string | null {
 
 /** The sign-in code for every email when DEV_LOGIN is on (localhost only). */
 const DEV_LOGIN_CODE = "123456";
+/** test.vehiclefinder.co.nz only (its nginx marks the requests, the live site's
+ *  strips the mark): two throwaway accounts that sign in with a fixed code and
+ *  no email. test1 never keeps a name, so it always gets the sign-up step;
+ *  test2 has one and goes straight in. */
+const TEST_SITE_LOGINS: Record<string, string | null> = { test1: null, test2: "Test" };
+const TEST_SITE_CODE = "000000";
+const onTestSite = (req: Request) => req.get("x-vf-site") === "test";
+const testSiteLogin = (req: Request, raw: unknown) => {
+  const name = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+  return onTestSite(req) && Object.hasOwn(TEST_SITE_LOGINS, name) ? name : null;
+};
 
 export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   const secureCookies = !opts.publicUrl.startsWith("http://");
@@ -593,6 +604,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   };
 
   router.post("/auth/request-link", async (req, res) => {
+    if (testSiteLogin(req, req.body?.email)) return res.json({ ok: true });
     const email = loginEmail(req.body?.email);
     if (!email) return res.status(400).json({ error: "Enter a valid email address" });
     // Asked again within a minute (Back, then the same email): the code already
@@ -629,6 +641,14 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     if (byCode && !opts.devLogin && !codeGuesses(clientIp(req))) {
       return res.status(429).json({ error: "Too many wrong codes. Wait a few minutes and try again." });
     }
+    const tester = testSiteLogin(req, req.body?.email);
+    if (tester) {
+      if (code !== TEST_SITE_CODE) return res.status(400).json({ error: "That code is wrong. Test accounts use 000000." });
+      const result = store.devSignIn(`${tester}@test.vehiclefinder.co.nz`, TEST_SITE_LOGINS[tester]);
+      if (TEST_SITE_LOGINS[tester] === null) store.setName(result.user.id, null);
+      setSessionCookie(res, result.session, secureCookies);
+      return res.json({ ok: true });
+    }
     const result = raw ? store.redeemLoginToken(raw) : byCode ? store.redeemLoginCode(email, code) : null;
     if (!result) {
       track("signin_link_rejected", "server", { method: byCode ? "code" : "link" });
@@ -651,8 +671,8 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     res.json({ ok: true });
   });
 
-  router.get("/auth/options", (_req, res) => {
-    res.json({ google: !!opts.google, devLogin: !!opts.devLogin });
+  router.get("/auth/options", (req, res) => {
+    res.json({ google: !!opts.google, devLogin: !!opts.devLogin, testLogin: onTestSite(req) });
   });
 
   if (opts.devLogin) {
