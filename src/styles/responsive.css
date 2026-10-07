@@ -35,10 +35,6 @@
   }
 }
 
-/* Nothing may drag the page sideways on a phone. Clip, not hidden: it makes no
-   scroll box, so the sticky header still sticks. */
-html, body { overflow-x: clip; }
-
 /* ── Fix iOS Safari input zoom (triggers when font-size < 16px) */
 @media (max-width: 767px) {
   input, select, textarea {
@@ -214,10 +210,12 @@ html, body { overflow-x: clip; }
   }
 }
 @media (max-width: 767px) {
+  /* --keyboard-shift (set in main.tsx): with the keyboard up, iOS slides what's
+     on screen down the page, past the top the strip would stick to. */
   .site-nav-mobile,
   .header-topbar {
     position: sticky;
-    top: 0;
+    top: var(--keyboard-shift, 0px);
     z-index: 40;
   }
 }
@@ -697,9 +695,9 @@ html, body { overflow-x: clip; }
 /* Past the email step the plans step aside and the sign-in takes one column. */
 .signup-grid--single { grid-template-columns: minmax(0, 460px); justify-content: center; text-align: center; }
 .signup-grid--single .otp { justify-content: center; }
-/* The sign-in fields light up like the code boxes, not with the browser's own ring. */
-.signup-input { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
-.signup-input:focus { outline: 0; border-color: #0ea5e9 !important; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18); }
+/* The sign-in fields turn blue when typed in, not with the browser's own ring. */
+.signup-input { transition: border-color 0.15s ease; }
+.signup-input:focus { outline: 0; border-color: #0ea5e9 !important; }
 .signup-grid--single .signup-back { display: flex; width: fit-content; }
 .signup-grid.is-leaving > * { animation: fade-out 0.18s ease-in forwards; }
 .signup-back {
