@@ -19,7 +19,7 @@ if [ -n "$old" ]; then kill $old; sleep 1; fi
 export POSTHOG_API_KEY= VITE_POSTHOG_API_KEY=
 
 # A phone on the same wifi opens the site at this address.
-ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+ip=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
 [ -z "$ip" ] && ip=$(ip -4 route get 1.1.1.1 2>/dev/null | grep -o 'src [0-9.]*' | cut -d' ' -f2)
 [ -n "$ip" ] && echo "On your phone: http://$ip:8080"
 

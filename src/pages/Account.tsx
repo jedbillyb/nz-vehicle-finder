@@ -14,7 +14,7 @@ import { BURST_PER_SECOND, TIERS, TIER_ORDER, type Tier, type TierId } from "../
 import { MAX_SAVED_SEARCH_NAME, MAX_SAVED_SEARCHES } from "../../shared/savedSearch";
 import { ChevronLeft, LogOut, Star } from "lucide-react";
 import { toast } from "sonner";
-import { LoadingDots } from "@/components/LoadingDots";
+import { Spinner } from "@/components/Spinner";
 import { SkeletonBlock } from "@/components/SkeletonRows";
 import { AnimatedNumber } from "@/components/NumberSlot";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -169,12 +169,19 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
     // view on its own a moment later, usually to just above the keyboard, so
     // the place is set again after it has.
     if (!window.matchMedia("(min-width: 900px)").matches) {
+      // Where the step sits in the page, leaving out the slide below: measuring
+      // mid-slide would scroll by the slide's offset and jolt the page.
+      const pageTop = () => {
+        let top = 0;
+        for (let n: HTMLElement | null = el; n; n = n.offsetParent as HTMLElement | null) top += n.offsetTop;
+        return top;
+      };
       const place = () => {
         const vv = window.visualViewport;
         const seenTop = vv?.offsetTop ?? 0;
         const seenHeight = vv?.height ?? window.innerHeight;
         const want = seenTop + Math.max(48, Math.round(seenHeight * 0.1));
-        window.scrollBy({ top: el.getBoundingClientRect().top - want, behavior: "instant" as ScrollBehavior });
+        window.scrollTo({ top: pageTop() - want, behavior: "instant" as ScrollBehavior });
       };
       place();
       const dy = was.top - el.getBoundingClientRect().top;
@@ -369,7 +376,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
               </div>
               <div className="otp-status">
                 {checking
-                  ? <span style={{ color: "#0369a1", fontWeight: 600 }}>Checking<LoadingDots label="Checking code" /></span>
+                  ? <span style={{ color: "#0369a1", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7 }}><Spinner size={13} />Checking code</span>
                   : error
                   ? <span style={{ color: "#b91c1c" }}>{error}</span>
                   : <span>
