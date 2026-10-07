@@ -6,6 +6,7 @@ import {
   createApiKey, deleteSavedSearch, deleteAccount, fetchAccount, fetchAdminAccounts, signOutEverywhere, fetchAuthOptions, devSignIn, devForgetName, googleSignInUrl, setAccountName, hasPendingSave, openBillingPortal, paidPlan, renameApiKey, renameSavedSearch, requestSignInLink,
   revokeApiKey, saveSearch, setPendingPlan, signOut, startCheckout, syncBilling, takePendingPlan, takePendingSave, verifySignInCode, verifySignInToken,
   type Account as AccountData, type AdminAccount, type SavedSearch,
+  type AuthOptions,
 } from "@/lib/account";
 import { PageShell } from "@/components/PageShell";
 import { DocSection, Split } from "@/components/DocLayout";
@@ -73,7 +74,8 @@ function GoogleMark() {
   );
 }
 
-function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignOut }: {
+function SignIn({ options, pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignOut }: {
+  options: AuthOptions;
   pendingSave: boolean;
   initialPlan: TierId;
   /** Signed in for the first time and no name yet: step 2 becomes step 3, the name. */
@@ -97,10 +99,10 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   const [rejected, setRejected] = useState(0);
   /** Phones get one plain input drawn as six boxes (CodeInputPhone); the library boxes stay on desktop. */
   const phone = typeof window !== "undefined" && window.matchMedia("(max-width: 899px)").matches;
-  const [googleOn, setGoogleOn] = useState(false);
-  const [devLogin, setDevLogin] = useState(false);
+  const googleOn = options.google;
+  const devLogin = !!options.devLogin;
   /** On test.vehiclefinder.co.nz: test1 and test2 sign in with 000000 (server/accounts.ts). */
-  const [testLogin, setTestLogin] = useState(false);
+  const testLogin = !!options.testLogin;
   /** Seconds until another code can be sent; the server allows one a minute per email. */
   const [cooldown, setCooldown] = useState(0);
   /** Where the last code went, so Back and the same email again doesn't ask for another inside the minute. */
@@ -110,9 +112,6 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
     const t = window.setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => window.clearTimeout(t);
   }, [cooldown]);
-  useEffect(() => {
-    fetchAuthOptions().then((o) => { setGoogleOn(o.google); setDevLogin(!!o.devLogin); setTestLogin(!!o.testLogin); }).catch(() => {});
-  }, []);
   const tier = TIERS[plan];
   const paid = tier.priceNzd > 0;
   const [name, setName] = useState("");
@@ -330,7 +329,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
             </button>
           )}
           <div style={{ ...label, marginBottom: 8 }}>
-            {shown === "name" ? "Set up your account" : shown === "code" ? "Check your email" : "Your email"}
+            {shown === "name" ? "3. Set up your account" : shown === "code" ? "2. Check your email" : "1. Enter your email"}
           </div>
           {shown === "name" ? (
             <>
@@ -1192,10 +1191,12 @@ export default function Account() {
     return () => { window.clearTimeout(t); document.documentElement.classList.remove("signin-handoff"); };
   }, [greeted]);
   const leavingSignIn = wantDashboard && !dashboardShown;
-  const [devLogin, setDevLogin] = useState(false);
+  // Fetched alongside the account, so the Google button builds in with the rest of the form.
+  const [authOptions, setAuthOptions] = useState<AuthOptions | null>(null);
   useEffect(() => {
-    fetchAuthOptions().then((o) => setDevLogin(!!o.devLogin)).catch(() => {});
+    fetchAuthOptions().then(setAuthOptions).catch(() => setAuthOptions({ google: false }));
   }, []);
+  const devLogin = !!authOptions?.devLogin;
   const showDashboard = account ? dashboardShown : loading && wasSignedIn;
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -1306,7 +1307,7 @@ export default function Account() {
       {error && (
         <div className="page-band" style={{ padding: "10px 24px", background: "#fef2f2", borderBottom: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>{error}</div>
       )}
-      {loading ? (
+      {loading || (!(account && dashboardShown) && !authOptions) ? (
         <div className="skeleton-late page-band" aria-busy="true" style={{ padding: "24px", display: "grid", gap: 16 }}><SkeletonBlock height={120} /><SkeletonBlock height={260} /></div>
       ) : account && dashboardShown ? (
         <>
@@ -1326,6 +1327,7 @@ export default function Account() {
         // Two short sections need no menu; same section styling as the docs, full width.
         <div className={`stagger-in stagger-in--slow doc-layout doc-layout--plain signin-fill${leavingSignIn ? " is-leaving-all" : ""}`}>
           <SignIn
+            options={authOptions!}
             pendingSave={pendingSave}
             initialPlan={checkoutPlan ?? urlPlan ?? "free"}
             naming={!!account}
