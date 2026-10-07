@@ -1308,7 +1308,7 @@ export default function Account() {
         </>
       ) : (
         // Two short sections need no menu; same section styling as the docs, full width.
-        <div className={`stagger-in stagger-in--slow doc-layout doc-layout--plain${leavingSignIn ? " is-leaving-all" : ""}`}>
+        <div className={`stagger-in stagger-in--slow doc-layout doc-layout--plain signin-fill${leavingSignIn ? " is-leaving-all" : ""}`}>
           <SignIn
             pendingSave={pendingSave}
             initialPlan={checkoutPlan ?? urlPlan ?? "free"}

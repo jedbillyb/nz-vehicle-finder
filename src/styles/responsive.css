@@ -358,6 +358,13 @@
 .doc-nav-link.is-active { background: #f0f9ff; color: #0369a1; font-weight: 600; }
 .doc-main { min-width: 0; }
 .doc-layout--plain { display: block; }
+/* Signed out on a wide screen, the sign-in sits centred in the room left above
+   "How accounts work", which keeps to the bottom of the window. */
+@media (min-width: 900px) {
+  .page-body:has(> .signin-fill) { display: flex; flex-direction: column; }
+  .doc-layout--plain.signin-fill { flex: 1; display: flex; flex-direction: column; gap: 0; }
+  .signin-fill > #sign-in { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+}
 .doc-section {
   padding: 32px 0;
   border-bottom: 1px solid #e5e7eb;

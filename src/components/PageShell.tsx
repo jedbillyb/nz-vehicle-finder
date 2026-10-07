@@ -40,7 +40,7 @@ export function PageShell({
         color: "#111827",
       }}
     >
-      <div style={{ flex: 1 }}>
+      <div className="page-body" style={{ flex: 1 }}>
         <SiteHeader source={source} subtitle={subtitle} />
 
         <div className="stats-hero" style={{ padding: "20px 24px 32px", background: "#ffffff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32 }}>
