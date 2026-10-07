@@ -43,9 +43,12 @@ body {
    strip. While the page is bounced past its top (index.html sets data-end)
    it grows to the whole screen, so a hard flick is blue however far it goes;
    the rest of the time the bottom half stays clear, so a bounce at the
-   bottom shows the footer colour. */
-body::before {
-  content: "";
+   bottom shows the footer colour.
+   It is a real element (#top-blue in index.html), not body::before: Safari 26
+   paints the strip at the top of the screen in the colour of whatever it finds
+   just under the top edge, and a pseudo-element counts as the pale <body>, so
+   the start of a pull flashed pale above the nav. */
+#top-blue {
   position: fixed;
   top: -100vh;
   left: 0;
@@ -53,9 +56,8 @@ body::before {
   height: 150vh;
   background: #0ea5e9;
   z-index: -1;
-  pointer-events: none;
 }
-html[data-end="top"] body::before {
+html[data-end="top"] #top-blue {
   height: 200vh;
 }
 
