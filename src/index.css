@@ -12,6 +12,14 @@
     overscroll-behavior: none;
   }
 }
+/* A mouse or trackpad (desktops): no stretch at the ends either. There's no
+   pull to refresh to keep, and the bounce just shows the colours behind the page. */
+@media (hover: hover) and (pointer: fine) {
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+}
 
 /* Safari on iPhone tints the strip under its floating bar from the html/body
    colour, so the body matches the footer (SiteFooter) and the grey page
