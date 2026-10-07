@@ -29,6 +29,15 @@ html,
 body {
   background: #f0f9ff !important;
 }
+/* Trial: Safari paints the space it opens above the page on a pull down in the
+   html colour, before anything on the page can cover it. Blue there, with the
+   body (the whole screen at least) keeping the pale footer colour. */
+html {
+  background: #0ea5e9 !important;
+}
+body {
+  min-height: 100vh;
+}
 #root {
   background: hsl(var(--background));
 }
