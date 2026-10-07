@@ -703,6 +703,9 @@
 .otp-resend:disabled { color: #9ca3af; text-decoration: none; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .signup-grid.is-leaving > * { animation: none; } }
 
+/* Sign-in done: the footer fades with the sign-in screen and returns after the account. */
+.footer-root { transition: opacity 0.35s ease; }
+.signin-handoff .footer-root { opacity: 0; transition-duration: 0.2s; }
 /* Sign-in done: the whole sign-in screen fades out before the account builds in. */
 .is-leaving-all > * { animation: leave-up 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards !important; animation-delay: 0s !important; }
 @keyframes leave-up { to { opacity: 0; transform: translateY(-16px); } }

@@ -480,7 +480,7 @@ function burstLimiter(perSecond: number) {
 /** Small in-memory limiter for the sign-in form, so it can't be used to spam inboxes. */
 function attemptLimiter(max: number, windowMs: number) {
   const hits = new Map<string, number[]>();
-  return (key: string): boolean => {
+  const allow = (key: string): boolean => {
     const now = Date.now();
     const recent = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
     if (recent.length >= max) {
@@ -492,6 +492,9 @@ function attemptLimiter(max: number, windowMs: number) {
     hits.set(key, recent);
     return true;
   };
+  /** Clears a key's count, for when what it guarded has been used up. */
+  const forget = (key: string) => { hits.delete(key); };
+  return Object.assign(allow, { forget });
 }
 
 function readCookie(req: Request, name: string): string | undefined {
@@ -632,6 +635,9 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
           : "This sign-in link has expired or was already used.",
       });
     }
+    // The code is used up, so signing out and back in straight away may send a
+    // new one: the once-a-minute limit is there to stop repeat emails, not this.
+    perEmail.forget(result.user.email);
     // Local dev: forget the name on every sign-in, so the name step can be retested with one email.
     if (opts.devLogin) store.setName(result.user.id, null);
     const id = analyticsId(result.user.id);

@@ -1156,9 +1156,19 @@ export default function Account() {
       return setDashboardShown(wantDashboard);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
+    // The footer leaves with the sign-in screen: on a short page it sits in view,
+    // and would ride up and down with the scroll before the account pushes it away.
+    const root = document.documentElement;
+    root.classList.add("signin-handoff");
     const t = window.setTimeout(() => { handoff.current = false; setGreeted(true); setDashboardShown(true); }, 500);
     return () => window.clearTimeout(t);
   }, [wantDashboard, dashboardShown]);
+  // ...and comes back once the account has risen into place.
+  useEffect(() => {
+    if (!greeted) return;
+    const t = window.setTimeout(() => document.documentElement.classList.remove("signin-handoff"), 1100);
+    return () => { window.clearTimeout(t); document.documentElement.classList.remove("signin-handoff"); };
+  }, [greeted]);
   const leavingSignIn = wantDashboard && !dashboardShown;
   const [devLogin, setDevLogin] = useState(false);
   useEffect(() => {
