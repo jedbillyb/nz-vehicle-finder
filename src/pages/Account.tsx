@@ -227,7 +227,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
     e.preventDefault();
     setError(null);
     const typedEmail = email.trim();
-    if (!devLogin && !(testLogin && /^test[12]$/i.test(typedEmail)) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typedEmail)) {
+    if (!(testLogin && /^test[12]$/i.test(typedEmail)) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typedEmail)) {
       setBadEmail(true);
       return;
     }
@@ -443,7 +443,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
               {testLogin && (
                 <div className="dev-login">
                   <span>Test site</span>
-                  <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 500, fontSize: 12 }}>test1 signs up, test2 signs in. Code 000000.</span>
+                  <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 500, fontSize: 12 }}>test1 signs up, test2 signs in. Code 000000.{devLogin && " Any other email: 123456."}</span>
                 </div>
               )}
               {googleOn && (
@@ -467,7 +467,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
               <form onSubmit={submit} noValidate style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ position: "relative" }}>
                   <input
-                    type={devLogin || testLogin ? "text" : "email"}
+                    type={testLogin ? "text" : "email"}
                     required
                     autoComplete="email"
                     placeholder="you@example.co.nz"

@@ -705,7 +705,8 @@
 .signup-input:focus { outline: 0; border-color: #0ea5e9 !important; }
 .signup-input.is-invalid, .signup-input.is-invalid:focus { border-color: #dc2626 !important; }
 .signup-input__problem {
-  position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;
+  /* Centred with flex, not a transform: a half-pixel shift blurs the text. */
+  position: absolute; right: 12px; top: 0; bottom: 0; display: flex; align-items: center; pointer-events: none;
   color: #b91c1c; font-size: 13px; font-weight: 500; white-space: nowrap;
 }
 .signup-grid--single .signup-back { display: flex; width: fit-content; }
@@ -736,13 +737,13 @@
 /* The old heading leaves with the sign-in screen. */
 .leave-fade { animation: leave-nudge 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 @keyframes leave-nudge { to { opacity: 0; transform: translateY(-5px); } }
-/* After sign-in the greeting lands first; the account follows a beat later. */
-.stagger-in--after-greeting > :nth-child(1) { animation-delay: 280ms; }
-.stagger-in--after-greeting > :nth-child(2) { animation-delay: 380ms; }
-.stagger-in--after-greeting > :nth-child(3) { animation-delay: 480ms; }
-.stagger-in--after-greeting > :nth-child(4) { animation-delay: 580ms; }
-.stagger-in--after-greeting > :nth-child(5) { animation-delay: 680ms; }
-.stagger-in--after-greeting > :nth-child(n+6) { animation-delay: 780ms; }
+/* After sign-in the greeting lands first; the account waits until it has nearly settled. */
+.stagger-in--after-greeting > :nth-child(1) { animation-delay: 450ms; }
+.stagger-in--after-greeting > :nth-child(2) { animation-delay: 550ms; }
+.stagger-in--after-greeting > :nth-child(3) { animation-delay: 650ms; }
+.stagger-in--after-greeting > :nth-child(4) { animation-delay: 750ms; }
+.stagger-in--after-greeting > :nth-child(5) { animation-delay: 850ms; }
+.stagger-in--after-greeting > :nth-child(n+6) { animation-delay: 950ms; }
 @media (prefers-reduced-motion: reduce) { .leave-fade { animation: none; } }
 
 /* Pull to refresh (PullToRefresh): the nav's blue sits just above the top of

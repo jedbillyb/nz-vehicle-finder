@@ -579,11 +579,6 @@ const DEV_LOGIN_CODE = "123456";
  *  test2 has one and goes straight in. */
 const TEST_SITE_LOGINS: Record<string, string | null> = { test1: null, test2: "Test" };
 const TEST_SITE_CODE = "000000";
-const onTestSite = (req: Request) => req.get("x-vf-site") === "test";
-const testSiteLogin = (req: Request, raw: unknown) => {
-  const name = typeof raw === "string" ? raw.trim().toLowerCase() : "";
-  return onTestSite(req) && Object.hasOwn(TEST_SITE_LOGINS, name) ? name : null;
-};
 
 export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   const secureCookies = !opts.publicUrl.startsWith("http://");
@@ -596,11 +591,12 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   const burst = burstLimiter(BURST_PER_SECOND);
 
   const sessionUser = (req: Request) => store.userForSession(readCookie(req, SESSION_COOKIE));
-  // Local dev takes any text, so "bob" signs in as bob@dev.local.
-  const loginEmail = (raw: unknown) => {
-    const email = normaliseEmail(raw);
-    if (email || !opts.devLogin || typeof raw !== "string" || !raw.trim()) return email;
-    return `${raw.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, "-")}@dev.local`;
+  const loginEmail = (raw: unknown) => normaliseEmail(raw);
+  // Local dev counts as the test site, so the test logins work there too.
+  const onTestSite = (req: Request) => !!opts.devLogin || req.get("x-vf-site") === "test";
+  const testSiteLogin = (req: Request, raw: unknown) => {
+    const name = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+    return onTestSite(req) && Object.hasOwn(TEST_SITE_LOGINS, name) ? name : null;
   };
 
   router.post("/auth/request-link", async (req, res) => {
