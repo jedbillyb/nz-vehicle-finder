@@ -168,9 +168,19 @@ function SignIn({ options, pendingSave, initialPlan, naming, onSignedIn, onNamed
     const timing = { duration: 450, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" };
     const dx = was.left - el.getBoundingClientRect().left;
     if (Math.abs(dx) >= 2) el.animate([{ transform: `translateX(${dx}px)` }, { transform: "none" }], timing);
-    // Phones: no scrolling to the next step, it just slides from where the step
-    // before it was (trying it without the snap, 2026-10-07).
+    // Phones: the step slides from where the step before it was. Arriving at the
+    // code, the keyboard has just gone down (submit waits for it) and can leave
+    // the page scrolled down by the footer, so the page is first put back with
+    // the step near the top, where the code keyboard won't cover it. The slide
+    // below starts from the old place on screen, so this doesn't show as a jump.
     if (!window.matchMedia("(min-width: 900px)").matches) {
+      if (shown === "code") {
+        let top = 0;
+        for (let n: HTMLElement | null = el; n; n = n.offsetParent as HTMLElement | null) top += n.offsetTop;
+        const maxTop = document.documentElement.scrollHeight - window.innerHeight;
+        const want = Math.max(48, Math.round(window.innerHeight * 0.1));
+        window.scrollTo({ top: Math.max(0, Math.min(top - want, maxTop)), behavior: "instant" as ScrollBehavior });
+      }
       const dy = was.top - el.getBoundingClientRect().top;
       if (Math.abs(dy) >= 2 && Math.abs(dy) <= window.innerHeight) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], timing);
       // The sections below start where they were on screen and glide up (or
