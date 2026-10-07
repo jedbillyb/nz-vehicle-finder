@@ -84,18 +84,9 @@ html[data-end="top"] #top-blue {
     left: 0;
     right: 0;
     bottom: 0;
-    height: 11px;
+    height: 12px;
     background: #f0f9ff;
     z-index: 30;
-  }
-  /* A backdrop filter (even one that changes nothing) makes Safari skip its
-     solid colour band for that edge and use its normal see-through bar. That
-     band is what grew down over the nav on a pull, and what made the bottom
-     strip so tall. */
-  .site-nav-mobile,
-  #bottom-edge {
-    -webkit-backdrop-filter: saturate(1);
-    backdrop-filter: saturate(1);
   }
 }
 
