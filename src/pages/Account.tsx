@@ -1081,6 +1081,17 @@ function AdminAccounts() {
             onChange={(e) => setFilter(e.target.value)}
             style={{ ...input, maxWidth: 320, marginBottom: 12 }}
           />
+          <div className="admin-sort">
+            <label>
+              Sort by
+              <select value={sort.key} onChange={(e) => sortBy(e.target.value as AdminSort)} style={{ ...input, width: "auto", padding: "6px 10px", fontSize: 13 }}>
+                {ADMIN_COLUMNS.map((c) => <option key={c.key} value={c.key}>{c.key === "id" ? "Newest" : c.label}</option>)}
+              </select>
+            </label>
+            <button type="button" onClick={() => setSort((s) => ({ ...s, desc: !s.desc }))} style={{ ...secondaryButton, padding: "6px 12px", fontSize: 13 }}>
+              {sort.desc ? "High to low ↓" : "Low to high ↑"}
+            </button>
+          </div>
           <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
@@ -1098,17 +1109,17 @@ function AdminAccounts() {
                 {shown.map((r) => (
                   <Fragment key={r.id}>
                     <tr className={`admin-table__row${open === r.id ? " is-open" : ""}`} onClick={() => { setOpen(open === r.id ? null : r.id); setConfirm(""); }}>
-                      <td className="num muted">{r.id}</td>
-                      <td>{r.name ?? <span className="muted">no name yet</span>}</td>
-                      <td>{r.email}</td>
-                      <td>{TIERS[r.tier as TierId]?.name ?? r.tier}{r.subscription_status && r.subscription_status !== "active" ? ` (${r.subscription_status})` : ""}</td>
-                      <td>{shortDate(r.created_at)}</td>
-                      <td>{shortDate(r.last_signin_at)}</td>
-                      <td>{shortDate(r.last_api_use)}</td>
-                      <td className="num">{r.searches}</td>
-                      <td className="num">{r.keys}</td>
-                      <td className="num">{r.requests_this_month.toLocaleString("en-NZ")}</td>
-                      <td className="num">{r.requests_total.toLocaleString("en-NZ")}</td>
+                      <td className="num muted admin-table__id">#{r.id}</td>
+                      <td className="admin-table__name">{r.name ?? <span className="muted">no name yet</span>}</td>
+                      <td className="admin-table__email">{r.email}</td>
+                      <td data-label="Plan">{TIERS[r.tier as TierId]?.name ?? r.tier}{r.subscription_status && r.subscription_status !== "active" ? ` (${r.subscription_status})` : ""}</td>
+                      <td data-label="Joined">{shortDate(r.created_at)}</td>
+                      <td data-label="Last in">{shortDate(r.last_signin_at)}</td>
+                      <td data-label="Last API">{shortDate(r.last_api_use)}</td>
+                      <td data-label="Searches" className="num">{r.searches}</td>
+                      <td data-label="Keys" className="num">{r.keys}</td>
+                      <td data-label="This month" className="num">{r.requests_this_month.toLocaleString("en-NZ")}</td>
+                      <td data-label="All time" className="num">{r.requests_total.toLocaleString("en-NZ")}</td>
                     </tr>
                     {open === r.id && (
                       <tr className="admin-table__detail">
@@ -1129,23 +1140,28 @@ function AdminAccounts() {
                             </dd>
                             <dt>API keys</dt><dd>{r.key_list ? r.key_list.split("\n").join(", ") : <span className="muted">none</span>}</dd>
                             <dt>Saved searches</dt><dd>{r.search_list ? r.search_list.split("\n").join(", ") : <span className="muted">none</span>}</dd>
-                            <dt>Delete</dt>
-                            <dd>
-                              <form className="admin-table__delete" onSubmit={(e) => { e.preventDefault(); remove(r); }}>
-                                <input
-                                  type="email"
-                                  placeholder={`Type ${r.email} to confirm`}
-                                  aria-label="Type the account's email to confirm"
-                                  value={confirm}
-                                  onChange={(e) => setConfirm(e.target.value)}
-                                  style={{ ...input, padding: "6px 10px", fontSize: 13 }}
-                                />
-                                <button type="submit" disabled={confirm.trim().toLowerCase() !== r.email} style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13, color: "#b91c1c", borderColor: "#fca5a5" }}>
-                                  Delete account
-                                </button>
-                              </form>
-                            </dd>
                           </dl>
+                          <form className="admin-table__delete" onSubmit={(e) => { e.preventDefault(); remove(r); }}>
+                            <label htmlFor={`admin-delete-${r.id}`}>
+                              To delete this account, type its email: <strong>{r.email}</strong>
+                            </label>
+                            <div className="admin-table__delete-row">
+                              <input
+                                id={`admin-delete-${r.id}`}
+                                type="email"
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                spellCheck={false}
+                                placeholder={r.email}
+                                value={confirm}
+                                onChange={(e) => setConfirm(e.target.value)}
+                                style={{ ...input, fontSize: 16 }}
+                              />
+                              <button type="submit" className="admin-table__delete-btn" disabled={confirm.trim().toLowerCase() !== r.email}>
+                                Delete account
+                              </button>
+                            </div>
+                          </form>
                         </td>
                       </tr>
                     )}

@@ -644,8 +644,39 @@
 .admin-table__detail dt { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6b7280; padding-top: 2px; }
 .admin-table__detail dd { margin: 0; word-break: break-word; }
 .admin-table__detail a { color: #0284c7; text-decoration: underline; }
-.admin-table__delete { display: flex; flex-wrap: wrap; gap: 8px; max-width: 460px; }
-.admin-table__delete input { flex: 1 1 220px; }
+.admin-table__delete { position: sticky; left: 16px; max-width: min(520px, calc(100vw - 64px)); margin-top: 14px; padding: 12px; border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2; }
+.admin-table__delete label { display: block; margin-bottom: 8px; font-size: 13px; color: #7f1d1d; overflow-wrap: anywhere; }
+.admin-table__delete label strong { color: #450a0a; }
+.admin-table__delete-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-table__delete-row input { flex: 1 1 220px; min-width: 0; background: #ffffff; }
+.admin-table__delete-btn { padding: 8px 16px; border: none; border-radius: 8px; background: #dc2626; color: #ffffff; font-size: 14px; font-weight: 600; cursor: pointer; }
+.admin-table__delete-btn:disabled { background: #e5e7eb; color: #4b5563; cursor: not-allowed; }
+.admin-sort { display: none; }
+
+/* Phones: each account is a card, no sideways scrolling. */
+@media (max-width: 640px) {
+  .admin-sort { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; color: #4b5563; }
+  .admin-sort label { display: flex; align-items: center; gap: 8px; }
+  .admin-table-wrap { overflow: visible; border: none; }
+  .admin-table, .admin-table tbody { display: block; }
+  .admin-table thead { display: none; }
+  .admin-table__row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 10px; margin-bottom: 8px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; background: #ffffff; }
+  .admin-table__row.is-open { margin-bottom: 0; border-color: #7dd3fc; border-bottom-left-radius: 0; border-bottom-right-radius: 0; background: #f0f9ff; }
+  .admin-table__row td, .admin-table__row:hover td, .admin-table__row.is-open td { padding: 0; border: none; background: none; white-space: normal; text-align: left; }
+  .admin-table__row td.admin-table__name { grid-column: 1 / 4; grid-row: 1; font-size: 15px; font-weight: 600; }
+  .admin-table__row td.num.admin-table__id { grid-column: 4; grid-row: 1; text-align: right; }
+  .admin-table__row td.admin-table__email { grid-column: 1 / -1; grid-row: 2; color: #374151; overflow-wrap: anywhere; }
+  .admin-table__row td.num { text-align: left; }
+  .admin-table__row td[data-label] { font-size: 13px; font-variant-numeric: tabular-nums; }
+  .admin-table__row td[data-label]::before { content: attr(data-label); display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; }
+  .admin-table__detail { display: block; margin-bottom: 8px; }
+  .admin-table__detail td { display: block; padding: 12px; border: 1px solid #7dd3fc; border-top: none; border-radius: 0 0 10px 10px; }
+  .admin-table__detail dl { position: static; max-width: none; grid-template-columns: 1fr; gap: 2px; }
+  .admin-table__detail dd { margin-bottom: 8px; }
+  .admin-table__delete { position: static; max-width: none; }
+  .admin-table__delete-btn { flex: 1 1 100%; padding: 10px 16px; }
+  .admin-table tbody > tr:not(.admin-table__row):not(.admin-table__detail) { display: block; }
+}
 
 /* ── Results table scroll box: edge fades and a "Swipe" hint ── */
 .table-scroll { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
