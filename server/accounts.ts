@@ -603,6 +603,22 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   const burst = burstLimiter(BURST_PER_SECOND);
 
   const sessionUser = (req: Request) => store.userForSession(readCookie(req, SESSION_COOKIE));
+  /** What PostHog shows on the person: who they are and where their account stands. */
+  const personProperties = (user: User) => {
+    const billing = store.billingFor(user.id);
+    return {
+      email: user.email,
+      ...(user.name && { name: user.name }),
+      tier: user.tier,
+      signed_up_at: user.created_at,
+      google: store.hasGoogle(user.id),
+      admin: admins.has(user.email),
+      api_keys: store.listKeys(user.id).length,
+      saved_searches: store.listSearches(user.id).length,
+      subscription_status: billing.subscriptionStatus,
+      ...(billing.stripeCustomerId && { stripe_customer: billing.stripeCustomerId }),
+    };
+  };
   const loginEmail = (raw: unknown) => normaliseEmail(raw);
   // Local dev counts as the test site, so the test logins work there too.
   const onTestSite = (req: Request) => !!opts.devLogin || req.get("x-vf-site") === "test";
@@ -659,7 +675,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     }
     const result = raw ? store.redeemLoginToken(raw) : byCode ? store.redeemLoginCode(email, code) : null;
     if (!result) {
-      track("signin_link_rejected", "server", { method: byCode ? "code" : "link" });
+      track("signin_link_rejected", "server", { method: byCode ? "code" : "link" }, req);
       return res.status(400).json({
         error: byCode
           ? "That code is wrong or has expired. Check the latest email, or send a new one."
@@ -670,8 +686,8 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     // new one: the once-a-minute limit is there to stop repeat emails, not this.
     perEmail.forget(result.user.email);
     const id = analyticsId(result.user.id);
-    if (result.created) track("account_created", id, { $set_once: { signed_up_at: result.user.created_at } });
-    track("signed_in", id, { method: byCode ? "code" : "link", new_account: result.created, $set: { tier: result.user.tier } });
+    if (result.created) track("account_created", id, { $set_once: { signed_up_at: result.user.created_at } }, req);
+    track("signed_in", id, { method: byCode ? "code" : "link", new_account: result.created, $set: personProperties(result.user) }, req);
     setSessionCookie(res, result.session, secureCookies);
     res.json({ ok: true });
   });
@@ -750,8 +766,8 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     if (!result) return fail("unverified_email");
 
     const id = analyticsId(result.user.id);
-    if (result.created) track("account_created", id, { $set_once: { signed_up_at: result.user.created_at } });
-    track("signed_in", id, { method: "google", new_account: result.created, $set: { tier: result.user.tier } });
+    if (result.created) track("account_created", id, { $set_once: { signed_up_at: result.user.created_at } }, req);
+    track("signed_in", id, { method: "google", new_account: result.created, $set: personProperties(result.user) }, req);
     setSessionCookie(res, result.session, secureCookies);
     res.redirect(`${opts.publicUrl}/account${plan ? `?plan=${plan}` : ""}`);
   });
@@ -766,7 +782,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     const user = sessionUser(req);
     if (!user) return res.status(401).json({ error: "Not signed in" });
     store.endAllSessions(user.id);
-    track("signed_out_everywhere", analyticsId(user.id));
+    track("signed_out_everywhere", analyticsId(user.id), {}, req);
     res.clearCookie(SESSION_COOKIE, { path: "/api" });
     res.json({ ok: true });
   });
@@ -783,7 +799,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
       return res.status(400).json({ error: "Type your email address to confirm." });
     }
     store.deleteAccount(user.id);
-    track("account_deleted", analyticsId(user.id), { tier: user.tier });
+    track("account_deleted", analyticsId(user.id), { tier: user.tier }, req);
     res.clearCookie(SESSION_COOKIE, { path: "/api" });
     res.json({ ok: true });
   });
@@ -793,6 +809,8 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     if (!user) return res.status(401).json({ error: "Not signed in" });
     const tier = tierFor(user.tier);
     const now = new Date();
+    // Keeps the PostHog person current (keys, searches, plan) each time they open the account page.
+    track("$set", analyticsId(user.id), { $set: { ...personProperties(user), api_requests_this_month: store.usageFor(user.id, now) } }, req);
     res.json({
       email: user.email,
       name: user.name,
@@ -818,7 +836,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     const name = cleanName(req.body?.name);
     if (!name) return res.status(400).json({ error: "Enter your name" });
     store.setName(user.id, name);
-    track("name_set", analyticsId(user.id), { first_time: !user.name, $set: { name } });
+    track("name_set", analyticsId(user.id), { first_time: !user.name, $set: { name } }, req);
     res.json({ ok: true, name });
   });
 
@@ -925,7 +943,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     if (check.tier) res.setHeader("X-RateLimit-Limit", String(check.tier.monthlyRequests));
     if (check.resetsAt) res.setHeader("X-RateLimit-Reset", check.resetsAt);
     if (check.ok === false) {
-      track("api_v1_rejected", "server", { reason: check.status === 429 ? "quota" : "bad_key", endpoint: req.path, tier: check.tier?.id });
+      track("api_v1_rejected", "server", { reason: check.status === 429 ? "quota" : "bad_key", endpoint: req.path, tier: check.tier?.id }, req);
       if (check.status === 429) res.setHeader("X-RateLimit-Remaining", "0");
       return res.status(check.status).json({ error: check.error });
     }
@@ -941,7 +959,8 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
         tier: check.tier.id,
         used_this_month: check.used,
         monthly_limit: check.tier.monthlyRequests,
-      }),
+        $set: { last_api_call_at: new Date().toISOString() },
+      }, req),
     );
     next();
   }

@@ -81,7 +81,7 @@ export function createBilling(store: AccountStore, opts: BillingOptions) {
     });
     if (user.tier !== tier) {
       console.log(`Account ${user.id} moved from ${user.tier} to ${tier}`);
-      track("plan_changed", analyticsId(user.id), { from: user.tier, to: tier, status: subscription?.status ?? null, $set: { tier } });
+      track("plan_changed", analyticsId(user.id), { from: user.tier, to: tier, status: subscription?.status ?? null, $set: { tier, subscription_status: subscription?.status ?? null } });
     }
   }
 

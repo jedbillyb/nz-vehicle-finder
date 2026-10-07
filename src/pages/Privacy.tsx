@@ -59,7 +59,9 @@ export default function Privacy() {
           </p>
           <p style={p}>
             Usage analytics record which pages are visited and what is clicked, with your browser and device type, so I can
-            see what is used and what is broken. Your IP address is used to stop abuse and shows up in the server's logs, but is never stored with your account.
+            see what is used and what is broken. If you have an account, these are linked to it, along with your email, name
+            and plan, so I can help when something goes wrong for you. Your IP address is used to stop abuse and to work out
+            roughly where visits come from (PostHog turns it into a city and country), but is never stored with your account here.
           </p>
         </DocSection>
 
