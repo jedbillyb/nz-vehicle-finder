@@ -35,6 +35,10 @@
   }
 }
 
+/* Nothing may drag the page sideways on a phone. Clip, not hidden: it makes no
+   scroll box, so the sticky header still sticks. */
+html, body { overflow-x: clip; }
+
 /* ── Fix iOS Safari input zoom (triggers when font-size < 16px) */
 @media (max-width: 767px) {
   input, select, textarea {
@@ -675,10 +679,13 @@
 .otp-phone__cell { width: var(--cell); height: var(--box); border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff; transition: border-color 0.15s, box-shadow 0.15s; }
 .otp-phone__cell.is-active { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18); }
 .otp-phone__input {
-  /* One cell wider than the boxes, clipped back: six digits plus their spacing
-     overrun the boxes, and an input that's too narrow scrolls them sideways. */
-  position: absolute; top: 0; left: 0; width: calc(100% + var(--cell) + var(--gap)); height: 100%; box-sizing: border-box; margin: 0; overflow: hidden;
-  clip-path: inset(0 calc(var(--cell) + var(--gap)) 0 0); text-align: left;
+  /* Six digits plus their spacing overrun the boxes by the left padding and a
+     gap, and an input that's too narrow scrolls them sideways: widen it by just
+     that, clipped back. No more, or it reaches past the screen edge and the
+     page can be dragged side to side. */
+  --overrun: calc((var(--cell) - 0.6em) / 2 + var(--gap) + 4px);
+  position: absolute; top: 0; left: 0; width: calc(100% + var(--overrun)); height: 100%; box-sizing: border-box; margin: 0; overflow: hidden;
+  clip-path: inset(0 var(--overrun) 0 0); text-align: left;
   padding: 0 0 0 calc((var(--cell) - 0.6em) / 2); border: 0; outline: 0; border-radius: 8px; background: transparent;
   font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 22px; font-weight: 600; line-height: var(--box); color: #0f172a;
   letter-spacing: calc(var(--cell) + var(--gap) - 0.6em); caret-color: #0ea5e9;
