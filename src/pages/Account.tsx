@@ -301,7 +301,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   };
 
   return (
-    <DocSection id="sign-in" title={shown === "name" ? "Welcome" : "Sign in or sign up"}>
+    <DocSection id="sign-in">
       {pendingSave && state !== "sent" && !naming && (
         <div style={{ ...panel, marginBottom: 12, background: "#fffbeb", borderColor: "#fcd34d", fontSize: 14, color: "#92400e", display: "flex", gap: 8, alignItems: "center" }}>
           <Star size={14} fill="#f59e0b" color="#f59e0b" style={{ flexShrink: 0 }} />
@@ -410,10 +410,10 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
           ) : (
             <>
               <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
-                We'll email you a 6-digit code. No password.
+                We'll email you a 6-digit code.
                 {paid
                   ? <> Then you go straight to Stripe to pay NZ${tier.priceNzd} a month for <strong>{tier.name}</strong>.</>
-                  : <> No account yet? The same code sets one up.</>}
+                  : <> No account yet? We'll set you up after that.</>}
               </p>
               {devLogin && (
                 <div className="dev-login">
@@ -1131,7 +1131,7 @@ export default function Account() {
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
   // While the session check runs, the heading uses last visit's answer, so signed-out
-  // visitors don't see "Your account" flash before it flips to "Sign in".
+  // visitors don't see "Your account" flash before it flips to "Sign in or sign up".
   const [wasSignedIn] = useState(() => {
     try { return localStorage.getItem(SIGNED_IN_KEY) === "1"; } catch { return false; }
   });
@@ -1275,12 +1275,12 @@ export default function Account() {
       crumb="Account"
       // Keyed, so a new heading fades up instead of swapping in place.
       title={<span key={showDashboard ? "in" : "out"} className={leavingSignIn ? "leave-fade" : showDashboard && !greeted ? undefined : "fade-in fade-in--slow"} style={{ display: "block" }}>
-        {showDashboard ? (account?.name || (!account && lastName) ? `Hey, ${account?.name ?? lastName}` : "Your account") : "Sign in"}
+        {showDashboard ? (account?.name || (!account && lastName) ? `Hey, ${account?.name ?? lastName}` : "Your account") : "Sign in or sign up"}
       </span>}
       intro={<span key={showDashboard ? "in" : "out"} className={leavingSignIn ? "leave-fade" : showDashboard && !greeted ? undefined : "fade-in fade-in--slow"} style={{ display: "block", animationDelay: leavingSignIn ? "0ms" : "120ms" }}>
         {showDashboard
           ? "Your API usage, keys, saved searches and plan."
-          : "Your saved searches and API keys. No account yet? Signing in sets one up."}
+          : "Your saved searches and API keys."}
       </span>}
       aside={account && showDashboard ? <SignedInAs account={account} reload={reload} animate={greeted} /> : false}
     >
