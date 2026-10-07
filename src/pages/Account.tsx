@@ -97,6 +97,8 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   const phone = typeof window !== "undefined" && window.matchMedia("(max-width: 899px)").matches;
   const [googleOn, setGoogleOn] = useState(false);
   const [devLogin, setDevLogin] = useState(false);
+  /** On test.vehiclefinder.co.nz: test1 and test2 sign in with 000000 (server/accounts.ts). */
+  const [testLogin, setTestLogin] = useState(false);
   /** Seconds until another code can be sent; the server allows one a minute per email. */
   const [cooldown, setCooldown] = useState(0);
   /** Where the last code went, so Back and the same email again doesn't ask for another inside the minute. */
@@ -107,7 +109,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
     return () => window.clearTimeout(t);
   }, [cooldown]);
   useEffect(() => {
-    fetchAuthOptions().then((o) => { setGoogleOn(o.google); setDevLogin(!!o.devLogin); }).catch(() => {});
+    fetchAuthOptions().then((o) => { setGoogleOn(o.google); setDevLogin(!!o.devLogin); setTestLogin(!!o.testLogin); }).catch(() => {});
   }, []);
   const tier = TIERS[plan];
   const paid = tier.priceNzd > 0;
@@ -429,6 +431,12 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                   ))}
                 </div>
               )}
+              {testLogin && (
+                <div className="dev-login">
+                  <span>Test site</span>
+                  <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 500, fontSize: 12 }}>test1 signs up, test2 signs in. Code 000000.</span>
+                </div>
+              )}
               {googleOn && (
                 <>
                   <a
@@ -449,7 +457,7 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                   doesn't change size with each plan's label. */}
               <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <input
-                  type={devLogin ? "text" : "email"}
+                  type={devLogin || testLogin ? "text" : "email"}
                   required
                   autoComplete="email"
                   placeholder="you@example.co.nz"

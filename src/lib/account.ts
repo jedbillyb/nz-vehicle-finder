@@ -69,7 +69,7 @@ export const setAccountName = (name: string) =>
   call<{ ok: true; name: string }>("/api/account", { method: "PATCH", body: JSON.stringify({ name }) });
 
 /** Which sign-in methods the server has turned on. */
-export const fetchAuthOptions = () => call<{ google: boolean; devLogin?: boolean }>("/api/auth/options");
+export const fetchAuthOptions = () => call<{ google: boolean; devLogin?: boolean; testLogin?: boolean }>("/api/auth/options");
 
 /** Local development only: the server answers 404 unless DEV_LOGIN is on. */
 export const devSignIn = (as: "user" | "admin") =>
