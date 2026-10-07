@@ -703,6 +703,11 @@
 /* The sign-in fields turn blue when typed in, not with the browser's own ring. */
 .signup-input { transition: border-color 0.15s ease; }
 .signup-input:focus { outline: 0; border-color: #0ea5e9 !important; }
+.signup-input.is-invalid, .signup-input.is-invalid:focus { border-color: #dc2626 !important; }
+.signup-input__problem {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;
+  color: #b91c1c; font-size: 13px; font-weight: 500; white-space: nowrap;
+}
 .signup-grid--single .signup-back { display: flex; width: fit-content; }
 .signup-grid.is-leaving > * { animation: fade-out 0.18s ease-in forwards; }
 .signup-back {

@@ -89,6 +89,8 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   const [plan, setPlan] = useState<TierId>(initialPlan);
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
+  /** Said inside the email box, so nothing below it moves. */
+  const [badEmail, setBadEmail] = useState(false);
   const [typed, setTyped] = useState("");
   const [checking, setChecking] = useState(false);
   /** Bumped on a wrong code, so the boxes shake (and clear) each time. */
@@ -224,6 +226,11 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    const typedEmail = email.trim();
+    if (!devLogin && !(testLogin && /^test[12]$/i.test(typedEmail)) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typedEmail)) {
+      setBadEmail(true);
+      return;
+    }
     // Enter on the keyboard keeps it up, unlike a tap on the button. Put it
     // down here too: carried over, it never offers the code from the email.
     (document.activeElement as HTMLElement | null)?.blur();
@@ -247,7 +254,9 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
       setState("sent");
       if (reused) toast("Use the code we already emailed you.");
     } catch (err) {
-      setError((err as Error).message);
+      const message = (err as Error).message;
+      if (/valid email/i.test(message)) setBadEmail(true);
+      else setError(message);
       setState("idle");
     }
   };
@@ -455,17 +464,22 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
               )}
               {/* Stacked and full width, like the Google button above, so the button
                   doesn't change size with each plan's label. */}
-              <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <input
-                  type={devLogin || testLogin ? "text" : "email"}
-                  required
-                  autoComplete="email"
-                  placeholder="you@example.co.nz"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="signup-input"
-                  style={{ ...input, width: "100%", height: 42, boxSizing: "border-box" }}
-                />
+              <form onSubmit={submit} noValidate style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={devLogin || testLogin ? "text" : "email"}
+                    required
+                    autoComplete="email"
+                    placeholder="you@example.co.nz"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setBadEmail(false); }}
+                    aria-invalid={badEmail}
+                    aria-describedby={badEmail ? "email-problem" : undefined}
+                    className={`signup-input${badEmail ? " is-invalid" : ""}`}
+                    style={{ ...input, width: "100%", height: 42, boxSizing: "border-box", paddingRight: badEmail ? 150 : undefined }}
+                  />
+                  {badEmail && <span id="email-problem" className="signup-input__problem">Enter a valid email</span>}
+                </div>
                 {/* The keyboard goes down with the tap, on purpose: the code box takes
                     focus as it appears, and a tap on it brings the keyboard up fresh for
                     it, which is when the phone offers the code from the email. Carried
