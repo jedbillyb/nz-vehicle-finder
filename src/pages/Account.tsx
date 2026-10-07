@@ -18,7 +18,6 @@ import { LoadingDots } from "@/components/LoadingDots";
 import { SkeletonBlock } from "@/components/SkeletonRows";
 import { AnimatedNumber } from "@/components/NumberSlot";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { REGEXP_ONLY_DIGITS } from "input-otp";
 
 const SIGNED_IN_KEY = "nzvf_signed_in";
 
@@ -352,7 +351,9 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                 {phone ? <CodeInputPhone value={typed} disabled={checking} onChange={onCodeChange} /> : <InputOTP
                   autoFocus
                   maxLength={6}
-                  pattern={REGEXP_ONLY_DIGITS}
+                  // No pattern: input-otp silently drops a paste or autofill that fails it,
+                  // and iOS copies the code with a space or newline. onCodeChange keeps digits.
+                  pasteTransformer={(text) => text.replace(/\D/g, "").slice(0, 6)}
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   aria-label="6-digit code"
