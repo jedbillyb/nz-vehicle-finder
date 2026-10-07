@@ -140,14 +140,14 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   // The grid's height eases to the new step's too, so the sections below glide instead of jumping.
   const stepRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
-  const from = useRef<{ left: number; top: number; height: number } | null>(null);
+  const from = useRef<{ left: number; top: number; height: number; bottom: number } | null>(null);
   /** Side by side (wide screens), the later steps keep the email step's height and sit
    *  centred in it, so the rule below the section never moves. */
   const [heldHeight, setHeldHeight] = useState<number | null>(null);
   useEffect(() => {
     if (leaving && stepRef.current && gridRef.current) {
       const at = stepRef.current.getBoundingClientRect();
-      from.current = { left: at.left, top: at.top, height: gridRef.current.offsetHeight };
+      from.current = { left: at.left, top: at.top, height: gridRef.current.offsetHeight, bottom: gridRef.current.getBoundingClientRect().bottom };
       if (shown === "email" && window.matchMedia("(min-width: 900px)").matches) setHeldHeight(gridRef.current.offsetHeight);
     }
     else if (shown === "email") setHeldHeight(null);
@@ -176,16 +176,27 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
         for (let n: HTMLElement | null = el; n; n = n.offsetParent as HTMLElement | null) top += n.offsetTop;
         return top;
       };
+      // The furthest the page can scroll once the sections below have settled;
+      // while they glide the page is briefly taller, and scrolling into that
+      // extra room would only be undone a moment later.
+      const maxTop = document.documentElement.scrollHeight - window.innerHeight;
       const place = () => {
         const vv = window.visualViewport;
         const seenTop = vv?.offsetTop ?? 0;
         const seenHeight = vv?.height ?? window.innerHeight;
         const want = seenTop + Math.max(48, Math.round(seenHeight * 0.1));
-        window.scrollTo({ top: pageTop() - want, behavior: "instant" as ScrollBehavior });
+        window.scrollTo({ top: Math.min(pageTop() - want, maxTop), behavior: "instant" as ScrollBehavior });
       };
       place();
       const dy = was.top - el.getBoundingClientRect().top;
       if (Math.abs(dy) >= 2 && Math.abs(dy) <= window.innerHeight) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], timing);
+      // The sections below start where they were on screen and glide up (or
+      // down) to their new place, instead of jumping when the step changes size.
+      const startHeight = was.bottom - grid.getBoundingClientRect().top;
+      const endHeight = grid.offsetHeight;
+      if (startHeight > 0 && startHeight <= endHeight + window.innerHeight && Math.abs(startHeight - endHeight) >= 2) {
+        grid.animate([{ height: `${startHeight}px`, overflow: "hidden" }, { height: `${endHeight}px`, overflow: "hidden" }], timing);
+      }
       const again = [80, 350].map((ms) => window.setTimeout(place, ms));
       return () => again.forEach(window.clearTimeout);
     }
@@ -207,6 +218,9 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    // Enter on the keyboard keeps it up, unlike a tap on the button. Put it
+    // down here too: carried over, it never offers the code from the email.
+    (document.activeElement as HTMLElement | null)?.blur();
     // Back, then the same email again within the minute: the code already
     // sent still works, and the server would refuse to send another anyway.
     if (cooldown > 0 && email.trim().toLowerCase() === sentTo) {
