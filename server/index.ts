@@ -692,8 +692,6 @@ function loginEmailHtml(code: string, link: string): string {
       </table>
     </td></tr>
     <tr><td style="${font} font-size:12px; line-height:1.6; color:#6b7280; padding:14px 0 0;">Questions? Reply to this email or write to <a href="mailto:${CONTACT_EMAIL.support}" style="color:#0369a1;">${CONTACT_EMAIL.support}</a>.</td></tr>
-    <!-- Last line of the message, as the origin-bound code format requires. -->
-    <tr><td style="${font} font-size:12px; line-height:1.6; color:#9ca3af; padding:14px 0 0;">@${siteHost} #${code}</td></tr>
   </table>
 </td></tr>
 </table>
@@ -701,12 +699,6 @@ function loginEmailHtml(code: string, link: string): string {
 </html>`;
 }
 const publicUrl = (process.env.PUBLIC_URL || "https://vehiclefinder.co.nz").replace(/\/+$/, "");
-/**
- * The site's host, for the origin-bound code line in the sign-in email
- * ("@vehiclefinder.co.nz #123456"): iPhone Mail reads it to offer the code
- * above Safari's keyboard on this site, and only this site.
- */
-const siteHost = new URL(publicUrl).host;
 const accounts = createAccounts(accountStore, {
   publicUrl,
   billingEnabled: !!process.env.STRIPE_SECRET_KEY,
@@ -737,8 +729,6 @@ const accounts = createAccounts(accountStore, {
         "",
         "The code and link work once and expire in 15 minutes.",
         "If you did not ask for this, ignore this email.",
-        "",
-        `@${siteHost} #${code}`,
       ].join("\n"),
     });
     if (error) throw new Error(error.message);
