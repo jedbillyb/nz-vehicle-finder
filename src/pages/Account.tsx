@@ -436,9 +436,11 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                   onChange={(e) => setEmail(e.target.value)}
                   style={{ ...input, width: "100%", height: 42, boxSizing: "border-box" }}
                 />
-                {/* The tap doesn't take focus off the email box, so the phone keyboard
-                    stays up and carries over to the code boxes (they focus as they appear). */}
-                <button type="submit" disabled={state === "sending"} onMouseDown={(e) => e.preventDefault()} style={{ ...primaryButton, width: "100%", height: 42 }}>
+                {/* The keyboard goes down with the tap, on purpose: the code box takes
+                    focus as it appears, and a tap on it brings the keyboard up fresh for
+                    it, which is when the phone offers the code from the email. Carried
+                    over from here, the keyboard never got that offer. */}
+                <button type="submit" disabled={state === "sending"} style={{ ...primaryButton, width: "100%", height: 42 }}>
                   {submitLabel}
                 </button>
               </form>

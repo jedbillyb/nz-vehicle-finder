@@ -689,10 +689,11 @@ function loginEmailHtml(code: string, link: string): string {
           </table>
         </td></tr>
         <tr><td style="${font} font-size:12px; line-height:1.6; color:#6b7280; padding:22px 0 0;">The code and link work once and expire in 15 minutes. If you did not ask for this, ignore this email.</td></tr>
-        <tr><td style="${font} font-size:12px; line-height:1.6; color:#9ca3af; padding:12px 0 0;">@${siteHost} #${code}</td></tr>
       </table>
     </td></tr>
     <tr><td style="${font} font-size:12px; line-height:1.6; color:#6b7280; padding:14px 0 0;">Questions? Reply to this email or write to <a href="mailto:${CONTACT_EMAIL.support}" style="color:#0369a1;">${CONTACT_EMAIL.support}</a>.</td></tr>
+    <!-- Last line of the message, as the origin-bound code format requires. -->
+    <tr><td style="${font} font-size:12px; line-height:1.6; color:#9ca3af; padding:14px 0 0;">@${siteHost} #${code}</td></tr>
   </table>
 </td></tr>
 </table>
