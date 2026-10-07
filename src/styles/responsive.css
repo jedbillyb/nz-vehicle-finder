@@ -35,6 +35,29 @@
   }
 }
 
+/* A pale band along the nav's top edge. iOS Safari 26 colours the area above
+   the page from whatever pinned element sits at the very top, so this makes it
+   pale like the page instead of blue. Then a pull at the top shows pale above
+   pale (no blue box sliding over the links), not a white strip under blue.
+   Safari ignores anything 10px or thinner, so it has to be at least 11px. */
+.site-nav-mobile-edge {
+  display: none;
+}
+@media (pointer: coarse) {
+  .site-nav-mobile {
+    padding-top: 12px !important;
+  }
+  .site-nav-mobile-edge {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 12px;
+    background: #f0f9ff;
+  }
+}
+
 /* ── Fix iOS Safari input zoom (triggers when font-size < 16px) */
 @media (max-width: 767px) {
   input, select, textarea {
