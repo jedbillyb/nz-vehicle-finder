@@ -1014,6 +1014,12 @@ const ADMIN_COLUMNS: { key: AdminSort; label: string; num?: boolean }[] = [
   { key: "requests_total", label: "All time", num: true },
 ];
 
+const ADMIN_DATES: AdminSort[] = ["id", "created_at", "last_signin_at", "last_api_use"];
+const sortDirectionLabel = (key: AdminSort, desc: boolean) =>
+  ADMIN_DATES.includes(key) ? (desc ? "Newest first" : "Oldest first")
+  : ["name", "email", "tier"].includes(key) ? (desc ? "Z to A" : "A to Z")
+  : desc ? "Most first" : "Fewest first";
+
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const withinWeek = (iso: string | null) => !!iso && Date.now() - new Date(iso).getTime() < WEEK_MS;
 
@@ -1066,6 +1072,7 @@ function AdminAccounts() {
         <SkeletonBlock height={160} />
       ) : (
         <>
+          <div className="admin-accounts">
           <div className="acct-usage__facts" style={{ marginBottom: 12 }}>
             <span><strong><AnimatedNumber value={rows.length} /></strong> accounts</span>
             <span><strong><AnimatedNumber value={newThisWeek} /></strong> new this week</span>
@@ -1075,22 +1082,23 @@ function AdminAccounts() {
             <span><strong><AnimatedNumber value={requests} /></strong> API requests this month</span>
             <span><strong><AnimatedNumber value={lastMonth} /></strong> last month</span>
           </div>
-          <input
-            placeholder="Filter by name, email or plan"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            style={{ ...input, maxWidth: 320, marginBottom: 12 }}
-          />
-          <div className="admin-sort">
-            <label>
-              Sort by
-              <select value={sort.key} onChange={(e) => sortBy(e.target.value as AdminSort)} style={{ ...input, width: "auto", padding: "6px 10px", fontSize: 13 }}>
-                {ADMIN_COLUMNS.map((c) => <option key={c.key} value={c.key}>{c.key === "id" ? "Newest" : c.label}</option>)}
+          <div className="admin-toolbar">
+            <input
+              className="admin-toolbar__filter"
+              type="search"
+              placeholder="Filter by name, email or plan"
+              aria-label="Filter accounts"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+            <div className="admin-toolbar__sort">
+              <select aria-label="Sort by" value={sort.key} onChange={(e) => sortBy(e.target.value as AdminSort)}>
+                {ADMIN_COLUMNS.map((c) => <option key={c.key} value={c.key}>Sort: {c.key === "id" ? "ID" : c.label}</option>)}
               </select>
-            </label>
-            <button type="button" onClick={() => setSort((s) => ({ ...s, desc: !s.desc }))} style={{ ...secondaryButton, padding: "6px 12px", fontSize: 13 }}>
-              {sort.desc ? "High to low ↓" : "Low to high ↑"}
-            </button>
+              <button type="button" onClick={() => setSort((s) => ({ ...s, desc: !s.desc }))}>
+                {sortDirectionLabel(sort.key, sort.desc)}
+              </button>
+            </div>
           </div>
           <div className="admin-table-wrap">
             <table className="admin-table">
@@ -1111,7 +1119,7 @@ function AdminAccounts() {
                     <tr className={`admin-table__row${open === r.id ? " is-open" : ""}`} onClick={() => { setOpen(open === r.id ? null : r.id); setConfirm(""); }}>
                       <td className="num muted admin-table__id">#{r.id}</td>
                       <td className="admin-table__name">{r.name ?? <span className="muted">no name yet</span>}</td>
-                      <td className="admin-table__email">{r.email}</td>
+                      <td className="admin-table__email" title={r.email}>{r.email}</td>
                       <td data-label="Plan">{TIERS[r.tier as TierId]?.name ?? r.tier}{r.subscription_status && r.subscription_status !== "active" ? ` (${r.subscription_status})` : ""}</td>
                       <td data-label="Joined">{shortDate(r.created_at)}</td>
                       <td data-label="Last in">{shortDate(r.last_signin_at)}</td>
@@ -1172,6 +1180,7 @@ function AdminAccounts() {
                 )}
               </tbody>
             </table>
+          </div>
           </div>
         </>
       )}
