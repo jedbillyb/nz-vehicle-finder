@@ -168,33 +168,9 @@ function SignIn({ options, pendingSave, initialPlan, naming, onSignedIn, onNamed
     const timing = { duration: 450, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" };
     const dx = was.left - el.getBoundingClientRect().left;
     if (Math.abs(dx) >= 2) el.animate([{ transform: `translateX(${dx}px)` }, { transform: "none" }], timing);
-    // Stacked (phones), the next step would take the plan picker's place higher
-    // up the page, out of sight. Scroll the page to put it near the top of
-    // what's on screen, clear of the keyboard, which takes the bottom half
-    // when it's up (and the page can't always tell), and slide it there from
-    // where the step before it was. The phone scrolls the focused box into
-    // view on its own a moment later, usually to just above the keyboard, so
-    // the place is set again after it has.
+    // Phones: no scrolling to the next step, it just slides from where the step
+    // before it was (trying it without the snap, 2026-10-07).
     if (!window.matchMedia("(min-width: 900px)").matches) {
-      // Where the step sits in the page, leaving out the slide below: measuring
-      // mid-slide would scroll by the slide's offset and jolt the page.
-      const pageTop = () => {
-        let top = 0;
-        for (let n: HTMLElement | null = el; n; n = n.offsetParent as HTMLElement | null) top += n.offsetTop;
-        return top;
-      };
-      // The furthest the page can scroll once the sections below have settled;
-      // while they glide the page is briefly taller, and scrolling into that
-      // extra room would only be undone a moment later.
-      const maxTop = document.documentElement.scrollHeight - window.innerHeight;
-      const place = () => {
-        const vv = window.visualViewport;
-        const seenTop = vv?.offsetTop ?? 0;
-        const seenHeight = vv?.height ?? window.innerHeight;
-        const want = seenTop + Math.max(48, Math.round(seenHeight * 0.1));
-        window.scrollTo({ top: Math.min(pageTop() - want, maxTop), behavior: "instant" as ScrollBehavior });
-      };
-      place();
       const dy = was.top - el.getBoundingClientRect().top;
       if (Math.abs(dy) >= 2 && Math.abs(dy) <= window.innerHeight) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], timing);
       // The sections below start where they were on screen and glide up (or
@@ -204,8 +180,7 @@ function SignIn({ options, pendingSave, initialPlan, naming, onSignedIn, onNamed
       if (startHeight > 0 && startHeight <= endHeight + window.innerHeight && Math.abs(startHeight - endHeight) >= 2) {
         grid.animate([{ height: `${startHeight}px`, overflow: "hidden" }, { height: `${endHeight}px`, overflow: "hidden" }], timing);
       }
-      const again = [80, 350].map((ms) => window.setTimeout(place, ms));
-      return () => again.forEach(window.clearTimeout);
+      return;
     }
     const height = grid.offsetHeight;
     if (Math.abs(height - was.height) >= 2) {
@@ -232,19 +207,24 @@ function SignIn({ options, pendingSave, initialPlan, naming, onSignedIn, onNamed
     }
     // Enter on the keyboard keeps it up, unlike a tap on the button. Put it
     // down here too: carried over, it never offers the code from the email.
+    // The code step waits for it to finish going down, so the page doesn't
+    // resize under the step as it slides in.
+    const keyboardWasUp = phone && document.activeElement instanceof HTMLInputElement;
     (document.activeElement as HTMLElement | null)?.blur();
+    const keyboardDown = keyboardWasUp ? keyboardClosed() : Promise.resolve();
     // Back, then the same email again within the minute: the code already
     // sent still works, and the server would refuse to send another anyway.
     if (cooldown > 0 && email.trim().toLowerCase() === sentTo) {
       setPendingPlan(paid ? plan : null);
       setTyped("");
+      await keyboardDown;
       setState("sent");
       toast("Use the code we already emailed you.");
       return;
     }
     setState("sending");
     try {
-      const { reused } = await requestSignInLink(email, paid ? plan : undefined);
+      const [{ reused }] = await Promise.all([requestSignInLink(email, paid ? plan : undefined), keyboardDown]);
       setPendingPlan(paid ? plan : null);
       captureEvent("api_signin_requested", { plan });
       setSentTo(email.trim().toLowerCase());
@@ -502,6 +482,29 @@ function SignIn({ options, pendingSave, initialPlan, naming, onSignedIn, onNamed
  * has, and what the phone's autofill is built for. Pasting keeps the digits
  * whatever came with them.
  */
+/**
+ * Resolves once the phone keyboard has gone down: the visible area is back to
+ * the full window and has stopped changing. Gives up after 600ms, since the
+ * page can't always see the keyboard.
+ */
+function keyboardClosed(): Promise<void> {
+  const vv = window.visualViewport;
+  if (!vv) return new Promise((done) => window.setTimeout(done, 300));
+  return new Promise((done) => {
+    const start = performance.now();
+    let last = vv.height;
+    let steady = 0;
+    const tick = () => {
+      steady = Math.abs(vv.height - last) < 1 ? steady + 1 : 0;
+      last = vv.height;
+      const down = window.innerHeight - vv.height < 80 && steady >= 3;
+      if (down || performance.now() - start > 600) return done();
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
 function CodeInputPhone({ value, disabled, onChange }: { value: string; disabled: boolean; onChange: (raw: string) => void }) {
   const [focused, setFocused] = useState(false);
   const active = Math.min(value.length, 5);

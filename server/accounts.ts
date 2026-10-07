@@ -478,9 +478,6 @@ function burstLimiter(perSecond: number) {
 }
 
 /** Small in-memory limiter for the sign-in form, so it can't be used to spam inboxes. */
-/** Asked for the name step on every sign-in, for testing it on the live site. */
-const NAME_STEP_TEST_EMAILS = ["hello@jedbillyb.com"];
-
 function attemptLimiter(max: number, windowMs: number) {
   const hits = new Map<string, number[]>();
   const allow = (key: string): boolean => {
@@ -596,7 +593,7 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
   const onTestSite = (req: Request) => !!opts.devLogin || req.get("x-vf-site") === "test";
   const testSiteLogin = (req: Request, raw: unknown) => {
     const name = typeof raw === "string" ? raw.trim().toLowerCase() : "";
-    return onTestSite(req) && Object.hasOwn(TEST_SITE_LOGINS, name) ? name : null;
+    return onTestSite(req) && Object.prototype.hasOwnProperty.call(TEST_SITE_LOGINS, name) ? name : null;
   };
 
   router.post("/auth/request-link", async (req, res) => {
@@ -657,9 +654,6 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     // The code is used up, so signing out and back in straight away may send a
     // new one: the once-a-minute limit is there to stop repeat emails, not this.
     perEmail.forget(result.user.email);
-    // Local dev, and the owner's test address in production: forget the name on
-    // every sign-in, so the name step can be retested with one email.
-    if (opts.devLogin || NAME_STEP_TEST_EMAILS.includes(result.user.email)) store.setName(result.user.id, null);
     const id = analyticsId(result.user.id);
     if (result.created) track("account_created", id, { $set_once: { signed_up_at: result.user.created_at } });
     track("signed_in", id, { method: byCode ? "code" : "link", new_account: result.created, $set: { tier: result.user.tier } });
