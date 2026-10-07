@@ -440,12 +440,6 @@ function SignIn({ pendingSave, initialPlan, naming, onSignedIn, onNamed, onSignO
                   ))}
                 </div>
               )}
-              {testLogin && (
-                <div className="dev-login">
-                  <span>Test site</span>
-                  <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 500, fontSize: 12 }}>test1 signs up, test2 signs in. Code 000000.{devLogin && " Any other email: 123456."}</span>
-                </div>
-              )}
               {googleOn && (
                 <>
                   <a
