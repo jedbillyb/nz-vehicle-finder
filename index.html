@@ -30,21 +30,6 @@
       }
       addEventListener("scroll", update, { passive: true });
     })();
-    // Safari fills the gap a pull opens past either end of the page with one
-    // colour, the page colour. In the top half of the page it is the nav's
-    // blue, so a pull down never shows a pale strip above the nav; in the
-    // bottom half it is the footer's pale colour (index.css).
-    (function () {
-      var html = document.documentElement, half = "";
-      function update() {
-        var room = document.documentElement.scrollHeight - window.innerHeight;
-        var next = window.scrollY < room / 2 || room <= 0 ? "top" : "bottom";
-        if (next !== half) html.setAttribute("data-half", (half = next));
-      }
-      update();
-      addEventListener("scroll", update, { passive: true });
-      addEventListener("resize", update);
-    })();
   </script>
 
   <!-- SEO: Title (53 chars) -->
@@ -105,9 +90,6 @@
        pseudo-element: Safari 26 colours the bar area from the element it
        finds at the top edge, and a pseudo-element counts as <body>. -->
   <div id="top-blue" aria-hidden="true"></div>
-  <!-- Pale, pinned to the bottom edge: Safari colours the strip under its
-       bottom bar from a pinned element it finds there (index.css). -->
-  <div id="bottom-edge" aria-hidden="true"></div>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
