@@ -633,6 +633,8 @@
 .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .admin-table th { text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6b7280; background: #f9fafb; padding: 8px 12px; white-space: nowrap; }
 .admin-table td { padding: 8px 12px; border-top: 1px solid #f1f5f9; color: #1f2937; white-space: nowrap; }
+.admin-table td.admin-table__email, .admin-table td.admin-table__name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.admin-table td.admin-table__name { max-width: 140px; }
 .admin-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .admin-table .muted { color: #9ca3af; }
 .admin-table__sort { all: unset; cursor: pointer; }
@@ -644,8 +646,62 @@
 .admin-table__detail dt { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6b7280; padding-top: 2px; }
 .admin-table__detail dd { margin: 0; word-break: break-word; }
 .admin-table__detail a { color: #0284c7; text-decoration: underline; }
-.admin-table__delete { display: flex; flex-wrap: wrap; gap: 8px; max-width: 460px; }
-.admin-table__delete input { flex: 1 1 220px; }
+.admin-table__delete { position: sticky; left: 16px; max-width: min(520px, calc(100vw - 64px)); margin-top: 14px; padding: 12px; border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2; }
+.admin-table__delete label { display: block; margin-bottom: 8px; font-size: 13px; color: #7f1d1d; overflow-wrap: anywhere; }
+.admin-table__delete label strong { color: #450a0a; }
+.admin-table__delete-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-table__delete-row input { flex: 1 1 220px; min-width: 0; background: #ffffff; }
+.admin-table__delete-btn { padding: 8px 16px; border: none; border-radius: 8px; background: #dc2626; color: #ffffff; font-size: 14px; font-weight: 600; cursor: pointer; }
+.admin-table__delete-btn:disabled { background: #e5e7eb; color: #4b5563; cursor: not-allowed; }
+.admin-accounts { container: admin / inline-size; }
+.admin-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.admin-toolbar input, .admin-toolbar select, .admin-toolbar button {
+  box-sizing: border-box; height: 40px; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px;
+  background: #ffffff; color: #1f2937; font: inherit; font-size: 14px;
+}
+.admin-toolbar input:focus-visible, .admin-toolbar select:focus-visible, .admin-toolbar button:focus-visible { outline: 2px solid #0ea5e9; outline-offset: 1px; }
+.admin-toolbar__filter { flex: 0 1 320px; min-width: 0; }
+.admin-toolbar__sort { display: none; gap: 8px; }
+.admin-toolbar select {
+  appearance: none; padding-right: 32px; cursor: pointer;
+  background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%236b7280' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 12px center;
+}
+.admin-toolbar button { cursor: pointer; font-weight: 600; color: #374151; white-space: nowrap; }
+.admin-toolbar button:hover, .admin-toolbar select:hover { border-color: #9ca3af; }
+
+/* Too narrow for every column: each account is a card, no sideways scrolling. */
+@container admin (max-width: 1099px) {
+  .admin-toolbar__filter { flex: 1 1 100%; }
+  .admin-toolbar__sort { display: flex; flex: 1 1 100%; }
+  .admin-toolbar__sort select { flex: 1 1 auto; min-width: 0; }
+  .admin-table-wrap { overflow: visible; border: none; }
+  .admin-table, .admin-table tbody { display: block; }
+  .admin-table thead { display: none; }
+  .admin-table__row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 10px; margin-bottom: 8px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; background: #ffffff; }
+  .admin-table__row.is-open { margin-bottom: 0; border-color: #7dd3fc; border-bottom-left-radius: 0; border-bottom-right-radius: 0; background: #f0f9ff; }
+  .admin-table__row td, .admin-table__row:hover td, .admin-table__row.is-open td { padding: 0; border: none; background: none; white-space: normal; text-align: left; }
+  .admin-table__row td.admin-table__name { grid-column: 1 / 4; grid-row: 1; font-size: 15px; font-weight: 600; }
+  .admin-table__row td.num.admin-table__id { grid-column: 4; grid-row: 1; text-align: right; }
+  .admin-table__row td.admin-table__email, .admin-table__row td.admin-table__name { max-width: none; }
+  .admin-table__row td.admin-table__email { grid-column: 1 / -1; grid-row: 2; color: #374151; overflow-wrap: anywhere; }
+  .admin-table__row td.num { text-align: left; }
+  .admin-table__row td[data-label] { font-size: 13px; font-variant-numeric: tabular-nums; }
+  .admin-table__row td[data-label]::before { content: attr(data-label); display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; }
+  .admin-table__detail { display: block; margin-bottom: 8px; }
+  .admin-table__detail td { display: block; padding: 12px; border: 1px solid #7dd3fc; border-top: none; border-radius: 0 0 10px 10px; }
+  .admin-table__detail dl { position: static; max-width: none; grid-template-columns: 1fr; gap: 2px; }
+  .admin-table__detail dd { margin-bottom: 8px; }
+  .admin-table__delete { position: static; max-width: none; }
+  .admin-table__delete-btn { flex: 1 1 100%; padding: 10px 16px; }
+  .admin-table tbody > tr:not(.admin-table__row):not(.admin-table__detail) { display: block; }
+}
+@container admin (min-width: 600px) and (max-width: 1099px) {
+  .admin-table__row { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .admin-table__row td.admin-table__name { grid-column: 1 / 8; }
+  .admin-table__row td.num.admin-table__id { grid-column: 8; }
+  .admin-table__detail dl { grid-template-columns: max-content 1fr; gap: 6px 16px; }
+  .admin-table__detail dd { margin-bottom: 0; }
+}
 
 /* ── Results table scroll box: edge fades and a "Swipe" hint ── */
 .table-scroll { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }

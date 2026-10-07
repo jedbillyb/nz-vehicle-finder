@@ -1014,6 +1014,12 @@ const ADMIN_COLUMNS: { key: AdminSort; label: string; num?: boolean }[] = [
   { key: "requests_total", label: "All time", num: true },
 ];
 
+const ADMIN_DATES: AdminSort[] = ["id", "created_at", "last_signin_at", "last_api_use"];
+const sortDirectionLabel = (key: AdminSort, desc: boolean) =>
+  ADMIN_DATES.includes(key) ? (desc ? "Newest first" : "Oldest first")
+  : ["name", "email", "tier"].includes(key) ? (desc ? "Z to A" : "A to Z")
+  : desc ? "Most first" : "Fewest first";
+
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const withinWeek = (iso: string | null) => !!iso && Date.now() - new Date(iso).getTime() < WEEK_MS;
 
@@ -1066,6 +1072,7 @@ function AdminAccounts() {
         <SkeletonBlock height={160} />
       ) : (
         <>
+          <div className="admin-accounts">
           <div className="acct-usage__facts" style={{ marginBottom: 12 }}>
             <span><strong><AnimatedNumber value={rows.length} /></strong> accounts</span>
             <span><strong><AnimatedNumber value={newThisWeek} /></strong> new this week</span>
@@ -1075,12 +1082,24 @@ function AdminAccounts() {
             <span><strong><AnimatedNumber value={requests} /></strong> API requests this month</span>
             <span><strong><AnimatedNumber value={lastMonth} /></strong> last month</span>
           </div>
-          <input
-            placeholder="Filter by name, email or plan"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            style={{ ...input, maxWidth: 320, marginBottom: 12 }}
-          />
+          <div className="admin-toolbar">
+            <input
+              className="admin-toolbar__filter"
+              type="search"
+              placeholder="Filter by name, email or plan"
+              aria-label="Filter accounts"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+            <div className="admin-toolbar__sort">
+              <select aria-label="Sort by" value={sort.key} onChange={(e) => sortBy(e.target.value as AdminSort)}>
+                {ADMIN_COLUMNS.map((c) => <option key={c.key} value={c.key}>Sort: {c.key === "id" ? "ID" : c.label}</option>)}
+              </select>
+              <button type="button" onClick={() => setSort((s) => ({ ...s, desc: !s.desc }))}>
+                {sortDirectionLabel(sort.key, sort.desc)}
+              </button>
+            </div>
+          </div>
           <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
@@ -1098,17 +1117,17 @@ function AdminAccounts() {
                 {shown.map((r) => (
                   <Fragment key={r.id}>
                     <tr className={`admin-table__row${open === r.id ? " is-open" : ""}`} onClick={() => { setOpen(open === r.id ? null : r.id); setConfirm(""); }}>
-                      <td className="num muted">{r.id}</td>
-                      <td>{r.name ?? <span className="muted">no name yet</span>}</td>
-                      <td>{r.email}</td>
-                      <td>{TIERS[r.tier as TierId]?.name ?? r.tier}{r.subscription_status && r.subscription_status !== "active" ? ` (${r.subscription_status})` : ""}</td>
-                      <td>{shortDate(r.created_at)}</td>
-                      <td>{shortDate(r.last_signin_at)}</td>
-                      <td>{shortDate(r.last_api_use)}</td>
-                      <td className="num">{r.searches}</td>
-                      <td className="num">{r.keys}</td>
-                      <td className="num">{r.requests_this_month.toLocaleString("en-NZ")}</td>
-                      <td className="num">{r.requests_total.toLocaleString("en-NZ")}</td>
+                      <td className="num muted admin-table__id">#{r.id}</td>
+                      <td className="admin-table__name">{r.name ?? <span className="muted">no name yet</span>}</td>
+                      <td className="admin-table__email" title={r.email}>{r.email}</td>
+                      <td data-label="Plan">{TIERS[r.tier as TierId]?.name ?? r.tier}{r.subscription_status && r.subscription_status !== "active" ? ` (${r.subscription_status})` : ""}</td>
+                      <td data-label="Joined">{shortDate(r.created_at)}</td>
+                      <td data-label="Last in">{shortDate(r.last_signin_at)}</td>
+                      <td data-label="Last API">{shortDate(r.last_api_use)}</td>
+                      <td data-label="Searches" className="num">{r.searches}</td>
+                      <td data-label="Keys" className="num">{r.keys}</td>
+                      <td data-label="This month" className="num">{r.requests_this_month.toLocaleString("en-NZ")}</td>
+                      <td data-label="All time" className="num">{r.requests_total.toLocaleString("en-NZ")}</td>
                     </tr>
                     {open === r.id && (
                       <tr className="admin-table__detail">
@@ -1129,23 +1148,28 @@ function AdminAccounts() {
                             </dd>
                             <dt>API keys</dt><dd>{r.key_list ? r.key_list.split("\n").join(", ") : <span className="muted">none</span>}</dd>
                             <dt>Saved searches</dt><dd>{r.search_list ? r.search_list.split("\n").join(", ") : <span className="muted">none</span>}</dd>
-                            <dt>Delete</dt>
-                            <dd>
-                              <form className="admin-table__delete" onSubmit={(e) => { e.preventDefault(); remove(r); }}>
-                                <input
-                                  type="email"
-                                  placeholder={`Type ${r.email} to confirm`}
-                                  aria-label="Type the account's email to confirm"
-                                  value={confirm}
-                                  onChange={(e) => setConfirm(e.target.value)}
-                                  style={{ ...input, padding: "6px 10px", fontSize: 13 }}
-                                />
-                                <button type="submit" disabled={confirm.trim().toLowerCase() !== r.email} style={{ ...secondaryButton, padding: "6px 14px", fontSize: 13, color: "#b91c1c", borderColor: "#fca5a5" }}>
-                                  Delete account
-                                </button>
-                              </form>
-                            </dd>
                           </dl>
+                          <form className="admin-table__delete" onSubmit={(e) => { e.preventDefault(); remove(r); }}>
+                            <label htmlFor={`admin-delete-${r.id}`}>
+                              To delete this account, type its email: <strong>{r.email}</strong>
+                            </label>
+                            <div className="admin-table__delete-row">
+                              <input
+                                id={`admin-delete-${r.id}`}
+                                type="email"
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                spellCheck={false}
+                                placeholder={r.email}
+                                value={confirm}
+                                onChange={(e) => setConfirm(e.target.value)}
+                                style={{ ...input, fontSize: 16 }}
+                              />
+                              <button type="submit" className="admin-table__delete-btn" disabled={confirm.trim().toLowerCase() !== r.email}>
+                                Delete account
+                              </button>
+                            </div>
+                          </form>
                         </td>
                       </tr>
                     )}
@@ -1156,6 +1180,7 @@ function AdminAccounts() {
                 )}
               </tbody>
             </table>
+          </div>
           </div>
         </>
       )}
