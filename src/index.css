@@ -21,15 +21,18 @@
   }
 }
 
-/* Safari on iPhone tints the strip under its floating bar from the html/body
-   colour, so the body matches the footer (SiteFooter) and the grey page
-   colour lives on the app inside it. The colour never changes: Safari also
-   tints the area around its bar from it, which flashed blue when it did. */
+/* The nav's blue on html and body. Safari fills the gap a pull down opens
+   above the page with this colour, before anything on the page can cover it,
+   so a pale colour here flashed a pale strip above the nav. It also tints the
+   strip under Safari's floating bar, so that is blue too (chosen 2026-10-07).
+   The grey page colour lives on the app inside it. The colour never changes:
+   Safari tints the area around its bar from it, which flashed when it did. */
 html,
 body {
-  background: #f0f9ff !important;
+  background: #0ea5e9 !important;
 }
 #root {
+  min-height: 100vh;
   background: hsl(var(--background));
 }
 /* Still loading, the app has drawn nothing yet: cover the screen in the page
