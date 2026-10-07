@@ -21,6 +21,8 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 
 const SIGNED_IN_KEY = "nzvf_signed_in";
+/** Last visit's first name, so the heading reads "Hey, Sam" while the account loads. */
+const SIGNED_IN_NAME_KEY = "nzvf_signed_in_name";
 
 const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" }) : "Never";
@@ -1134,11 +1136,16 @@ export default function Account() {
   const [wasSignedIn] = useState(() => {
     try { return localStorage.getItem(SIGNED_IN_KEY) === "1"; } catch { return false; }
   });
+  const [lastName] = useState(() => {
+    try { return localStorage.getItem(SIGNED_IN_NAME_KEY); } catch { return null; }
+  });
   useEffect(() => {
     if (loading) return;
     try {
       if (account) localStorage.setItem(SIGNED_IN_KEY, "1");
       else localStorage.removeItem(SIGNED_IN_KEY);
+      if (account?.name) localStorage.setItem(SIGNED_IN_NAME_KEY, account.name);
+      else localStorage.removeItem(SIGNED_IN_NAME_KEY);
     } catch { /* storage blocked: fall back to the signed-out heading */ }
   }, [account, loading]);
   // An account with no name yet is still finishing sign-up, on the sign-in screen.
@@ -1269,7 +1276,7 @@ export default function Account() {
       crumb="Account"
       // Keyed, so a new heading fades up instead of swapping in place.
       title={<span key={showDashboard ? "in" : "out"} className={leavingSignIn ? "leave-fade" : showDashboard && !greeted ? undefined : "fade-in fade-in--slow"} style={{ display: "block" }}>
-        {showDashboard ? (account?.name ? `Hey, ${account.name}` : "Your account") : "Get an API key"}
+        {showDashboard ? (account?.name || (!account && lastName) ? `Hey, ${account?.name ?? lastName}` : "Your account") : "Get an API key"}
       </span>}
       intro={<span key={showDashboard ? "in" : "out"} className={leavingSignIn ? "leave-fade" : showDashboard && !greeted ? undefined : "fade-in fade-in--slow"} style={{ display: "block", animationDelay: leavingSignIn ? "0ms" : "120ms" }}>
         {showDashboard
