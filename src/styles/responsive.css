@@ -217,23 +217,6 @@
     z-index: 40;
   }
 }
-/* Blue running up from the pinned strip, past the top of the screen. At the
-   start of a pull down at the top, Safari moves the page a frame or two before
-   it moves the fixed blue behind it (index.css), and the pale page colour
-   showed as a strip above the nav. This blue moves with the nav, so it can't. */
-@media (max-width: 767px) {
-  .site-nav-mobile::before,
-  .header-topbar::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: calc(100% - 1px);
-    height: 100vh;
-    background: #0ea5e9;
-    pointer-events: none;
-  }
-}
 
 /* ── Header count — hidden on mobile ────────────────────────── */
 @media (max-width: 767px) {
