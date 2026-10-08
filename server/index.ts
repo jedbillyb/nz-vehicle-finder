@@ -16,6 +16,11 @@ import { isValidEmail } from "../shared/email.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
+// Behind nginx on loopback only. Trusting just the loopback hop makes req.ip the
+// address nginx reported (its X-Forwarded-For / X-Real-IP = the real client),
+// while any client-supplied X-Forwarded-For is ignored, so the rate limiter and
+// analytics see the true IP and cannot be spoofed by a header.
+app.set("trust proxy", "loopback");
 /**
  * The free /api/* endpoints serve this site, so browsers elsewhere are refused.
  * /api/v1 is gated by API keys instead and stays open to any origin.

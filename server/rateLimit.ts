@@ -13,7 +13,15 @@ import type { Request, Response, NextFunction } from "express";
  */
 export function clientIp(req: Request): string {
   const cf = req.headers["cf-connecting-ip"];
-  return (typeof cf === "string" && cf) || req.ip || "unknown";
+  if (typeof cf === "string" && cf) return cf;
+  // Requests that reach the app without Cloudflare (e.g. a scan straight to the
+  // origin IP) carry no cf-connecting-ip. Fall back to what nginx forwarded so
+  // the real address is still recorded, not this server's own. req.ip honours
+  // `trust proxy: loopback`, so it is nginx's X-Forwarded-For value, never the
+  // loopback socket, and client-supplied X-Forwarded-For is overwritten by nginx.
+  const xr = req.headers["x-real-ip"];
+  if (typeof xr === "string" && xr) return xr;
+  return req.ip || "unknown";
 }
 
 /** Fixed-window counter per key. Cheap enough to run on every request. */
