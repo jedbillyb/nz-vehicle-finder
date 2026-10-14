@@ -82,12 +82,12 @@ export default function Contact() {
         </p>
 
         {sent ? (
-          <div style={{ maxWidth: 440, width: "100%", margin: "8px auto 0", padding: "20px 22px", borderRadius: 10, border: "1px solid #bbf7d0", background: "#f0fdf4", color: "#166534", textAlign: "center" }}>
+          <div style={{ maxWidth: 540, width: "100%", margin: "8px auto 0", padding: "20px 22px", borderRadius: 10, border: "1px solid #bbf7d0", background: "#f0fdf4", color: "#166534", textAlign: "center" }}>
             <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Thanks, that&apos;s on its way.</div>
             <div style={{ fontSize: 14 }}>I&apos;ll get back to you at {email.trim()} within a day or two.</div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} noValidate style={{ maxWidth: 440, width: "100%", margin: "8px auto 0", textAlign: "left", display: "flex", flexDirection: "column", gap: 14 }}>
+          <form onSubmit={handleSubmit} noValidate style={{ maxWidth: 540, width: "100%", margin: "8px auto 0", textAlign: "left", display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <label style={labelStyle} htmlFor="contact-name">Name <span style={{ color: "#9ca3af", fontWeight: 400 }}>(optional)</span></label>
               <input id="contact-name" className="signup-input" style={fieldStyle} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={120} />
