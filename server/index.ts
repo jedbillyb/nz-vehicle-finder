@@ -989,4 +989,16 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   if (!res.headersSent) res.status(500).json({ error: "Internal server error" });
 });
 
+// Last-resort safety net. This API is a single process, so an uncaught error in
+// one request used to exit it; pm2 then relaunched before port 3001 was freed,
+// turning one failed request (a sync DB throw inside an async route, which
+// Express can't forward to the handler above) into a burst of EADDRINUSE
+// restarts and 502s for everyone. Log and keep serving instead of dying.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled promise rejection (kept server alive):", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception (kept server alive):", err);
+});
+
 app.listen(3001);
