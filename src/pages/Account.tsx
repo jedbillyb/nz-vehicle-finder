@@ -1074,6 +1074,7 @@ function AdminAccounts() {
   const newThisWeek = all.filter((r) => withinWeek(r.created_at)).length;
   const activeThisWeek = all.filter((r) => withinWeek(r.last_signin_at) || withinWeek(r.last_api_use)).length;
   const google = all.filter((r) => r.google).length;
+  const savedSearches = all.reduce((n, r) => n + r.searches, 0);
 
   const sortBy = (key: AdminSort) =>
     setSort((s) => (s.key === key ? { key, desc: !s.desc } : { key, desc: !["name", "email", "tier"].includes(key) }));
@@ -1091,6 +1092,7 @@ function AdminAccounts() {
             <span><strong><AnimatedNumber value={activeThisWeek} /></strong> active this week</span>
             <span><strong><AnimatedNumber value={paid} /></strong> paying</span>
             <span><strong><AnimatedNumber value={google} /></strong> use Google</span>
+            <span><strong><AnimatedNumber value={savedSearches} /></strong> saved {savedSearches === 1 ? "search" : "searches"}</span>
             <span><strong><AnimatedNumber value={requests} /></strong> API requests this month</span>
             <span><strong><AnimatedNumber value={lastMonth} /></strong> last month</span>
           </div>
