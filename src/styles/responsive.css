@@ -607,9 +607,11 @@
    server says what to loosen, and every action is the same height so the box
    reads as one tidy set rather than mismatched buttons. */
 .zero-recovery { animation: fade-up 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-/* Opacity-only so the real suggestions cross-fade in place of the skeleton,
-   without a vertical slide that reads as a jump once the box has settled. */
-.zero-recovery__body { animation: fade 0.3s ease-out both; }
+/* The swap region's height is tweened in JS when the skeleton gives way to the
+   real content, revealing the solid suggestions as it grows. No opacity fade on
+   the content: fading it in while the box is already full height leaves an empty
+   gap above the footer for a moment, which reads as a flash. */
+.zero-swap { overflow: hidden; }
 .zero-btn {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 38px; padding: 0 16px; border-radius: 999px;

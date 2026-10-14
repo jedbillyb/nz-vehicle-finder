@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { SearchField } from "@/components/SearchField";
 import { RangeField } from "@/components/RangeField";
@@ -200,6 +200,24 @@ export default function Index() {
   const [relaxLoading, setRelaxLoading] = useState(false);
   // Page-1 results for the relaxed query, fetched ahead so applying it is instant.
   const relaxPrefetch = useRef<{ keys: string; data: Awaited<ReturnType<typeof searchVehicles>> } | null>(null);
+  // The swap region inside the zero-result box changes height when the skeleton
+  // gives way to the real suggestions (which may add "did you mean" chips).
+  // Ease that height change so the box grows smoothly instead of snapping.
+  const zeroSwapRef = useRef<HTMLDivElement>(null);
+  const zeroSwapPrevH = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const el = zeroSwapRef.current;
+    if (!el) { zeroSwapPrevH.current = null; return; }
+    const target = el.scrollHeight;
+    const from = zeroSwapPrevH.current;
+    zeroSwapPrevH.current = target;
+    if (from == null || from === target) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    el.animate(
+      [{ height: `${from}px` }, { height: `${target}px` }],
+      { duration: 320, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" },
+    );
+  }, [relaxLoading, relax]);
   // Set just before a loosened search so the URL effect pushes a history entry
   // (instead of replacing), letting the browser Back button return to the
   // original search. Every other filter change still replaces.
@@ -868,6 +886,7 @@ export default function Index() {
             <div style={{ padding: "32px 24px", overflowY: "auto" }}>
               <div className="zero-recovery" style={{ maxWidth: 560, margin: "0 auto", background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "24px 26px" }}>
                 <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No exact matches</h3>
+                <div ref={zeroSwapRef} className="zero-swap">
                 {relaxLoading && (
                   <div className="zero-recovery__body" aria-hidden="true">
                     <div className="text-skeleton" style={{ height: 12, width: "92%", margin: "2px 0 7px", borderRadius: 4 }} />
@@ -916,6 +935,7 @@ export default function Index() {
                     </div>
                   );
                 })()}
+                </div>
                 <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid #f3f4f6", fontSize: 13, color: "#6b7280" }}>
                   Still can&apos;t find it?{" "}
                   <Link to="/developers" onClick={() => captureEvent("api_cta_clicked", { location: "zero_results", source: "index" })} style={{ color: "#0369a1", fontWeight: 600 }}>

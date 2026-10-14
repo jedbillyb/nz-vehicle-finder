@@ -14,9 +14,15 @@ function CountUp({ value, initial = 0 }: { value: number; initial?: number }) {
     const start = performance.now();
     const origin = from.current > value ? 0 : from.current;
     let frame = 0;
+    const lo = Math.min(origin, value);
+    const hi = Math.max(origin, value);
     const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / COUNT_MS);
-      const next = Math.round(origin + (value - origin) * (1 - Math.pow(1 - t, 3)));
+      // Clamp t to [0,1]: the first frame can arrive with now < start, which
+      // would make the eased value dip past the origin (e.g. negative) for a
+      // frame and read as a jump. Clamp the output to the range too, for safety.
+      const t = Math.min(1, Math.max(0, (now - start) / COUNT_MS));
+      const raw = Math.round(origin + (value - origin) * (1 - Math.pow(1 - t, 3)));
+      const next = Math.min(hi, Math.max(lo, raw));
       from.current = next;
       setShown(next);
       if (t < 1) frame = requestAnimationFrame(tick);
