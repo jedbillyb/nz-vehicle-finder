@@ -868,9 +868,17 @@ export default function Index() {
             <div style={{ padding: "32px 24px", overflowY: "auto" }}>
               <div className="zero-recovery" style={{ maxWidth: 560, margin: "0 auto", background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "24px 26px" }}>
                 <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No exact matches</h3>
-                {relaxLoading && <div style={{ fontSize: 13, color: "#6b7280" }}>Working out what to loosen…</div>}
+                {relaxLoading && (
+                  <div className="zero-recovery__body" aria-hidden="true">
+                    <div className="text-skeleton" style={{ height: 12, width: "92%", margin: "2px 0 7px", borderRadius: 4 }} />
+                    <div className="text-skeleton" style={{ height: 12, width: "58%", margin: "0 0 14px", borderRadius: 4 }} />
+                    <div className="text-skeleton" style={{ height: 38, width: "78%", borderRadius: 999 }} />
+                  </div>
+                )}
                 {!relaxLoading && relax.length === 0 && (
-                  <p style={{ margin: 0, fontSize: 13, color: "#374151" }}>Try removing a filter or two, or widen a range.</p>
+                  <div className="zero-recovery__body">
+                    <p style={{ margin: 0, fontSize: 13, color: "#374151" }}>Try removing a filter or two, or widen a range.</p>
+                  </div>
                 )}
                 {!relaxLoading && relax.length > 0 && (() => {
                   const keys = relax.map((s) => s.key);
