@@ -153,25 +153,22 @@ function sameFilters(a: SearchFilters, b: SearchFilters): boolean {
   );
 }
 
-// Engine size is shown in litres (what people think in) but stored and queried
-// in cc (what the register holds), so 3.5 means 3,500cc, not a filter that
-// matched nothing.
-function litresToCc(litres: string): string {
-  const s = litres.trim();
+// Engine size is stored and queried in cc (what the register holds). People
+// think in litres ("3.5"), but plenty read the cc figure straight off the
+// papers ("3500"), so accept either: 100 or more is taken as cc, anything
+// smaller as litres. Either way the filter underneath is cc.
+function engineInputToCc(value: string): string {
+  const s = value.trim();
   if (!s) return "";
   const n = parseFloat(s);
-  return Number.isFinite(n) ? String(Math.round(n * 1000)) : "";
+  if (!Number.isFinite(n) || n <= 0) return "";
+  return String(n >= 100 ? Math.round(n) : Math.round(n * 1000));
 }
 function ccToLitres(cc: string | undefined): string {
   if (!cc) return "";
   const n = parseInt(cc, 10);
   return Number.isFinite(n) ? String(n / 1000) : "";
 }
-
-const relaxChipStyle: React.CSSProperties = {
-  padding: "5px 12px", borderRadius: 999, border: "1px solid #bae6fd", background: "#f0f9ff",
-  color: "#0369a1", fontSize: 12, fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
-};
 
 export default function Index() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -221,11 +218,11 @@ export default function Index() {
   // shared link): a change the inputs made themselves already matches, so this
   // never fights the user mid-type (e.g. a half-typed "3.").
   useEffect(() => {
-    if (litresToCc(engineMinL) !== (filters.CC_RATING_MIN || "")) setEngineMinL(ccToLitres(filters.CC_RATING_MIN));
+    if (engineInputToCc(engineMinL) !== (filters.CC_RATING_MIN || "")) setEngineMinL(ccToLitres(filters.CC_RATING_MIN));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.CC_RATING_MIN]);
   useEffect(() => {
-    if (litresToCc(engineMaxL) !== (filters.CC_RATING_MAX || "")) setEngineMaxL(ccToLitres(filters.CC_RATING_MAX));
+    if (engineInputToCc(engineMaxL) !== (filters.CC_RATING_MAX || "")) setEngineMaxL(ccToLitres(filters.CC_RATING_MAX));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.CC_RATING_MAX]);
 
@@ -339,6 +336,12 @@ export default function Index() {
             .then(({ total: relaxableTotal, suggestions }) => {
               setRelax(suggestions);
               setRelaxTotal(relaxableTotal);
+              captureEvent("relax_suggestions_shown", {
+                suggested_keys: suggestions.map((s) => s.key),
+                suggestion_count: suggestions.length,
+                relaxed_total: relaxableTotal,
+                has_did_you_mean: suggestions.some((s) => s.examples.length > 0),
+              });
               // Warm the relaxed query so applying the fix paints with no wait.
               if (suggestions.length > 0) {
                 const next = { ...f };
@@ -677,7 +680,7 @@ export default function Index() {
               />
             ))}
             <RangeField label="Year" fieldMin="VEHICLE_YEAR_MIN" fieldMax="VEHICLE_YEAR_MAX" valueMin={filters.VEHICLE_YEAR_MIN || ""} valueMax={filters.VEHICLE_YEAR_MAX || ""} onChangeMin={(v) => updateFilter("VEHICLE_YEAR_MIN", v)} onChangeMax={(v) => updateFilter("VEHICLE_YEAR_MAX", v)} min={1950} max={2026} />
-            <RangeField label="Engine size (L)" fieldMin="CC_RATING_MIN" fieldMax="CC_RATING_MAX" valueMin={engineMinL} valueMax={engineMaxL} onChangeMin={(v) => { setEngineMinL(v); updateFilter("CC_RATING_MIN", litresToCc(v)); }} onChangeMax={(v) => { setEngineMaxL(v); updateFilter("CC_RATING_MAX", litresToCc(v)); }} min={0} max={8} step={0.1} />
+            <RangeField label="Engine size" hint="L or cc" placeholderMin="1.5" placeholderMax="3.5" fieldMin="CC_RATING_MIN" fieldMax="CC_RATING_MAX" valueMin={engineMinL} valueMax={engineMaxL} onChangeMin={(v) => { setEngineMinL(v); updateFilter("CC_RATING_MIN", engineInputToCc(v)); }} onChangeMax={(v) => { setEngineMaxL(v); updateFilter("CC_RATING_MAX", engineInputToCc(v)); }} min={0} max={8000} step={0.1} />
             <RangeField label="Power (kW)" fieldMin="POWER_RATING_MIN" fieldMax="POWER_RATING_MAX" valueMin={filters.POWER_RATING_MIN || ""} valueMax={filters.POWER_RATING_MAX || ""} onChangeMin={(v) => updateFilter("POWER_RATING_MIN", v)} onChangeMax={(v) => updateFilter("POWER_RATING_MAX", v)} min={0} max={500} />
           </div>
 
@@ -863,7 +866,7 @@ export default function Index() {
 
           {total === 0 && (
             <div style={{ padding: "32px 24px", overflowY: "auto" }}>
-              <div style={{ maxWidth: 640, margin: "0 auto", background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "24px 26px" }}>
+              <div className="zero-recovery" style={{ maxWidth: 560, margin: "0 auto", background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "24px 26px" }}>
                 <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No exact matches</h3>
                 {relaxLoading && <div style={{ fontSize: 13, color: "#6b7280" }}>Working out what to loosen…</div>}
                 {!relaxLoading && relax.length === 0 && (
@@ -878,31 +881,31 @@ export default function Index() {
                   const noDataOnes = relax.filter((s) => s.noData);
                   const didYouMeanOnes = relax.filter((s) => s.examples.length > 0);
                   return (
-                    <>
-                      <p style={{ margin: "0 0 16px", fontSize: 13, color: "#6b7280" }}>
+                    <div className="zero-recovery__body">
+                      <p style={{ margin: "0 0 16px", fontSize: 13, color: "#6b7280", lineHeight: 1.6 }}>
                         No vehicle matches your <strong>{labelList}</strong> {labels.length === 1 ? "filter" : "filters together"}.
                       </p>
-                      <button onClick={() => applyRelax(keys)} style={{ padding: "10px 18px", borderRadius: 999, border: "none", background: "#0ea5e9", color: "#ffffff", fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+                      <button onClick={() => applyRelax(keys)} className="zero-btn zero-btn--primary">
                         Show {relaxTotal.toLocaleString("en-NZ")} result{relaxTotal === 1 ? "" : "s"} without {labels.length === 1 ? "it" : "them"}
                       </button>
                       {noDataOnes.length > 0 && (
-                        <p style={{ margin: "14px 0 0", fontSize: 12, color: "#9ca3af" }}>
+                        <p style={{ margin: "14px 0 0", fontSize: 12, color: "#9ca3af", lineHeight: 1.6 }}>
                           {noDataOnes.map((s) => s.label.toLowerCase()).join(", ")} {noDataOnes.length === 1 ? "isn't" : "aren't"} in the register, so nothing can match {noDataOnes.length === 1 ? "it" : "them"}.
                         </p>
                       )}
                       {didYouMeanOnes.map((s) => (
-                        <div key={s.key} style={{ marginTop: 14 }}>
+                        <div key={s.key} style={{ marginTop: 16 }}>
                           <div style={{ fontSize: 13, color: "#374151", marginBottom: 8 }}>
-                            Or try a <strong>{s.label.toLowerCase()}</strong> we have on record:
+                            Or try a different <strong>{s.label.toLowerCase()}</strong>:
                           </div>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                             {s.examples.map((ex) => (
-                              <button key={ex} onClick={() => applyDidYouMean(s.key, ex, keys)} style={relaxChipStyle}>{ex}</button>
+                              <button key={ex} onClick={() => applyDidYouMean(s.key, ex, keys)} className="zero-btn zero-btn--chip">{ex}</button>
                             ))}
                           </div>
                         </div>
                       ))}
-                    </>
+                    </div>
                   );
                 })()}
                 <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid #f3f4f6", fontSize: 13, color: "#6b7280" }}>
@@ -917,7 +920,7 @@ export default function Index() {
 
           {total > 0 && (
           <TableScroll>
-            <table className="results-table" style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
+            <table className="results-table results-appear" style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
               <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 10 }}>
                 <tr>
                   {resultColumns.map((col) => (

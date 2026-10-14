@@ -13,6 +13,7 @@ import { DocSection, Split } from "@/components/DocLayout";
 import { code, input, label, primaryButton, secondaryButton } from "@/lib/pageStyles";
 import { BURST_PER_SECOND, TIERS, TIER_ORDER, type Tier, type TierId } from "../../shared/apiTiers";
 import { MAX_SAVED_SEARCH_NAME, MAX_SAVED_SEARCHES } from "../../shared/savedSearch";
+import { isValidEmail } from "../../shared/email";
 import { ChevronLeft, LogOut, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Spinner } from "@/components/Spinner";
@@ -93,6 +94,8 @@ function SignIn({ options, pendingSave, initialPlan, naming, onSignedIn, onNamed
   const [error, setError] = useState<string | null>(null);
   /** Said inside the email box, so nothing below it moves. */
   const [badEmail, setBadEmail] = useState(false);
+  /** Flag a malformed email as soon as they leave the field, not only on submit. */
+  const [emailTouched, setEmailTouched] = useState(false);
   const [typed, setTyped] = useState("");
   const [checking, setChecking] = useState(false);
   /** Bumped on a wrong code, so the boxes shake (and clear) each time. */
@@ -207,12 +210,20 @@ function SignIn({ options, pendingSave, initialPlan, naming, onSignedIn, onNamed
 
   const submitLabel = state === "sending" ? "Sending..." : paid ? `Continue with ${tier.name}` : "Email me a code";
 
+  // Flag a malformed email live (once the field has been left or a submit tried),
+  // the same way the feedback box does. The test logins aren't real emails, so
+  // they're never flagged.
+  const typedEmail = email.trim();
+  const emailLooksBad = typedEmail !== "" && !(testLogin && /^test[12]$/i.test(typedEmail)) && !isValidEmail(typedEmail);
+  const showEmailError = badEmail || (emailTouched && emailLooksBad);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     const typedEmail = email.trim();
-    if (!(testLogin && /^test[12]$/i.test(typedEmail)) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typedEmail)) {
+    if (!(testLogin && /^test[12]$/i.test(typedEmail)) && !isValidEmail(typedEmail)) {
       setBadEmail(true);
+      setEmailTouched(true);
       return;
     }
     // Enter on the keyboard keeps it up, unlike a tap on the button. Put it
@@ -456,12 +467,13 @@ function SignIn({ options, pendingSave, initialPlan, naming, onSignedIn, onNamed
                     placeholder="you@example.co.nz"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setBadEmail(false); }}
-                    aria-invalid={badEmail}
-                    aria-describedby={badEmail ? "email-problem" : undefined}
-                    className={`signup-input${badEmail ? " is-invalid" : ""}`}
-                    style={{ ...input, width: "100%", height: 42, boxSizing: "border-box", paddingRight: badEmail ? 150 : undefined }}
+                    onBlur={() => setEmailTouched(true)}
+                    aria-invalid={showEmailError}
+                    aria-describedby={showEmailError ? "email-problem" : undefined}
+                    className={`signup-input${showEmailError ? " is-invalid" : ""}`}
+                    style={{ ...input, width: "100%", height: 42, boxSizing: "border-box", paddingRight: showEmailError ? 150 : undefined }}
                   />
-                  {badEmail && <span id="email-problem" className="signup-input__problem">Enter a valid email</span>}
+                  {showEmailError && <span id="email-problem" className="signup-input__problem">Enter a valid email</span>}
                 </div>
                 {/* The keyboard goes down with the tap, on purpose: the code box takes
                     focus as it appears, and a tap on it brings the keyboard up fresh for

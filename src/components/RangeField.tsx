@@ -12,6 +12,10 @@ interface RangeFieldProps {
   min: number;
   max: number;
   step?: number;
+  /** Muted note after the label, e.g. the units a field accepts. */
+  hint?: string;
+  placeholderMin?: string;
+  placeholderMax?: string;
 }
 
 /**
@@ -34,11 +38,15 @@ export function RangeField({
   min,
   max,
   step = 1,
+  hint,
+  placeholderMin,
+  placeholderMax,
 }: RangeFieldProps) {
   return (
     <div className="min-w-0">
       <label className="mb-1 block text-xs font-medium text-muted-foreground font-mono tracking-wide">
         {label}
+        {hint && <span className="ml-1.5 font-normal normal-case text-muted-foreground/60">{hint}</span>}
       </label>
       <div className="flex min-w-0 items-center gap-1.5">
         <input
@@ -47,7 +55,7 @@ export function RangeField({
           aria-label={`${label} from`}
           value={valueMin}
           onChange={(e) => onChangeMin(e.target.value)}
-          placeholder={String(min)}
+          placeholder={placeholderMin ?? String(min)}
           min={min}
           max={max}
           step={step}
@@ -61,7 +69,7 @@ export function RangeField({
           aria-label={`${label} to`}
           value={valueMax}
           onChange={(e) => onChangeMax(e.target.value)}
-          placeholder={String(max)}
+          placeholder={placeholderMax ?? String(max)}
           min={min}
           max={max}
           step={step}

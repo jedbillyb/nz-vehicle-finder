@@ -23,7 +23,9 @@ export default function Contact() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [badEmail, setBadEmail] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const showEmailError = badEmail || (emailTouched && email.trim() !== "" && !isValidEmail(email.trim()));
   const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastDraft = useRef("");
 
@@ -101,12 +103,13 @@ export default function Contact() {
                   placeholder="you@example.co.nz"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setBadEmail(false); }}
-                  aria-invalid={badEmail}
-                  aria-describedby={badEmail ? "contact-email-problem" : undefined}
-                  className={`signup-input${badEmail ? " is-invalid" : ""}`}
-                  style={{ ...fieldStyle, paddingRight: badEmail ? 150 : undefined }}
+                  onBlur={() => setEmailTouched(true)}
+                  aria-invalid={showEmailError}
+                  aria-describedby={showEmailError ? "contact-email-problem" : undefined}
+                  className={`signup-input${showEmailError ? " is-invalid" : ""}`}
+                  style={{ ...fieldStyle, paddingRight: showEmailError ? 150 : undefined }}
                 />
-                {badEmail && <span id="contact-email-problem" className="signup-input__problem">Enter a valid email</span>}
+                {showEmailError && <span id="contact-email-problem" className="signup-input__problem">Enter a valid email</span>}
               </div>
             </div>
             <div>
