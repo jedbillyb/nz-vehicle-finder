@@ -145,6 +145,14 @@ function normalizeParams(params: URLSearchParams): string {
   return new URLSearchParams(entries).toString();
 }
 
+/** Do two filter sets describe the same search (ignoring key order)? */
+function sameFilters(a: SearchFilters, b: SearchFilters): boolean {
+  return (
+    normalizeParams(new URLSearchParams(filtersToParams(a))) ===
+    normalizeParams(new URLSearchParams(filtersToParams(b)))
+  );
+}
+
 // Engine size is shown in litres (what people think in) but stored and queried
 // in cc (what the register holds), so 3.5 means 3,500cc, not a filter that
 // matched nothing.
@@ -404,36 +412,48 @@ export default function Index() {
     if (hasFilters) doSearch(filters, 1, "auto");
   }, [filters, doSearch]);
 
-  // The last query we wrote to the URL ourselves. Anything else the URL turns
-  // into (Back/Forward, a shared link opened in place) is navigation we adopt.
-  const lastWrittenSearch = useRef<string>(normalizeParams(searchParams));
+  // Two-way binding between filters and the URL. To stop the two effects below
+  // from chasing each other, `syncingFromUrl` marks a filters change that came
+  // FROM the URL, so the writer skips the one write that change would trigger.
+  const syncingFromUrl = useRef(false);
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+  const doSearchRef = useRef(doSearch);
+  doSearchRef.current = doSearch;
+  // react-router gives `setSearchParams` a new identity whenever the location
+  // changes, so keep it in a ref: if it were an effect dependency, a Back
+  // navigation would re-run the writer with the old filters and flip the URL
+  // forward again.
+  const setSearchParamsRef = useRef(setSearchParams);
+  setSearchParamsRef.current = setSearchParams;
+
+  // Writer: filters -> URL. Runs only when filters (or page size) change, never
+  // when the URL changes on its own, so a Back navigation is never written back.
   useEffect(() => {
+    if (syncingFromUrl.current) { syncingFromUrl.current = false; pushUrlNext.current = false; return; }
     const p = filtersToParams(filters);
     if (pageSize !== DEFAULT_PAGE_SIZE) p.limit = String(pageSize);
-    const norm = normalizeParams(new URLSearchParams(p));
-    lastWrittenSearch.current = norm;
-    // The URL already shows these filters (e.g. right after adopting a Back
-    // navigation): don't write it again, or the two effects fight.
-    if (norm === normalizeParams(searchParams)) { pushUrlNext.current = false; return; }
     // Loosening a search pushes a history entry so Back returns to it; every
     // other change just rewrites the current URL.
-    setSearchParams(p, { replace: !pushUrlNext.current });
+    setSearchParamsRef.current(p, { replace: !pushUrlNext.current });
     pushUrlNext.current = false;
-  }, [filters, pageSize, searchParams, setSearchParams]);
+  }, [filters, pageSize]);
 
-  // Browser Back/Forward (and opening a shared link in place) changes the URL
-  // without going through our handlers; re-read it and re-run that search, so
-  // stepping back from a loosened search returns to the original.
+  // Reader: URL -> filters. Browser Back/Forward (and opening a shared link in
+  // place) changes the URL without going through our handlers; re-read it and
+  // re-run that search, so stepping back from a loosened search returns to the
+  // original. Compares against a ref so a live filter edit never reverts.
   useEffect(() => {
-    if (normalizeParams(searchParams) === lastWrittenSearch.current) return;
-    lastWrittenSearch.current = normalizeParams(searchParams);
     const next = filtersFromParams(searchParams);
+    if (sameFilters(next, filtersRef.current)) return;
+    syncingFromUrl.current = true; // the setFilters below must not write back
     setFilters(next);
     setPage(1);
     const hasFilters = Object.values(next).some((v) => v && v.trim());
-    if (hasFilters) doSearch(next, 1, "auto");
-    else { setResults([]); setTotal(null); setRelax([]); setRelaxTotal(0); }
-  }, [searchParams, doSearch]);
+    if (hasFilters) doSearchRef.current(next, 1, "auto");
+    else { setResults([]); setTotal(null); setPages(1); setRelax([]); setRelaxTotal(0); relaxPrefetch.current = null; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
