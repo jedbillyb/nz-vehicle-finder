@@ -9,6 +9,13 @@ function CountUp({ value, initial = 0 }: { value: number; initial?: number }) {
   // spill over the text beside it. Counting down starts from 0 instead.
   const [shown, setShown] = useState(() => (reducedMotion() ? value : initial > value ? 0 : initial));
   const from = useRef(shown);
+  // When the target drops (e.g. 6,488 -> 0 stepping Back to a zero-result page),
+  // snap down now, during render, so the old higher number is never painted for
+  // a frame before the effect runs. Counting up still animates below.
+  if (value < shown) {
+    setShown(value);
+    from.current = value;
+  }
   useEffect(() => {
     if (reducedMotion()) { setShown(value); from.current = value; return; }
     const start = performance.now();

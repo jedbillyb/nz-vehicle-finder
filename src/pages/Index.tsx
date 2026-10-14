@@ -685,6 +685,9 @@ export default function Index() {
   );
 
   const displayResults = sortedResults;
+  // A filtered URL (deep link, or navigating between searches) has filters set
+  // but no total yet; don't flash the marketing landing while that search runs.
+  const hasActiveFilters = Object.values(filters).some((v) => v && v?.trim());
 
   return (
     <div
@@ -1077,6 +1080,7 @@ export default function Index() {
               {loading ? "Broad searches can take a few seconds" : "Set at least one filter, then click Run Search"}
             </p>
           </div>
+          {!hasActiveFilters && (
           <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 40, color: "#374151", fontSize: 13, lineHeight: 1.8 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#111827" }}>Search the NZ Motor Vehicle Register</h2>
             <p style={{ marginBottom: 12 }}>NZ Vehicle Finder gives you free public access to New Zealand's Motor Vehicle Register - the same database maintained by Waka Kotahi. Our fleet search tool allows you to search across 5.9 million registered vehicles by make, model, colour, fuel type, region, and more.</p>
@@ -1151,6 +1155,7 @@ export default function Index() {
               </div>
             </div>
           </div>
+          )}
         </div>
       )}
 
