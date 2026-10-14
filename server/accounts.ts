@@ -642,7 +642,19 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
     if (!opts.devLogin && !perEmail(email)) {
       return res.status(429).json({ error: "We emailed you a code less than a minute ago. Use that one, or wait a minute for a new one." });
     }
-    const { token: raw, code } = store.createLogin(email, undefined, opts.devLogin ? DEV_LOGIN_CODE : undefined);
+    // Capture the lead BEFORE the token write, which hits the same disk that
+    // once filled and lost a sign-up. This is an HTTP post to PostHog, so the
+    // email is kept even if the write below throws.
+    track("signin_link_attempt", email, { $set: { email } }, req);
+    let login: ReturnType<typeof store.createLogin>;
+    try {
+      login = store.createLogin(email, undefined, opts.devLogin ? DEV_LOGIN_CODE : undefined);
+    } catch (err) {
+      console.error("Login token write failed:", (err as Error).message);
+      track("signin_link_failed", email, { reason: "token_write" }, req);
+      return res.status(503).json({ error: "We're having a brief hiccup. Please try again in a moment." });
+    }
+    const { token: raw, code } = login;
     // A paid plan picked before signing up rides along in the link, so the
     // account page can go straight to checkout even on another device.
     const plan = paidPlanFrom(req.body?.plan);
@@ -762,7 +774,23 @@ export function createAccounts(store: AccountStore, opts: AccountsOptions) {
       console.error("Google token exchange failed:", (err as Error).message);
     }
     if (!profile) return fail("token");
-    const result = store.signInWithGoogle(profile);
+    // Capture the lead BEFORE the account write. The write touches accounts.db on
+    // the same disk that once filled up and silently lost a real sign-up; this is
+    // an HTTP post to PostHog, so the email survives even if the DB write throws.
+    if (profile.email) {
+      track("signin_google_attempt", profile.email, {
+        method: "google",
+        $set: { email: profile.email, ...(profile.name ? { name: profile.name } : {}) },
+      }, req);
+    }
+    let result: ReturnType<typeof store.signInWithGoogle>;
+    try {
+      result = store.signInWithGoogle(profile);
+    } catch (err) {
+      console.error("Google sign-in write failed:", (err as Error).message);
+      track("signin_google_error", profile.email || "server", { error: (err as Error).message }, req);
+      return fail("write_failed");
+    }
     if (!result) return fail("unverified_email");
 
     const id = analyticsId(result.user.id);

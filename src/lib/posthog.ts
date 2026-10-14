@@ -9,6 +9,11 @@ function isEnabled() {
   return Boolean(POSTHOG_API_KEY) && typeof window !== "undefined" && typeof document !== "undefined";
 }
 
+/** The stable per-browser id sent with every event; also tags server-side lead captures. */
+export function currentDistinctId() {
+  return getDistinctId();
+}
+
 function getDistinctId() {
   if (typeof window === "undefined") return "server";
 

@@ -10,9 +10,12 @@ import {
   checkHealth,
   fetchBreakdown,
   fetchFleetOverview,
+  fetchRelax,
+  fetchAllForExport,
   preloadModelsForMake,
   preloadSuggestions,
   type BreakdownData,
+  type RelaxSuggestion,
   type SearchFilters,
   searchVehicles,
 } from "@/lib/vehicleApi";
@@ -135,6 +138,26 @@ function filtersToParams(filters: SearchFilters): Record<string, string> {
   return out;
 }
 
+// Engine size is shown in litres (what people think in) but stored and queried
+// in cc (what the register holds), so 3.5 means 3,500cc, not a filter that
+// matched nothing.
+function litresToCc(litres: string): string {
+  const s = litres.trim();
+  if (!s) return "";
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? String(Math.round(n * 1000)) : "";
+}
+function ccToLitres(cc: string | undefined): string {
+  if (!cc) return "";
+  const n = parseInt(cc, 10);
+  return Number.isFinite(n) ? String(n / 1000) : "";
+}
+
+const relaxChipStyle: React.CSSProperties = {
+  padding: "5px 12px", borderRadius: 999, border: "1px solid #bae6fd", background: "#f0f9ff",
+  color: "#0369a1", fontSize: 12, fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
+};
+
 export default function Index() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<SearchFilters>(() => filtersFromParams(searchParams));
@@ -159,10 +182,33 @@ export default function Index() {
   useScrollLock(breakdownSheetOpen);
   const [validity, setValidity] = useState<Record<string, boolean>>({});
   const isSearching = useRef(false);
+  // Zero-result recovery: the set of filters to drop to get results back.
+  const [relax, setRelax] = useState<RelaxSuggestion[]>([]);
+  const [relaxTotal, setRelaxTotal] = useState(0);
+  const [relaxLoading, setRelaxLoading] = useState(false);
+  // Page-1 results for the relaxed query, fetched ahead so applying it is instant.
+  const relaxPrefetch = useRef<{ keys: string; data: Awaited<ReturnType<typeof searchVehicles>> } | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const exportAbort = useRef<AbortController | null>(null);
+  // Litres shown in the engine-size inputs; the filter underneath stays in cc.
+  const [engineMinL, setEngineMinL] = useState(() => ccToLitres(filters.CC_RATING_MIN));
+  const [engineMaxL, setEngineMaxL] = useState(() => ccToLitres(filters.CC_RATING_MAX));
   const [showAdvanced, setShowAdvanced] = useState(() => [...searchParams.keys()].some(k => advancedFilterKeySet.has(k)));
   const advancedActiveCount = useMemo(() => [...advancedFilterKeySet].filter(k => (filters[k as keyof SearchFilters] as string | undefined)?.trim()).length, [filters]);
 
   useEffect(() => { preloadSuggestions(); }, []);
+
+  // Re-derive the litres inputs only on an external filter change (Clear, or a
+  // shared link): a change the inputs made themselves already matches, so this
+  // never fights the user mid-type (e.g. a half-typed "3.").
+  useEffect(() => {
+    if (litresToCc(engineMinL) !== (filters.CC_RATING_MIN || "")) setEngineMinL(ccToLitres(filters.CC_RATING_MIN));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.CC_RATING_MIN]);
+  useEffect(() => {
+    if (litresToCc(engineMaxL) !== (filters.CC_RATING_MAX || "")) setEngineMaxL(ccToLitres(filters.CC_RATING_MAX));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.CC_RATING_MAX]);
 
   // The register grows every month, so read the size rather than hard-coding it.
   useEffect(() => {
@@ -265,11 +311,31 @@ export default function Index() {
         setSort(null);
 
         if (data.total === 0) {
-          toast("No records found", { description: "Try broadening your search filters." });
-          captureEvent("search_zero_results", {
-            ...searchMeta,
-            result_count: 0,
-          });
+          captureEvent("search_zero_results", { ...searchMeta, result_count: 0 });
+          relaxPrefetch.current = null;
+          setRelax([]);
+          setRelaxTotal(0);
+          setRelaxLoading(true);
+          fetchRelax(f)
+            .then(({ total: relaxableTotal, suggestions }) => {
+              setRelax(suggestions);
+              setRelaxTotal(relaxableTotal);
+              // Warm the relaxed query so applying the fix paints with no wait.
+              if (suggestions.length > 0) {
+                const next = { ...f };
+                for (const s of suggestions) delete next[s.key as keyof SearchFilters];
+                const keys = suggestions.map((s) => s.key).sort().join(",");
+                searchVehicles(next, 1, size)
+                  .then((d) => { relaxPrefetch.current = { keys, data: d }; })
+                  .catch(() => {});
+              }
+            })
+            .catch(() => { setRelax([]); setRelaxTotal(0); })
+            .finally(() => setRelaxLoading(false));
+        } else {
+          setRelax([]);
+          setRelaxTotal(0);
+          relaxPrefetch.current = null;
         }
 
         captureEvent("search_completed", {
@@ -371,6 +437,67 @@ export default function Index() {
     setPage(1);
     setSort(null);
     setErrorMessage(null);
+    setRelax([]);
+    setRelaxTotal(0);
+    relaxPrefetch.current = null;
+  };
+
+  // Drop every filter the recovery panel flagged, together, and paint instantly
+  // if the relaxed query was the one we prefetched.
+  const applyRelax = (keys: string[]) => {
+    captureEvent("search_relaxed", { removed: keys.join(","), action: "remove" });
+    const next = { ...filters };
+    for (const k of keys) delete next[k as keyof SearchFilters];
+    setFilters(next);
+    setPage(1);
+    const warmed = relaxPrefetch.current;
+    if (warmed && warmed.keys === [...keys].sort().join(",")) {
+      setResults(warmed.data.vehicles);
+      setTotal(warmed.data.total);
+      setPages(warmed.data.pages);
+      setSort(null);
+      setRelax([]);
+      setRelaxTotal(0);
+      relaxPrefetch.current = null;
+    }
+    // Always run the real search too: it refreshes the breakdown and URL, and is
+    // warm (so fast) after the prefetch already touched these rows.
+    doSearch(next, 1, "button");
+  };
+
+  // "Did you mean RIDER?" - replace a text filter with a value the field really
+  // holds, and drop the other culprits so the search actually returns.
+  const applyDidYouMean = (key: string, value: string, otherKeys: string[]) => {
+    captureEvent("search_relaxed", { removed: key, action: "replace" });
+    const next = { ...filters, [key]: value };
+    for (const k of otherKeys) if (k !== key) delete next[k as keyof SearchFilters];
+    setFilters(next);
+    setPage(1);
+    doSearch(next, 1, "button");
+  };
+
+  const handleExport = async () => {
+    if (exporting) return;
+    captureEvent("export_csv_clicked", {
+      ...summarizeFilters(filters as Record<string, string | undefined>),
+      result_count: total ?? results.length,
+    });
+    setExporting(true);
+    const controller = new AbortController();
+    exportAbort.current = controller;
+    try {
+      const { vehicles, capped } = await fetchAllForExport(filters, controller.signal);
+      const rows = vehicles.length ? vehicles : results;
+      exportToCsv(rows);
+      if (capped) {
+        toast("Exported the first 10,000", { description: "That's the free limit. Use the API for the full set." });
+      }
+    } catch {
+      toast.error("Export failed", { description: "Couldn't build the file. Please try again." });
+    } finally {
+      setExporting(false);
+      exportAbort.current = null;
+    }
   };
 
 
@@ -492,7 +619,7 @@ export default function Index() {
               />
             ))}
             <RangeField label="Year" fieldMin="VEHICLE_YEAR_MIN" fieldMax="VEHICLE_YEAR_MAX" valueMin={filters.VEHICLE_YEAR_MIN || ""} valueMax={filters.VEHICLE_YEAR_MAX || ""} onChangeMin={(v) => updateFilter("VEHICLE_YEAR_MIN", v)} onChangeMax={(v) => updateFilter("VEHICLE_YEAR_MAX", v)} min={1950} max={2026} />
-            <RangeField label="CC rating" fieldMin="CC_RATING_MIN" fieldMax="CC_RATING_MAX" valueMin={filters.CC_RATING_MIN || ""} valueMax={filters.CC_RATING_MAX || ""} onChangeMin={(v) => updateFilter("CC_RATING_MIN", v)} onChangeMax={(v) => updateFilter("CC_RATING_MAX", v)} min={0} max={8000} />
+            <RangeField label="Engine size (L)" fieldMin="CC_RATING_MIN" fieldMax="CC_RATING_MAX" valueMin={engineMinL} valueMax={engineMaxL} onChangeMin={(v) => { setEngineMinL(v); updateFilter("CC_RATING_MIN", litresToCc(v)); }} onChangeMax={(v) => { setEngineMaxL(v); updateFilter("CC_RATING_MAX", litresToCc(v)); }} min={0} max={8} step={0.1} />
             <RangeField label="Power (kW)" fieldMin="POWER_RATING_MIN" fieldMax="POWER_RATING_MAX" valueMin={filters.POWER_RATING_MIN || ""} valueMax={filters.POWER_RATING_MAX || ""} onChangeMin={(v) => updateFilter("POWER_RATING_MIN", v)} onChangeMax={(v) => updateFilter("POWER_RATING_MAX", v)} min={0} max={500} />
           </div>
 
@@ -578,19 +705,13 @@ export default function Index() {
                 </div>
                 <div className="action-buttons-secondary" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
                   {results.length > 0 && (
-                    <button onClick={() => {
-                      captureEvent("export_csv_clicked", {
-                        ...summarizeFilters(filters as Record<string, string | undefined>),
-                        result_count: results.length,
-                      });
-                      exportToCsv(results);
-                    }}
-                      style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.02em", whiteSpace: "nowrap" }}
+                    <button onClick={handleExport} disabled={exporting}
+                      style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 16px", background: "transparent", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 999, cursor: exporting ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.02em", whiteSpace: "nowrap", opacity: exporting ? 0.6 : 1 }}
                       onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9ca3af")}
                       onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
                     >
-                      <Download size={11} />
-                      Export CSV
+                      {exporting ? <Spinner size={11} /> : <Download size={11} />}
+                      {exporting ? "Exporting…" : "Export CSV"}
                     </button>
                   )}
                   {total !== null && (
@@ -682,6 +803,61 @@ export default function Index() {
             </div>
           </div>
 
+          {total === 0 && (
+            <div style={{ padding: "32px 24px", overflowY: "auto" }}>
+              <div style={{ maxWidth: 640, margin: "0 auto", background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "24px 26px" }}>
+                <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No exact matches</h3>
+                {relaxLoading && <div style={{ fontSize: 13, color: "#6b7280" }}>Working out what to loosen…</div>}
+                {!relaxLoading && relax.length === 0 && (
+                  <p style={{ margin: 0, fontSize: 13, color: "#374151" }}>Try removing a filter or two, or widen a range.</p>
+                )}
+                {!relaxLoading && relax.length > 0 && (() => {
+                  const keys = relax.map((s) => s.key);
+                  const labels = relax.map((s) => s.label.toLowerCase());
+                  const labelList = labels.length === 1
+                    ? labels[0]
+                    : `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`;
+                  const noDataOnes = relax.filter((s) => s.noData);
+                  const didYouMeanOnes = relax.filter((s) => s.examples.length > 0);
+                  return (
+                    <>
+                      <p style={{ margin: "0 0 16px", fontSize: 13, color: "#6b7280" }}>
+                        Your <strong>{labelList}</strong> {labels.length === 1 ? "filter is" : "filters are"} too narrow to match together.
+                      </p>
+                      <button onClick={() => applyRelax(keys)} style={{ padding: "10px 18px", borderRadius: 999, border: "none", background: "#0ea5e9", color: "#ffffff", fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+                        Show {relaxTotal.toLocaleString("en-NZ")} result{relaxTotal === 1 ? "" : "s"} without {labels.length === 1 ? "it" : "them"}
+                      </button>
+                      {noDataOnes.length > 0 && (
+                        <p style={{ margin: "14px 0 0", fontSize: 12, color: "#9ca3af" }}>
+                          {noDataOnes.map((s) => s.label.toLowerCase()).join(", ")} {noDataOnes.length === 1 ? "isn't" : "aren't"} recorded for these vehicles.
+                        </p>
+                      )}
+                      {didYouMeanOnes.map((s) => (
+                        <div key={s.key} style={{ marginTop: 14 }}>
+                          <div style={{ fontSize: 13, color: "#374151", marginBottom: 8 }}>
+                            Or fix the <strong>{s.label.toLowerCase()}</strong> — did you mean:
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                            {s.examples.map((ex) => (
+                              <button key={ex} onClick={() => applyDidYouMean(s.key, ex, keys)} style={relaxChipStyle}>{ex}</button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  );
+                })()}
+                <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid #f3f4f6", fontSize: 13, color: "#6b7280" }}>
+                  Still can&apos;t find it?{" "}
+                  <Link to="/developers" onClick={() => captureEvent("api_cta_clicked", { location: "zero_results", source: "index" })} style={{ color: "#0369a1", fontWeight: 600 }}>
+                    Try your luck with our API →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {total > 0 && (
           <TableScroll>
             <table className="results-table" style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed", background: "#ffffff" }}>
               <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 10 }}>
@@ -732,8 +908,9 @@ export default function Index() {
               </tbody>
             </table>
           </TableScroll>
+          )}
 
-          <Pagination page={page} pages={pages} onPageChange={handlePageChange} />
+          {total > 0 && <Pagination page={page} pages={pages} onPageChange={handlePageChange} />}
         </div>
       )}
 

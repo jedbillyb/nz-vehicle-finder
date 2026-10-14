@@ -1,5 +1,5 @@
 import { Vehicle } from "@/lib/mockData";
-import { clampPageSize, DEFAULT_PAGE_SIZE } from "../../shared/pagination";
+import { clampPageSize, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "../../shared/pagination";
 
 /**
  * Every text filter below holds an encoded term list (see shared/filterTerms.ts),
@@ -91,6 +91,72 @@ export async function searchVehicles(
   }
 
   return res.json();
+}
+
+export interface RelaxSuggestion {
+  /** A culprit filter key to drop, e.g. "TRANSMISSION_TYPE" or "CC_RATING_MAX". */
+  key: string;
+  label: string;
+  /** For a text filter: real values that field holds under the surviving filters. */
+  examples: string[];
+  /** True when the field is blank for every surviving match (not just too narrow). */
+  noData: boolean;
+}
+
+export interface RelaxResult {
+  /** Results once every culprit filter is dropped together. */
+  total: number;
+  /** The filters that must come off (as a set) to get those results back. */
+  suggestions: RelaxSuggestion[];
+}
+
+/**
+ * When a search returns nothing, ask which filters are to blame. The server
+ * relaxes greedily, so the suggestions are the set to remove together, and
+ * `total` is how many results that brings back.
+ */
+export async function fetchRelax(
+  filters: SearchFilters,
+  signal?: AbortSignal
+): Promise<RelaxResult> {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(filters)) {
+    if (v && v.trim()) params.set(k, v.trim());
+  }
+  try {
+    const res = await fetchApi(`/api/relax?${params}`, { signal });
+    if (!res.ok) return { total: 0, suggestions: [] };
+    const data = await res.json();
+    return {
+      total: typeof data?.total === "number" ? data.total : 0,
+      suggestions: Array.isArray(data?.suggestions) ? data.suggestions : [],
+    };
+  } catch {
+    return { total: 0, suggestions: [] };
+  }
+}
+
+/**
+ * Every matching vehicle for an export, up to the free result cap, fetched in
+ * big pages. Returns the rows plus whether the cap clipped the set.
+ */
+export async function fetchAllForExport(
+  filters: SearchFilters,
+  signal?: AbortSignal
+): Promise<{ vehicles: Vehicle[]; capped: boolean }> {
+  const CAP = 10_000; // matches FREE_MAX_RESULT_DEPTH on the server
+  const out: Vehicle[] = [];
+  let page = 1;
+  let total = Infinity;
+  while (out.length < Math.min(total, CAP)) {
+    if (signal?.aborted) break;
+    const data = await searchVehicles(filters, page, MAX_PAGE_SIZE);
+    total = data.total;
+    out.push(...data.vehicles);
+    if (data.vehicles.length === 0 || page >= data.pages) break;
+    page += 1;
+  }
+  return { vehicles: out.slice(0, CAP), capped: total > CAP };
 }
 
 export async function fetchBreakdown(

@@ -86,6 +86,23 @@ try {
   )`);
   const cols = feedbackDb.prepare("PRAGMA table_info(feedback)").all() as { name: string }[];
   if (!cols.some((c) => c.name === "email")) feedbackDb.exec("ALTER TABLE feedback ADD COLUMN email TEXT");
+  // Contact messages and abandoned drafts live here too. status is 'submitted'
+  // for a sent message or 'draft' for one captured as the person typed but never
+  // sent; a draft is upserted by distinct_id so it never loses the latest email.
+  feedbackDb.exec(`CREATE TABLE IF NOT EXISTS contacts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    status TEXT NOT NULL,
+    name TEXT,
+    email TEXT,
+    message TEXT,
+    topic TEXT,
+    page_path TEXT,
+    distinct_id TEXT
+  )`);
+  feedbackDb.exec(`CREATE UNIQUE INDEX IF NOT EXISTS contacts_draft_by_distinct
+    ON contacts(distinct_id) WHERE status = 'draft'`);
   console.log("Feedback DB ready:", feedbackDbPath);
 } catch (err) {
   console.error("Feedback DB failed to open:", (err as Error).message);
@@ -197,8 +214,11 @@ function buildFilterClauses(filters: Record<string, string>) {
     if (key.endsWith("_MIN") || key.endsWith("_MAX")) {
       const col = key.slice(0, -4);
       if (!ALLOWED_FIELDS.has(col)) continue;
-      const bound = parseInt(value, 10);
-      if (Number.isNaN(bound)) continue;
+      // Round rather than parseInt: "3.5" must not silently truncate to 3 (the
+      // engine-size filter sends litres-to-cc values and a decimal slipping
+      // through here used to zero out every search).
+      const bound = Math.round(parseFloat(value));
+      if (!Number.isFinite(bound)) continue;
       clauses.push(`CAST("${col}" AS INTEGER) ${key.endsWith("_MIN") ? ">=" : "<="} ?`);
       params.push(bound);
       continue;
@@ -579,7 +599,103 @@ function vehiclesHandler(req: express.Request, res: express.Response) {
   const vehicles = db.prepare(`SELECT ${RESULT_COLUMNS} FROM fleet ${where} LIMIT ? OFFSET ?`).all(...params, limit, offset);
   res.json({ vehicles, total, page: currentPage, pages: Math.min(Math.ceil(total / limit), maxPage), limit });
 }
+
+/** Human labels for the relax suggestions, so the UI names the filter to drop. */
+const FILTER_LABELS: Record<string, string> = {
+  MAKE: "Make", MODEL: "Model", SUBMODEL: "Submodel", BASIC_COLOUR: "Colour",
+  MOTIVE_POWER: "Fuel type", BODY_TYPE: "Body type", TRANSMISSION_TYPE: "Transmission",
+  TLA: "Region", POSTCODE: "Postcode", IMPORT_STATUS: "Import status",
+  ORIGINAL_COUNTRY: "Country of manufacture", CLASS: "Class", INDUSTRY_CLASS: "Industry class",
+  ROAD_TRANSPORT_CODE: "Road code", VEHICLE_USAGE: "Usage", NZ_ASSEMBLED: "NZ assembled",
+  VIN11: "VIN", VEHICLE_YEAR: "Year", CC_RATING: "Engine size", POWER_RATING: "Power",
+  GROSS_VEHICLE_MASS: "Gross mass", WIDTH: "Width", NUMBER_OF_SEATS: "Seats", NUMBER_OF_AXLES: "Axles",
+};
+function labelForKey(key: string): string {
+  if (key.endsWith("_MIN")) return `${FILTER_LABELS[key.slice(0, -4)] ?? key.slice(0, -4)} (min)`;
+  if (key.endsWith("_MAX")) return `${FILTER_LABELS[key.slice(0, -4)] ?? key.slice(0, -4)} (max)`;
+  return FILTER_LABELS[key] ?? key;
+}
+function isRangeKey(key: string) {
+  return (key.endsWith("_MIN") || key.endsWith("_MAX")) && ALLOWED_FIELDS.has(key.slice(0, -4));
+}
+
+/**
+ * When a search returns nothing, work out which filters are to blame. A single
+ * leave-one-out misses the common case where several filters each independently
+ * kill the search (the Nissan Elgrand that started this: submodel, transmission
+ * and engine size were all impossible at once). So we relax greedily: repeatedly
+ * drop whichever remaining filter most increases the count, until results come
+ * back. The dropped filters are the culprits. For each dropped text filter we
+ * also read the values that field really holds under the surviving filters, so
+ * the UI can offer "did you mean RIDER?" or say "transmission isn't recorded for
+ * these vehicles".
+ */
+function relaxHandler(req: express.Request, res: express.Response) {
+  if (!db) return res.status(503).json({ suggestions: [] });
+  const { page: _p, limit: _l, ...rawFilters } = req.query as Record<string, string>;
+  const entries = Object.entries(rawFilters).filter(
+    ([k, v]) => typeof v === "string" && v.trim() && (ALLOWED_FIELDS.has(k) || isRangeKey(k))
+  );
+  if (entries.length === 0 || entries.length > 16) return res.json({ total: 0, suggestions: [] });
+
+  let budget = 60; // cap COUNT queries so a pathological search can't stall the backend
+  const countFor = (subset: [string, string][]): number => {
+    const { where, params } = buildFilterClauses(Object.fromEntries(subset));
+    budget -= 1;
+    return (db!.prepare(`SELECT COUNT(*) as n FROM fleet ${where}`).get(...params) as { n: number }).n;
+  };
+
+  // Keep the most useful filters we can and drop only the ones that make the
+  // search impossible. Make and Model anchor the search (the car they are after),
+  // so they go in first. The rest are added broadest-first - by how many rows
+  // each allows alongside the anchor - so a wide filter like colour is kept and a
+  // rare or impossible one (an obscure submodel guess, a blank transmission) is
+  // the one that gives way, not the other way round.
+  const PRIORITY = ["MAKE", "MODEL"];
+  const anchor = entries.filter(([k]) => PRIORITY.includes(k))
+    .sort((a, b) => PRIORITY.indexOf(a[0]) - PRIORITY.indexOf(b[0]));
+  const rest = entries.filter(([k]) => !PRIORITY.includes(k));
+  const selectivity = new Map<string, number>();
+  for (const e of rest) {
+    selectivity.set(e[0], budget > 0 ? countFor([...anchor, e]) : 0);
+  }
+  rest.sort((a, b) => (selectivity.get(b[0]) ?? 0) - (selectivity.get(a[0]) ?? 0));
+  const ordered = [...anchor, ...rest];
+
+  const kept: [string, string][] = [];
+  const dropped: string[] = [];
+  for (const e of ordered) {
+    if (budget <= 0) { kept.push(e); continue; } // out of budget: keep the rest, flag nothing
+    if (countFor([...kept, e]) > 0) kept.push(e);
+    else dropped.push(e[0]);
+  }
+
+  if (dropped.length === 0) return res.json({ total: 0, suggestions: [] });
+  const finalCount = countFor(kept);
+
+  // The WHERE of the filters that survived, for looking up real values of a culprit.
+  const { where, params } = buildFilterClauses(Object.fromEntries(kept));
+  const suggestions = dropped.map((key) => {
+    const isText = ALLOWED_FIELDS.has(key) && !isRangeKey(key);
+    let examples: string[] = [];
+    let noData = false;
+    if (isText && budget > 0) {
+      const extra = `TRIM(COALESCE("${key}",'')) <> ''`;
+      const w = where ? `${where} AND ${extra}` : `WHERE ${extra}`;
+      budget -= 1;
+      const rows = db!.prepare(
+        `SELECT TRIM("${key}") as v, COUNT(*) as c FROM fleet ${w} GROUP BY v ORDER BY c DESC LIMIT 3`
+      ).all(...params) as { v: string; c: number }[];
+      examples = rows.map((r) => r.v).filter(Boolean);
+      noData = examples.length === 0; // field is blank for every surviving match
+    }
+    return { key, label: labelForKey(key), examples, noData };
+  });
+
+  res.json({ total: finalCount, suggestions });
+}
 app.get("/api/vehicles", limitPerIp(60, 60_000), vehiclesHandler);
+app.get("/api/relax", limitPerIp(30, 60_000), relaxHandler);
 
 function fleetOverviewHandler(_req: express.Request, res: express.Response) {
   if (!fleetOverview) return res.status(503).json({});
@@ -645,6 +761,95 @@ app.post("/api/feedback", async (req, res) => {
     } catch (err) {
       console.error("Resend email failed:", (err as Error).message);
     }
+  }
+
+  res.json({ ok: true });
+});
+
+/**
+ * Contact form. A real message (status 'submitted') is stored and emailed on.
+ * It also clears any draft this person left, so an abandoned-then-completed
+ * contact is not double counted.
+ */
+app.post("/api/contact", async (req, res) => {
+  const { name, email, message, topic, page_path, distinct_id } = req.body ?? {};
+  const trimmedEmail = typeof email === "string" ? email.trim() : "";
+  if (!trimmedEmail || !isValidEmail(trimmedEmail)) {
+    return res.status(400).json({ error: "A valid email is required so we can reply" });
+  }
+  const safeMessage = typeof message === "string" ? message.trim().slice(0, 4000) : "";
+  if (!safeMessage) return res.status(400).json({ error: "Please add a message" });
+  const safeName = typeof name === "string" ? name.trim().slice(0, 120) || null : null;
+  const safeTopic = typeof topic === "string" ? topic.trim().slice(0, 60) || null : null;
+  const safePath = typeof page_path === "string" ? page_path.slice(0, 200) : null;
+  const safeDistinctId = typeof distinct_id === "string" ? distinct_id.slice(0, 100) : null;
+  const nowIso = new Date().toISOString();
+
+  if (feedbackDb) {
+    feedbackDb.prepare(
+      `INSERT INTO contacts (created_at, updated_at, status, name, email, message, topic, page_path, distinct_id)
+       VALUES (?, ?, 'submitted', ?, ?, ?, ?, ?, ?)`
+    ).run(nowIso, nowIso, safeName, trimmedEmail, safeMessage, safeTopic, safePath, safeDistinctId);
+    if (safeDistinctId) {
+      feedbackDb.prepare(`DELETE FROM contacts WHERE status = 'draft' AND distinct_id = ?`).run(safeDistinctId);
+    }
+  }
+
+  if (resend && process.env.FEEDBACK_FROM_EMAIL) {
+    try {
+      await resend.emails.send({
+        from: process.env.FEEDBACK_FROM_EMAIL,
+        to: CONTACT_EMAIL.support,
+        subject: `NZ Vehicle Finder contact${safeTopic ? `: ${safeTopic}` : ""}`,
+        replyTo: trimmedEmail,
+        text: [
+          safeName ? `From: ${safeName} <${trimmedEmail}>` : `From: ${trimmedEmail}`,
+          safeTopic ? `Topic: ${safeTopic}` : "",
+          "",
+          safeMessage,
+          "",
+          safePath ? `Page: ${safePath}` : "",
+          safeDistinctId ? `User: ${safeDistinctId}` : "",
+        ].filter(Boolean).join("\n"),
+      });
+    } catch (err) {
+      console.error("Contact email failed:", (err as Error).message);
+    }
+  }
+
+  res.json({ ok: true });
+});
+
+/**
+ * Abandoned-form capture: the browser posts here as the person types a valid
+ * email (debounced), so a lead is kept even if they never hit send. Upserted by
+ * distinct_id so there is one draft per person, always holding their latest input.
+ */
+app.post("/api/contact/partial", (req, res) => {
+  const { name, email, message, topic, page_path, distinct_id } = req.body ?? {};
+  const trimmedEmail = typeof email === "string" ? email.trim() : "";
+  // Only worth keeping once there is a usable email to reach them on.
+  if (!trimmedEmail || !isValidEmail(trimmedEmail)) return res.json({ ok: true });
+  const safeMessage = typeof message === "string" ? message.trim().slice(0, 4000) : null;
+  const safeName = typeof name === "string" ? name.trim().slice(0, 120) || null : null;
+  const safeTopic = typeof topic === "string" ? topic.trim().slice(0, 60) || null : null;
+  const safePath = typeof page_path === "string" ? page_path.slice(0, 200) : null;
+  const safeDistinctId = typeof distinct_id === "string" ? distinct_id.slice(0, 100) : null;
+  const nowIso = new Date().toISOString();
+
+  if (feedbackDb && safeDistinctId) {
+    feedbackDb.prepare(
+      `INSERT INTO contacts (created_at, updated_at, status, name, email, message, topic, page_path, distinct_id)
+       VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(distinct_id) WHERE status = 'draft' DO UPDATE SET
+         updated_at = excluded.updated_at, name = excluded.name, email = excluded.email,
+         message = excluded.message, topic = excluded.topic, page_path = excluded.page_path`
+    ).run(nowIso, nowIso, safeName, trimmedEmail, safeMessage, safeTopic, safePath, safeDistinctId);
+  } else if (feedbackDb) {
+    feedbackDb.prepare(
+      `INSERT INTO contacts (created_at, updated_at, status, name, email, message, topic, page_path, distinct_id)
+       VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, NULL)`
+    ).run(nowIso, nowIso, safeName, trimmedEmail, safeMessage, safeTopic, safePath);
   }
 
   res.json({ ok: true });
