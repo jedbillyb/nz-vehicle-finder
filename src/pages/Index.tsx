@@ -138,6 +138,13 @@ function filtersToParams(filters: SearchFilters): Record<string, string> {
   return out;
 }
 
+/** Order-independent string for a URL's params, so "same query" compares equal. */
+function normalizeParams(params: URLSearchParams): string {
+  const entries = [...params.entries()].filter(([, v]) => v);
+  entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return new URLSearchParams(entries).toString();
+}
+
 // Engine size is shown in litres (what people think in) but stored and queried
 // in cc (what the register holds), so 3.5 means 3,500cc, not a filter that
 // matched nothing.
@@ -188,6 +195,10 @@ export default function Index() {
   const [relaxLoading, setRelaxLoading] = useState(false);
   // Page-1 results for the relaxed query, fetched ahead so applying it is instant.
   const relaxPrefetch = useRef<{ keys: string; data: Awaited<ReturnType<typeof searchVehicles>> } | null>(null);
+  // Set just before a loosened search so the URL effect pushes a history entry
+  // (instead of replacing), letting the browser Back button return to the
+  // original search. Every other filter change still replaces.
+  const pushUrlNext = useRef(false);
   const [exporting, setExporting] = useState(false);
   const exportAbort = useRef<AbortController | null>(null);
   // Litres shown in the engine-size inputs; the filter underneath stays in cc.
@@ -280,7 +291,7 @@ export default function Index() {
   }, []);
 
   const doSearch = useCallback(
-    async (f: SearchFilters, p: number, trigger: "button" | "page" | "auto" | "page_size" = "button", size: number = pageSize) => {
+    async (f: SearchFilters, p: number, trigger: "button" | "page" | "auto" | "page_size" | "relax" = "button", size: number = pageSize) => {
       if (isSearching.current) return;
       isSearching.current = true;
       const startedAt = Date.now();
@@ -345,7 +356,7 @@ export default function Index() {
           latency_ms: Date.now() - startedAt,
         });
 
-        if (p === 1) {
+        if (p === 1 && data.total > 0) {
           const controller = new AbortController();
           breakdownAbortRef.current = controller;
           setBreakdownLoading(true);
@@ -393,11 +404,36 @@ export default function Index() {
     if (hasFilters) doSearch(filters, 1, "auto");
   }, [filters, doSearch]);
 
+  // The last query we wrote to the URL ourselves. Anything else the URL turns
+  // into (Back/Forward, a shared link opened in place) is navigation we adopt.
+  const lastWrittenSearch = useRef<string>(normalizeParams(searchParams));
   useEffect(() => {
     const p = filtersToParams(filters);
     if (pageSize !== DEFAULT_PAGE_SIZE) p.limit = String(pageSize);
-    setSearchParams(p, { replace: true });
-  }, [filters, pageSize, setSearchParams]);
+    const norm = normalizeParams(new URLSearchParams(p));
+    lastWrittenSearch.current = norm;
+    // The URL already shows these filters (e.g. right after adopting a Back
+    // navigation): don't write it again, or the two effects fight.
+    if (norm === normalizeParams(searchParams)) { pushUrlNext.current = false; return; }
+    // Loosening a search pushes a history entry so Back returns to it; every
+    // other change just rewrites the current URL.
+    setSearchParams(p, { replace: !pushUrlNext.current });
+    pushUrlNext.current = false;
+  }, [filters, pageSize, searchParams, setSearchParams]);
+
+  // Browser Back/Forward (and opening a shared link in place) changes the URL
+  // without going through our handlers; re-read it and re-run that search, so
+  // stepping back from a loosened search returns to the original.
+  useEffect(() => {
+    if (normalizeParams(searchParams) === lastWrittenSearch.current) return;
+    lastWrittenSearch.current = normalizeParams(searchParams);
+    const next = filtersFromParams(searchParams);
+    setFilters(next);
+    setPage(1);
+    const hasFilters = Object.values(next).some((v) => v && v.trim());
+    if (hasFilters) doSearch(next, 1, "auto");
+    else { setResults([]); setTotal(null); setRelax([]); setRelaxTotal(0); }
+  }, [searchParams, doSearch]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -446,6 +482,7 @@ export default function Index() {
   // if the relaxed query was the one we prefetched.
   const applyRelax = (keys: string[]) => {
     captureEvent("search_relaxed", { removed: keys.join(","), action: "remove" });
+    pushUrlNext.current = true;
     const next = { ...filters };
     for (const k of keys) delete next[k as keyof SearchFilters];
     setFilters(next);
@@ -462,18 +499,19 @@ export default function Index() {
     }
     // Always run the real search too: it refreshes the breakdown and URL, and is
     // warm (so fast) after the prefetch already touched these rows.
-    doSearch(next, 1, "button");
+    doSearch(next, 1, "relax");
   };
 
   // "Did you mean RIDER?" - replace a text filter with a value the field really
   // holds, and drop the other culprits so the search actually returns.
   const applyDidYouMean = (key: string, value: string, otherKeys: string[]) => {
     captureEvent("search_relaxed", { removed: key, action: "replace" });
+    pushUrlNext.current = true;
     const next = { ...filters, [key]: value };
     for (const k of otherKeys) if (k !== key) delete next[k as keyof SearchFilters];
     setFilters(next);
     setPage(1);
-    doSearch(next, 1, "button");
+    doSearch(next, 1, "relax");
   };
 
   const handleExport = async () => {
@@ -730,7 +768,7 @@ export default function Index() {
                       {copiedLink ? "Copied!" : "Share"}
                     </button>
                   )}
-                  {total !== null && (
+                  {total !== null && total > 0 && (
                     <Link
                       to="/developers"
                       onClick={() => captureEvent("api_cta_clicked", { location: "results_actions", source: "index" })}
@@ -740,7 +778,7 @@ export default function Index() {
                     </Link>
                   )}
                   {/* Phones only: the breakdown sits beside the filters on wider screens. */}
-                  {total !== null && isMobile && (
+                  {total !== null && total > 0 && isMobile && (
                     <button
                       className="breakdown-open"
                       onClick={() => setBreakdownSheetOpen(true)}
@@ -822,20 +860,20 @@ export default function Index() {
                   return (
                     <>
                       <p style={{ margin: "0 0 16px", fontSize: 13, color: "#6b7280" }}>
-                        Your <strong>{labelList}</strong> {labels.length === 1 ? "filter is" : "filters are"} too narrow to match together.
+                        No vehicle matches your <strong>{labelList}</strong> {labels.length === 1 ? "filter" : "filters together"}.
                       </p>
                       <button onClick={() => applyRelax(keys)} style={{ padding: "10px 18px", borderRadius: 999, border: "none", background: "#0ea5e9", color: "#ffffff", fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
                         Show {relaxTotal.toLocaleString("en-NZ")} result{relaxTotal === 1 ? "" : "s"} without {labels.length === 1 ? "it" : "them"}
                       </button>
                       {noDataOnes.length > 0 && (
                         <p style={{ margin: "14px 0 0", fontSize: 12, color: "#9ca3af" }}>
-                          {noDataOnes.map((s) => s.label.toLowerCase()).join(", ")} {noDataOnes.length === 1 ? "isn't" : "aren't"} recorded for these vehicles.
+                          {noDataOnes.map((s) => s.label.toLowerCase()).join(", ")} {noDataOnes.length === 1 ? "isn't" : "aren't"} in the register, so nothing can match {noDataOnes.length === 1 ? "it" : "them"}.
                         </p>
                       )}
                       {didYouMeanOnes.map((s) => (
                         <div key={s.key} style={{ marginTop: 14 }}>
                           <div style={{ fontSize: 13, color: "#374151", marginBottom: 8 }}>
-                            Or fix the <strong>{s.label.toLowerCase()}</strong>. Did you mean:
+                            Or try a <strong>{s.label.toLowerCase()}</strong> we have on record:
                           </div>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                             {s.examples.map((ex) => (
