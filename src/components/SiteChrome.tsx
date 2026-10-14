@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { memo, useEffect, useRef, type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { captureEvent } from "@/lib/posthog";
 import { APP_VERSION } from "@/lib/version";
@@ -83,7 +83,7 @@ let lastHeaderCount: number | null = null;
  * and on the right a vehicle count (the whole fleet unless the page passes its
  * own) or whatever the page puts there instead.
  */
-export function SiteHeader({
+export const SiteHeader = memo(function SiteHeader({
   subtitle,
   count,
   countLabel = "VEHICLES REGISTERED",
@@ -145,7 +145,7 @@ export function SiteHeader({
       </div>
     </header>
   );
-}
+});
 
 /**
  * The panel on the right of every page's hero: a solid API button (the thing
@@ -189,7 +189,7 @@ const groupSep = <span aria-hidden="true" className="footer-sep footer-sep--grou
  * section; the body is the same tint (index.css). `source` and `eventProps`
  * tag the analytics events with where they came from.
  */
-export function SiteFooter({ source, eventProps }: { source: string; eventProps?: Record<string, unknown> }) {
+export const SiteFooter = memo(function SiteFooter({ source, eventProps }: { source: string; eventProps?: Record<string, unknown> }) {
   const track = (event: string) => captureEvent(event, { location: "footer", source, ...eventProps });
   return (
     <footer className="footer-root" style={{ padding: "12px 24px", background: "#f0f9ff", borderTop: "1px solid #bae6fd", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontSize: 10, fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#6b7280", letterSpacing: "0.1em" }}>
@@ -256,4 +256,4 @@ export function SiteFooter({ source, eventProps }: { source: string; eventProps?
       </div>
     </footer>
   );
-}
+});
