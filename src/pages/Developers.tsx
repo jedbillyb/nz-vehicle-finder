@@ -404,11 +404,12 @@ Pick a plan and you go straight from sign-in to checkout. Card payments by Strip
               </ul>
             </div>
           ))}
+          {/* Its own cell in the same grid: column 1 of a new row, so it is
+              exactly one card wide and left-aligned under the first card. */}
+          <a href={CONTACT} style={{ gridColumn: 1, alignSelf: "start", display: "block", boxSizing: "border-box", textAlign: "center", background: "#0ea5e9", color: "#ffffff", fontWeight: 700, fontSize: 14, padding: "11px 18px", borderRadius: 8, textDecoration: "none" }}>
+            Ask for a quote
+          </a>
         </div>
-        {/* Full width of the whole card row above, so it reads as one block. */}
-        <a href={CONTACT} style={{ display: "block", width: "100%", boxSizing: "border-box", textAlign: "center", background: "#0ea5e9", color: "#ffffff", fontWeight: 700, fontSize: 14, padding: "11px 18px", borderRadius: 8, textDecoration: "none" }}>
-          Ask for a quote
-        </a>
       </Section>
       </DocLayout>
     </PageShell>
