@@ -26,6 +26,8 @@ dist-ssr
 database/vehicles.db-*
 database/accounts.db-*
 .env
+.env.*
+.claude/
 
 # Generated on the server by database/import-mvr.ts from the live database
 public/autocomplete.json
