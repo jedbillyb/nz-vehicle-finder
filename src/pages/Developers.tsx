@@ -394,7 +394,7 @@ Pick a plan and you go straight from sign-in to checkout. Card payments by Strip
           Don't want to write code? Tell us what you need and we'll pull it for you, as a PDF report, a spreadsheet or both.
           Faster than a data request to NZTA, and you only pay for what you ask for.
         </p>
-        <div className="doc-offers" style={{ marginBottom: 16 }}>
+        <div className="doc-offers">
           {OFFERS.map((o) => (
             <div key={o.title} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: "16px 18px", background: "#ffffff" }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{o.title}</div>
