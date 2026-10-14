@@ -512,6 +512,7 @@
 .error-page__code { font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #0ea5e9; margin-bottom: 10px; }
 .error-page__title { font-size: 48px; font-weight: 800; color: #0f172a; letter-spacing: -0.03em; line-height: 1.1; margin: 0 0 12px; }
 .error-page__intro { font-size: 16px; color: #374151; line-height: 1.6; margin: 0 0 32px; max-width: 560px; }
+.contact-page .error-page__intro { text-align: justify; text-align-last: center; }
 .error-page__intro code { font-size: 14px; background: #f3f4f6; padding: 1px 6px; border-radius: 4px; word-break: break-all; }
 .error-page__links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; width: 100%; max-width: 760px; text-align: left; }
 .error-page__links a { display: block; text-decoration: none; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; transition: background-color 0.12s, border-color 0.12s; }
@@ -599,7 +600,7 @@
   transition: background-color 0.12s;
 }
 .contact-email:hover, .contact-email:focus-visible { background: #0284c7; }
-.contact-note { font-size: 13px; color: #6b7280; margin: 24px auto 0; max-width: 560px; line-height: 1.7; }
+.contact-note { font-size: 13px; color: #6b7280; margin: 24px auto 0; max-width: 560px; line-height: 1.7; text-align: justify; text-align-last: center; }
 .contact-note button { background: none; border: none; padding: 0; font: inherit; color: #0369a1; font-weight: 600; cursor: pointer; }
 
 /* Zero-result recovery: the card eases in, its body eases in again once the

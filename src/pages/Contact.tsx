@@ -71,7 +71,7 @@ export default function Contact() {
   };
 
   return (
-    <div className="error-page">
+    <div className="error-page contact-page">
       <SiteHeader source="contact_page" subtitle="Contact" />
       <main className="stagger-in error-page__main">
         <div className="error-page__code">CONTACT</div>
