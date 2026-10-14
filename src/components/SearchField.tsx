@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect, useDeferredValue } from "react";
 import { getSuggestionsLocal, preloadSuggestions, getSuggestions, getModelsForMake, SUGGESTION_LIMIT } from "@/lib/vehicleApi";
 import { Vehicle } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
@@ -59,6 +59,11 @@ export function SearchField({
 
   const terms = useMemo(() => parseFilterValue(value), [value]);
 
+  // The typed text paints immediately; the heavy suggestion list (a scan over
+  // the local autocomplete cache) is computed from this deferred copy at a lower
+  // priority, so a keystroke is never held up waiting for the list to rebuild.
+  const deferredInput = useDeferredValue(input);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedInput(input), 150);
     return () => clearTimeout(t);
@@ -113,7 +118,7 @@ export function SearchField({
     // Remote suggestions are the most accurate - they respect the other fields.
     // A placeholder list from the previous keystroke is narrowed to what is typed now.
     if (remoteSuggestions.length > 0) {
-      const typed = input.trim().toUpperCase();
+      const typed = deferredInput.trim().toUpperCase();
       return typed
         ? remoteSuggestions.filter(v => v.toUpperCase().includes(typed))
         : remoteSuggestions;
@@ -125,7 +130,7 @@ export function SearchField({
     // Only the locally cached models for the chosen make are safe to show.
     if (hasActiveFilters && !isError) {
       if (field === "MODEL" && filterBy?.MAKE) {
-        const models = getModelsForMake(filterBy.MAKE, input);
+        const models = getModelsForMake(filterBy.MAKE, deferredInput);
         if (models.length > 0) return models;
       }
       return [];
@@ -133,20 +138,20 @@ export function SearchField({
 
     // General local fallback (the big autocomplete.json): no other filters to
     // respect, or the API is unreachable and a rough list beats none.
-    return getSuggestionsLocal(field as string, input, filterBy);
+    return getSuggestionsLocal(field as string, deferredInput, filterBy);
     // localReady isn't read, but listing it rebuilds the list once autocomplete.json lands.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [field, input, filterBy, hasActiveFilters, remoteSuggestions, isError, localReady]);
+  }, [field, deferredInput, filterBy, hasActiveFilters, remoteSuggestions, isError, localReady]);
 
   // What is already picked stays in the list, pinned at the top and ticked, so
   // the dropdown always shows the current selection - and clicking one takes it
   // off again. The rest keeps the server's popularity order.
   const suggestions = useMemo(() => {
-    const typed = input.trim().toUpperCase();
+    const typed = deferredInput.trim().toUpperCase();
     const pinned = selected.filter(v => !typed || v.toUpperCase().includes(typed));
     const rest = available.filter(v => !selectedSet.has(v.toUpperCase()));
     return [...pinned, ...rest];
-  }, [available, selected, selectedSet, input]);
+  }, [available, selected, selectedSet, deferredInput]);
 
   // Typed text that matches nothing at all is worth flagging; committed terms
   // are always searchable, they just might return no rows.
