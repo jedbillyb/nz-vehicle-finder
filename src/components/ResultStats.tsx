@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 import { type BreakdownData } from "@/lib/vehicleApi";
 import { captureEvent } from "@/lib/posthog";
@@ -42,14 +42,40 @@ export function ResultStats({ data, loading, isInline = false, hideHeader = fals
   data = Object.fromEntries(Object.entries(data).filter(([, items]) => items.length > 1));
   const hasData = Object.keys(data).length > 0;
 
+  // The skeleton is a fixed 5x8 guess; the real data is usually a different
+  // shape, so swapping it in used to snap the panel height and jolt everything
+  // below it. Ease the height between states instead. Keyed on what's shown.
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const prevH = useRef<number | null>(null);
+  const shapeKey = loading && !hasData
+    ? "skeleton"
+    : Object.entries(data).map(([k, items]) => `${k}:${items.length}`).join("|");
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const target = el.scrollHeight;
+    // On first appearance grow from 0 (inline only, so the stats pages are
+    // untouched); afterwards glide from the previous height.
+    const from = prevH.current ?? (isInline ? 0 : target);
+    prevH.current = target;
+    if (from === target) return;
+    el.animate(
+      [{ height: `${from}px` }, { height: `${target}px` }],
+      { duration: 300, easing: "cubic-bezier(0.2,0.7,0.2,1)" }
+    );
+  }, [shapeKey, isInline]);
+
   if (!hasData && !loading) return null;
 
   const content = (
     <div
+      ref={boxRef}
       className={isInline ? undefined : "content-col"}
       style={{
         padding: isInline ? "0" : "16px 24px",
         background: isInline ? "transparent" : "#ffffff",
+        overflow: "hidden",
         display: "grid",
         // 280px keeps the bar visible beside a long label and the count. auto-fit
         // (not auto-fill) drops unused tracks so the groups stretch to fill wide screens.

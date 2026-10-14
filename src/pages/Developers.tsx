@@ -405,7 +405,8 @@ Pick a plan and you go straight from sign-in to checkout. Card payments by Strip
             </div>
           ))}
         </div>
-        <a href={CONTACT} style={{ display: "inline-block", background: "#0ea5e9", color: "#ffffff", fontWeight: 700, fontSize: 14, padding: "10px 18px", borderRadius: 8, textDecoration: "none" }}>
+        {/* Full width of the whole card row above, so it reads as one block. */}
+        <a href={CONTACT} style={{ display: "block", width: "100%", boxSizing: "border-box", textAlign: "center", background: "#0ea5e9", color: "#ffffff", fontWeight: 700, fontSize: 14, padding: "11px 18px", borderRadius: 8, textDecoration: "none" }}>
           Ask for a quote
         </a>
       </Section>

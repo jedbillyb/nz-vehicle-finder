@@ -200,6 +200,13 @@ export default function Index() {
   const [relaxLoading, setRelaxLoading] = useState(false);
   // Page-1 results for the relaxed query, fetched ahead so applying it is instant.
   const relaxPrefetch = useRef<{ keys: string; data: Awaited<ReturnType<typeof searchVehicles>> } | null>(null);
+  // Searches already fetched this session, keyed by canonical query + page +
+  // size. Back/Forward (and a repeated search) restore from here in one commit:
+  // no refetch, no loading flash, no skeleton replay, no count jump. Each entry
+  // is filled in place as its relax suggestions and breakdown arrive.
+  const searchCache = useRef(
+    new Map<string, { results: Vehicle[]; total: number; pages: number; relax: RelaxSuggestion[]; relaxTotal: number; breakdown: BreakdownData }>()
+  );
   // The swap region inside the zero-result box changes height when the skeleton
   // gives way to the real suggestions (which may add "did you mean" chips).
   // Ease that height change so the box grows smoothly instead of snapping.
@@ -213,9 +220,16 @@ export default function Index() {
     zeroSwapPrevH.current = target;
     if (from == null || from === target) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Grow the height and, when the box is expanding into fuller content, fade
+    // that content up at the same time, so the suggestions arrive as one soft
+    // reveal rather than a bare height change.
+    const expanding = target > from;
     el.animate(
-      [{ height: `${from}px` }, { height: `${target}px` }],
-      { duration: 320, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" },
+      [
+        { height: `${from}px`, opacity: expanding ? 0.35 : 1, transform: expanding ? "translateY(4px)" : "none" },
+        { height: `${target}px`, opacity: 1, transform: "none" },
+      ],
+      { duration: 360, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" },
     );
   }, [relaxLoading, relax]);
   // Set just before a loosened search so the URL effect pushes a history entry
@@ -317,6 +331,29 @@ export default function Index() {
     async (f: SearchFilters, p: number, trigger: "button" | "page" | "auto" | "page_size" | "relax" = "button", size: number = pageSize) => {
       if (isSearching.current) return;
       isSearching.current = true;
+
+      const cacheKey = canonicalQuery(filtersToParams(f)) + `|p=${p}|s=${size}`;
+      const cached = searchCache.current.get(cacheKey);
+      if (cached) {
+        // Instant restore (Back/Forward or a repeated search). Re-insert to mark
+        // it most-recent for the small LRU cap below.
+        searchCache.current.delete(cacheKey);
+        searchCache.current.set(cacheKey, cached);
+        setResults(cached.results);
+        setTotal(cached.total);
+        setPages(cached.pages);
+        setSort(null);
+        setRelax(cached.relax);
+        setRelaxTotal(cached.relaxTotal);
+        setRelaxLoading(false);
+        relaxPrefetch.current = null;
+        if (p === 1) { setBreakdown(cached.breakdown); setBreakdownLoading(false); }
+        setLoading(false);
+        setErrorMessage(null);
+        isSearching.current = false;
+        return;
+      }
+
       const startedAt = Date.now();
       setLoading(true);
       setErrorMessage(null);
@@ -344,6 +381,15 @@ export default function Index() {
         setPages(data.pages);
         setSort(null);
 
+        // Stash it so a later Back/Forward restores instantly. relax and
+        // breakdown land below; mutating `entry` updates the cached copy too.
+        const entry = { results: data.vehicles, total: data.total, pages: data.pages, relax: [] as RelaxSuggestion[], relaxTotal: 0, breakdown: {} as BreakdownData };
+        if (searchCache.current.size >= 24) {
+          const oldest = searchCache.current.keys().next().value;
+          if (oldest !== undefined) searchCache.current.delete(oldest);
+        }
+        searchCache.current.set(cacheKey, entry);
+
         if (data.total === 0) {
           captureEvent("search_zero_results", { ...searchMeta, result_count: 0 });
           relaxPrefetch.current = null;
@@ -354,6 +400,8 @@ export default function Index() {
             .then(({ total: relaxableTotal, suggestions }) => {
               setRelax(suggestions);
               setRelaxTotal(relaxableTotal);
+              entry.relax = suggestions;
+              entry.relaxTotal = relaxableTotal;
               captureEvent("relax_suggestions_shown", {
                 suggested_keys: suggestions.map((s) => s.key),
                 suggestion_count: suggestions.length,
@@ -392,6 +440,7 @@ export default function Index() {
 
           fetchBreakdown(f, controller.signal)
             .then((nextBreakdown) => {
+              entry.breakdown = nextBreakdown;
               if (breakdownAbortRef.current === controller) {
                 setBreakdown(nextBreakdown);
               }
@@ -779,7 +828,13 @@ export default function Index() {
                     style={{ flex: isMobile ? "1 1 0" : "0 0 auto", minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 18px", background: loading ? "#bae6fd" : "#0ea5e9", color: "#ffffff", border: "1px solid #0ea5e9", borderRadius: 999, cursor: loading ? "default" : "pointer", fontSize: 11, fontFamily: "inherit", letterSpacing: "0.02em", fontWeight: 700, whiteSpace: "nowrap" }}
                   >
                     {loading ? <Spinner size={11} /> : <Search size={11} />}
-                    {loading ? "Searching…" : "Run search"}
+                    {/* Reserve the width of the wider label so the button (and the
+                        row beside it) doesn't resize when loading toggles per page. */}
+                    <span style={{ display: "grid", justifyItems: "center" }}>
+                      <span aria-hidden style={{ gridArea: "1 / 1", visibility: "hidden" }}>Searching…</span>
+                      <span aria-hidden style={{ gridArea: "1 / 1", visibility: "hidden" }}>Run search</span>
+                      <span style={{ gridArea: "1 / 1" }}>{loading ? "Searching…" : "Run search"}</span>
+                    </span>
                   </button>
                 </div>
                 <div className="action-buttons-secondary" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
@@ -935,12 +990,17 @@ export default function Index() {
                     </div>
                   );
                 })()}
-                </div>
-                <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid #f3f4f6", fontSize: 13, color: "#6b7280" }}>
-                  Still can&apos;t find it?{" "}
-                  <Link to="/developers" onClick={() => captureEvent("api_cta_clicked", { location: "zero_results", source: "index" })} style={{ color: "#0369a1", fontWeight: 600 }}>
-                    Try your luck with our API →
-                  </Link>
+                {/* The footer waits for the suggestions and sits inside the
+                    height-tweened region, so the whole box reveals as one piece
+                    instead of the footer showing first under the skeleton. */}
+                {!relaxLoading && (
+                  <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid #f3f4f6", fontSize: 13, color: "#6b7280" }}>
+                    Still can&apos;t find it?{" "}
+                    <Link to="/developers" onClick={() => captureEvent("api_cta_clicked", { location: "zero_results", source: "index" })} style={{ color: "#0369a1", fontWeight: 600 }}>
+                      Try your luck with our API →
+                    </Link>
+                  </div>
+                )}
                 </div>
               </div>
             </div>
