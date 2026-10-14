@@ -4,19 +4,16 @@ import { captureEvent } from "@/lib/posthog";
 import { openFeedback } from "@/lib/feedback";
 import { submitContact, saveContactDraft } from "@/lib/contactApi";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { input, primaryButton } from "@/lib/pageStyles";
 import { CONTACT_EMAIL } from "../../shared/contact";
 import { isValidEmail } from "../../shared/email";
 
 const TOPICS = ["General", "The data", "API / developers", "Billing", "Custom report", "Bug"];
 
-const inputStyle: React.CSSProperties = {
-  width: "100%", padding: "10px 12px", fontSize: 14, borderRadius: 8,
-  border: "1px solid #d1d5db", background: "#ffffff", color: "#111827",
-  fontFamily: "inherit", boxSizing: "border-box",
-};
 const labelStyle: React.CSSProperties = {
   display: "block", fontSize: 12, fontWeight: 600, color: "#374151", margin: "0 0 6px",
 };
+const fieldStyle: React.CSSProperties = { ...input, width: "100%", height: 42, boxSizing: "border-box" };
 
 export default function Contact() {
   const [name, setName] = useState("");
@@ -25,6 +22,7 @@ export default function Contact() {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [badEmail, setBadEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastDraft = useRef("");
@@ -51,15 +49,10 @@ export default function Contact() {
     return () => { if (draftTimer.current) clearTimeout(draftTimer.current); };
   }, [name, email, topic, message, sent]);
 
-  const emailValid = isValidEmail(email.trim());
-  const canSend = emailValid && message.trim().length > 0 && !sending;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSend) {
-      setError(!emailValid ? "Please enter a valid email so I can reply." : "Please add a message.");
-      return;
-    }
+    if (!isValidEmail(email.trim())) { setBadEmail(true); return; }
+    if (!message.trim()) { setError("Please add a message."); return; }
     setError(null);
     setSending(true);
     captureEvent("contact_submitted", { topic });
@@ -67,7 +60,8 @@ export default function Contact() {
       await submitContact({ name: name.trim(), email: email.trim(), topic, message: message.trim() });
       setSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send your message. Please try again.");
+      const msg = err instanceof Error ? err.message : "Could not send your message. Please try again.";
+      if (/valid email/i.test(msg)) setBadEmail(true); else setError(msg);
       captureEvent("contact_failed");
     } finally {
       setSending(false);
@@ -91,27 +85,42 @@ export default function Contact() {
             <div style={{ fontSize: 14 }}>I&apos;ll get back to you at {email.trim()} within a day or two.</div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} style={{ maxWidth: 440, width: "100%", margin: "8px auto 0", textAlign: "left", display: "flex", flexDirection: "column", gap: 14 }}>
+          <form onSubmit={handleSubmit} noValidate style={{ maxWidth: 440, width: "100%", margin: "8px auto 0", textAlign: "left", display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <label style={labelStyle} htmlFor="contact-name">Name <span style={{ color: "#9ca3af", fontWeight: 400 }}>(optional)</span></label>
-              <input id="contact-name" style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={120} />
+              <input id="contact-name" className="signup-input" style={fieldStyle} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={120} />
             </div>
             <div>
               <label style={labelStyle} htmlFor="contact-email">Email</label>
-              <input id="contact-email" type="email" required style={inputStyle} value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" placeholder="you@example.com" maxLength={254} />
+              <div style={{ position: "relative" }}>
+                <input
+                  id="contact-email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="you@example.co.nz"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setBadEmail(false); }}
+                  aria-invalid={badEmail}
+                  aria-describedby={badEmail ? "contact-email-problem" : undefined}
+                  className={`signup-input${badEmail ? " is-invalid" : ""}`}
+                  style={{ ...fieldStyle, paddingRight: badEmail ? 150 : undefined }}
+                />
+                {badEmail && <span id="contact-email-problem" className="signup-input__problem">Enter a valid email</span>}
+              </div>
             </div>
             <div>
               <label style={labelStyle} htmlFor="contact-topic">Topic</label>
-              <select id="contact-topic" style={inputStyle} value={topic} onChange={(e) => setTopic(e.target.value)}>
+              <select id="contact-topic" className="signup-input" style={fieldStyle} value={topic} onChange={(e) => setTopic(e.target.value)}>
                 {TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
               <label style={labelStyle} htmlFor="contact-message">Message</label>
-              <textarea id="contact-message" required rows={5} style={{ ...inputStyle, resize: "vertical", minHeight: 110 }} value={message} onChange={(e) => setMessage(e.target.value)} maxLength={4000} placeholder="How can I help?" />
+              <textarea id="contact-message" required rows={5} className="signup-input" style={{ ...input, width: "100%", minHeight: 120, boxSizing: "border-box", resize: "vertical", lineHeight: 1.5 }} value={message} onChange={(e) => setMessage(e.target.value)} maxLength={4000} placeholder="How can I help?" />
             </div>
-            {error && <div style={{ fontSize: 13, color: "#b91c1c" }}>{error}</div>}
-            <button type="submit" disabled={!canSend} style={{ padding: "11px 18px", borderRadius: 999, border: "none", background: canSend ? "#0ea5e9" : "#bae6fd", color: "#ffffff", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: canSend ? "pointer" : "default" }}>
+            {error && <p style={{ fontSize: 13, color: "#b91c1c", margin: 0 }}>{error}</p>}
+            <button type="submit" disabled={sending} style={{ ...primaryButton, width: "100%", height: 42, opacity: sending ? 0.6 : 1 }}>
               {sending ? "Sending…" : "Send message"}
             </button>
           </form>

@@ -835,7 +835,7 @@ export default function Index() {
                       {didYouMeanOnes.map((s) => (
                         <div key={s.key} style={{ marginTop: 14 }}>
                           <div style={{ fontSize: 13, color: "#374151", marginBottom: 8 }}>
-                            Or fix the <strong>{s.label.toLowerCase()}</strong> — did you mean:
+                            Or fix the <strong>{s.label.toLowerCase()}</strong>. Did you mean:
                           </div>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                             {s.examples.map((ex) => (
