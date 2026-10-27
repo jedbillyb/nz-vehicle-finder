@@ -50,7 +50,7 @@ export function applySeo({
   description,
   keywords,
   canonical,
-  image = "https://vehiclefinder.co.nz/og-image-v7.jpg",
+  image = "https://vehiclefinder.co.nz/og-image-v8.jpg",
   type = "website",
   noindex = false,
   jsonLd,
