@@ -8,7 +8,7 @@ import {
   searchVehicles,
   type BreakdownData,
 } from "@/lib/vehicleApi";
-import { applySeo } from "@/lib/seo";
+import { applySeo, statsOgImage } from "@/lib/seo";
 import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
 import { getMakeBlurb } from "@/lib/makeContent";
@@ -205,7 +205,7 @@ export default function MakeStats() {
 
     const keywords = `fleet search, NZ vehicle register, motor vehicle register, ${makeDisplay} NZ, ${makeDisplay} registrations NZ`;
 
-    applySeo({ title, description, keywords, canonical, jsonLd });
+    applySeo({ title, description, keywords, canonical, jsonLd, image: statsOgImage(canonical) });
   }, [make, makeDisplay, canonical, total, top.model, top.region]);
 
   const handlePageChange = (newPage: number) => {

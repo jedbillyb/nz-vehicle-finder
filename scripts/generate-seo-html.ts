@@ -99,6 +99,13 @@ function titleCaseRegion(tla: string): string {
 
 // --- SEO derivation ---
 
+// Stats pages get their own social card, drawn by the API with the live count.
+function ogImageForUrl(fullUrl: string): string | null {
+  return /^https:\/\/vehiclefinder\.co\.nz\/stats\/[^/]+(\/[^/]+)?$/.test(fullUrl)
+    ? fullUrl.replace("/stats/", "/api/og/stats/") + ".png"
+    : null;
+}
+
 function getSeoForUrl(fullUrl: string): { title: string; description: string } {
   const urlPath = fullUrl.replace("https://vehiclefinder.co.nz", "");
 
@@ -179,12 +186,19 @@ function patchHtml(
   html: string,
   title: string,
   description: string,
-  canonical: string
+  canonical: string,
+  image: string | null
 ): string {
   const t = escapeHtml(title);
   const d = escapeHtml(description);
   const c = escapeHtml(canonical);
-  return html
+  const patched = image
+    ? html
+        .replace(/(<meta property="og:image" content=")[^"]*(")/, `$1${escapeHtml(image)}$2`)
+        .replace(/(<meta name="twitter:image" content=")[^"]*(")/, `$1${escapeHtml(image)}$2`)
+        .replace(/(<meta property="og:image:alt" content=")[^"]*(")/, `$1${t}$2`)
+    : html;
+  return patched
     .replace(/<title>[^<]*<\/title>/, `<title>${t}</title>`)
     .replace(/(<meta name="description" content=")[^"]*(")/,          `$1${d}$2`)
     .replace(/(<link rel="canonical" href=")[^"]*(")/,                 `$1${c}$2`)
@@ -213,7 +227,7 @@ for (const url of urls) {
   }
 
   const { title, description } = getSeoForUrl(url);
-  const patched = patchHtml(template, title, description, url);
+  const patched = patchHtml(template, title, description, url, ogImageForUrl(url));
 
   const dirPath = join(distDir, urlPath);
   mkdirSync(dirPath, { recursive: true });

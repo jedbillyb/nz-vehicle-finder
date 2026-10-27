@@ -13,6 +13,7 @@ import { createBilling } from "./billing.js";
 import { FREE_MAX_RESULT_DEPTH, limitPerIp } from "./rateLimit.js";
 import { CONTACT_EMAIL } from "../shared/contact.js";
 import { isValidEmail } from "../shared/email.js";
+import { registerOgRoutes } from "./og.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -719,6 +720,7 @@ function topModelsHandler(req: express.Request, res: express.Response) {
   res.json(rows);
 }
 app.get("/api/top-models/:make", topModelsHandler);
+registerOgRoutes(app, () => db);
 
 app.post("/api/feedback", async (req, res) => {
   const { rating, comment, page_path, distinct_id, email } = req.body ?? {};

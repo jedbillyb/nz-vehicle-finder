@@ -45,6 +45,11 @@ function upsertLink(rel: string, href: string) {
   if (!existing) document.head.appendChild(tag);
 }
 
+/** A stats page's own social card, drawn by the API with its live count. */
+export function statsOgImage(canonical: string): string {
+  return canonical.replace("/stats/", "/api/og/stats/") + ".png";
+}
+
 export function applySeo({
   title,
   description,

@@ -8,7 +8,7 @@ import {
   searchVehicles,
   type BreakdownData,
 } from "@/lib/vehicleApi";
-import { applySeo } from "@/lib/seo";
+import { applySeo, statsOgImage } from "@/lib/seo";
 import { captureEvent, summarizeFilters } from "@/lib/posthog";
 import { Vehicle } from "@/lib/mockData";
 import { modelToSlug, slugToMakeUpper, slugToModel, titleCaseModel, titleCaseMake } from "@/lib/slugs";
@@ -214,7 +214,7 @@ export default function ModelStats() {
     }
 
     const keywords = `${makeDisplay} ${modelDisplay} NZ, ${makeDisplay} ${modelDisplay} registrations NZ, ${makeDisplay} ${modelDisplay} New Zealand, NZ vehicle register`;
-    applySeo({ title, description, keywords, canonical, jsonLd });
+    applySeo({ title, description, keywords, canonical, jsonLd, image: statsOgImage(canonical) });
   }, [make, makeDisplay, makeSlug, model, modelDisplay, canonical, total, top.colour, top.region, top.fuel]);
 
   const handlePageChange = (newPage: number) => {
