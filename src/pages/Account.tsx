@@ -17,7 +17,7 @@ import { isValidEmail } from "../../shared/email";
 import { ChevronLeft, LogOut, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Spinner } from "@/components/Spinner";
-import { StripeCheckoutDialog, embeddedCheckoutAvailable } from "@/components/StripeCheckout";
+import { StripeCheckoutPanel, embeddedCheckoutAvailable, preloadStripe } from "@/components/StripeCheckout";
 import { SkeletonBlock } from "@/components/SkeletonRows";
 import { AnimatedNumber } from "@/components/NumberSlot";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -609,7 +609,13 @@ function SignedInAs({ account, reload, animate }: { account: AccountData; reload
   );
 }
 
-function Dashboard({ account, reload, greeted, openCheckout }: { account: AccountData; reload: () => void; greeted: boolean; openCheckout: (tier: TierId) => void }) {
+function Dashboard({ account, reload, greeted, openCheckout, buying, checkout }: {
+  account: AccountData; reload: () => void; greeted: boolean;
+  openCheckout: (tier: TierId) => void;
+  /** The plan being bought in the checkout under the plans, if any. */
+  buying: TierId | null;
+  checkout: React.ReactNode;
+}) {
   // Once per visit: tie this browser to the account, then record what the account looks like.
   useEffect(() => {
     identifyUser(account.analyticsId, { tier: account.tier.id });
@@ -821,13 +827,13 @@ function Dashboard({ account, reload, greeted, openCheckout }: { account: Accoun
             Your last payment failed. Update your card in Manage billing to keep your plan.
           </p>
         )}
-        <div className="stagger-in stagger-in--slow acct-plans">
+        <div className={buying ? "stagger-in stagger-in--slow acct-plans is-buying" : "stagger-in stagger-in--slow acct-plans"}>
           {account.tiers.map((t) => {
             const current = t.id === account.tier.id;
             const busy = redirecting !== null;
             const planButton = { padding: "4px 12px", fontSize: 12, borderRadius: 999 } as const;
             return (
-              <div key={t.id} className={current ? "acct-plan is-current" : "acct-plan"}>
+              <div key={t.id} className={`acct-plan${current ? " is-current" : ""}${buying === t.id ? " is-picked" : ""}`}>
                 <div className="acct-plan__row">
                   <span className="acct-plan__name">{t.name}</span>
                   <span className="acct-plan__price">
@@ -847,8 +853,8 @@ function Dashboard({ account, reload, greeted, openCheckout }: { account: Accoun
                       {redirecting === t.id ? "Opening Stripe..." : t.priceNzd === 0 ? "Cancel paid plan" : `Switch to ${t.name}`}
                     </button>
                   ) : t.priceNzd > 0 ? (
-                    <button style={{ ...primaryButton, ...planButton, opacity: busy && redirecting !== t.id ? 0.5 : 1 }} disabled={busy} onClick={() => embeddedCheckoutAvailable ? openCheckout(t.id as TierId) : goToStripe(t.id, "checkout_started", () => startCheckout(t.id))}>
-                      {redirecting === t.id ? "Opening Stripe..." : "Upgrade"}
+                    <button style={{ ...primaryButton, ...planButton, opacity: busy && redirecting !== t.id ? 0.5 : 1 }} disabled={busy || buying !== null} onMouseEnter={preloadStripe} onFocus={preloadStripe} onClick={() => embeddedCheckoutAvailable ? openCheckout(t.id as TierId) : goToStripe(t.id, "checkout_started", () => startCheckout(t.id))}>
+                      {redirecting === t.id ? "Opening Stripe..." : buying === t.id ? "Checking out" : "Upgrade"}
                     </button>
                   ) : null}
                 </div>
@@ -856,6 +862,7 @@ function Dashboard({ account, reload, greeted, openCheckout }: { account: Accoun
             );
           })}
         </div>
+        {checkout}
         {billing.subscribed && (
           <button style={{ ...secondaryButton, marginTop: 14 }} disabled={redirecting !== null} onClick={() => goToStripe("portal", "billing_portal_opened", openBillingPortal)}>
             {redirecting === "portal" ? "Opening Stripe..." : "Manage billing, invoices and card"}
@@ -1492,7 +1499,37 @@ export default function Account() {
               </div>
             </div>
           )}
-          <Dashboard account={account} reload={reload} greeted={greeted} openCheckout={(tier) => openCheckout(tier, "plans")} />
+          <Dashboard
+            account={account}
+            reload={reload}
+            greeted={greeted}
+            openCheckout={(tier) => openCheckout(tier, "plans")}
+            buying={embedded?.tier ?? null}
+            checkout={embedded && (
+              <StripeCheckoutPanel
+                key={embedded.tier}
+                planName={TIERS[embedded.tier].name}
+                price={`NZ$${TIERS[embedded.tier].priceNzd} a month`}
+                getClientSecret={() => startEmbeddedCheckout(embedded.tier)}
+                onComplete={() => {
+                  captureEvent("checkout_completed", { tier: embedded.tier, source: embedded.source, embedded: true });
+                  setEmbedded(null);
+                  setNotice("Payment done. Your new plan is active.");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  // Pull the new plan now rather than waiting on the webhook.
+                  syncBilling().catch(() => {}).finally(reload);
+                }}
+                onClose={() => {
+                  captureEvent("checkout_cancelled", { tier: embedded.tier, source: embedded.source, embedded: true });
+                  setEmbedded(null);
+                }}
+                onError={(message) => {
+                  setEmbedded(null);
+                  setError(message);
+                }}
+              />
+            )}
+          />
         </>
       ) : (
         // Two short sections need no menu; same section styling as the docs, full width.
@@ -1523,27 +1560,6 @@ export default function Account() {
           />
           <HowItWorks />
         </div>
-      )}
-      {embedded && (
-        <StripeCheckoutDialog
-          planName={TIERS[embedded.tier].name}
-          getClientSecret={() => startEmbeddedCheckout(embedded.tier)}
-          onComplete={() => {
-            captureEvent("checkout_completed", { tier: embedded.tier, source: embedded.source, embedded: true });
-            setEmbedded(null);
-            setNotice("Payment done. Your new plan is active.");
-            // Pull the new plan now rather than waiting on the webhook.
-            syncBilling().catch(() => {}).finally(reload);
-          }}
-          onClose={() => {
-            captureEvent("checkout_cancelled", { tier: embedded.tier, source: embedded.source, embedded: true });
-            setEmbedded(null);
-          }}
-          onError={(message) => {
-            setEmbedded(null);
-            setError(message);
-          }}
-        />
       )}
     </PageShell>
   );

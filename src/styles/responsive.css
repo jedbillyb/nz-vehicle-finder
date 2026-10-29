@@ -582,6 +582,34 @@
 .acct-plan__price span { font-size: 12px; font-weight: 500; color: #6b7280; }
 .acct-plan__reqs { font-size: 12px; color: #6b7280; }
 .acct-plan__current { font-size: 12px; font-weight: 700; color: #0369a1; }
+/* While a plan is being bought: the others step back, the picked one is outlined. */
+.acct-plan { transition: opacity 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease; }
+.acct-plans.is-buying .acct-plan { opacity: 0.45; }
+.acct-plans.is-buying .acct-plan.is-picked { opacity: 1; border-color: #0ea5e9; box-shadow: 0 0 0 3px #e0f2fe; transform: translateY(-2px); }
+/* Checkout opens in place under the plans: the height grows (grid 0fr to 1fr), the card rises in. */
+.acct-checkout { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.42s cubic-bezier(0.2, 0.7, 0.2, 1), margin-top 0.42s cubic-bezier(0.2, 0.7, 0.2, 1); margin-top: 0; scroll-margin-top: 16px; }
+.acct-checkout.is-open { grid-template-rows: 1fr; margin-top: 14px; }
+.acct-checkout.is-closing { transition-duration: 0.38s; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+.acct-checkout__inner { overflow: hidden; min-height: 0; }
+.acct-checkout__card { border: 1px solid #bae6fd; border-radius: 12px; background: #ffffff; padding: 16px 16px 8px; opacity: 0; transform: translateY(14px); transition: opacity 0.38s ease 0.08s, transform 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) 0.08s; }
+.acct-checkout.is-open .acct-checkout__card { opacity: 1; transform: none; }
+.acct-checkout.is-closing .acct-checkout__card { transition-delay: 0s; transition-duration: 0.25s; }
+.acct-checkout__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; margin-bottom: 8px; }
+.acct-checkout__eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #0369a1; }
+.acct-checkout__title { font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 2px; }
+.acct-checkout__title span { font-size: 13px; font-weight: 500; color: #6b7280; margin-left: 4px; }
+.acct-checkout__cancel { background: none; border: 0; padding: 4px 2px; font-size: 13px; font-weight: 600; color: #6b7280; cursor: pointer; }
+.acct-checkout__cancel:hover { color: #0f172a; }
+.acct-checkout__loading { display: flex; flex-direction: column; gap: 10px; padding: 14px 0 18px; }
+.acct-checkout__shimmer { height: 16px; border-radius: 6px; background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%); background-size: 200% 100%; animation: acct-shimmer 1.2s linear infinite; }
+@keyframes acct-shimmer { to { background-position: -200% 0; } }
+/* Stripe's form fades up once it has drawn, instead of popping in. */
+.acct-checkout__form { opacity: 0; transform: translateY(6px); transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.acct-checkout__form.is-ready { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .acct-plan, .acct-checkout, .acct-checkout__card, .acct-checkout__form { transition: none; }
+  .acct-checkout__shimmer { animation: none; }
+}
 @media (max-width: 767px) {
   .acct-who { max-width: none; align-self: stretch; margin-top: 0; }
 }

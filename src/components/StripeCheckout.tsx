@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Spinner } from "@/components/Spinner";
 
 /**
  * Stripe Checkout inside the account page, instead of a trip to stripe.com.
+ * It opens in place under the plans, so paying feels like part of the page.
  * Stripe.js has to come from js.stripe.com (Stripe's rule), so it is loaded on
  * first use rather than bundled. With no publishable key set, callers fall back
  * to the hosted checkout page.
@@ -11,6 +10,9 @@ import { Spinner } from "@/components/Spinner";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
 export const embeddedCheckoutAvailable = !!PUBLISHABLE_KEY;
+
+/** Matches the close transition in responsive.css (.acct-checkout). */
+const CLOSE_MS = 380;
 
 interface EmbeddedCheckoutPage {
   mount(el: HTMLElement): void;
@@ -37,15 +39,29 @@ function loadStripe(): Promise<StripeJs> {
   return stripePromise;
 }
 
-export function StripeCheckoutDialog({ planName, getClientSecret, onComplete, onClose, onError }: {
+/** Start fetching Stripe.js early (on hover or focus of an Upgrade button), so the form opens faster. */
+export const preloadStripe = () => { if (embeddedCheckoutAvailable) loadStripe().catch(() => {}); };
+
+export function StripeCheckoutPanel({ planName, price, getClientSecret, onComplete, onClose, onError }: {
   planName: string;
+  price: string;
   getClientSecret: () => Promise<string>;
   onComplete: () => void;
   onClose: () => void;
   onError: (message: string) => void;
 }) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const mountRef = useRef<HTMLDivElement | null>(null);
+  // "opening" for one frame so the expand transition has a start point.
+  const [phase, setPhase] = useState<"opening" | "open" | "closing">("opening");
   const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setPhase("open"));
+    // Bring the form into view once it has started to open.
+    const scroll = window.setTimeout(() => panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+    return () => { cancelAnimationFrame(frame); window.clearTimeout(scroll); };
+  }, []);
 
   useEffect(() => {
     let page: EmbeddedCheckoutPage | null = null;
@@ -63,24 +79,34 @@ export function StripeCheckoutDialog({ planName, getClientSecret, onComplete, on
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one checkout per opening
   }, []);
 
+  const close = () => {
+    if (phase === "closing") return;
+    setPhase("closing");
+    window.setTimeout(onClose, CLOSE_MS);
+  };
+
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent
-        className="max-h-[92dvh] overflow-y-auto p-0 sm:max-w-[560px]"
-        // Clicks inside Stripe's frame must never close the dialog.
-        onInteractOutside={(e) => e.preventDefault()}
-        aria-describedby={undefined}
-      >
-        <DialogTitle style={{ padding: "18px 48px 0 20px", fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
-          Upgrade to {planName}
-        </DialogTitle>
-        {!ready && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "48px 0", color: "#6b7280", fontSize: 13 }}>
-            <Spinner /> Loading secure checkout...
+    <div ref={panelRef} className={`acct-checkout is-${phase}`} aria-label={`Checkout for ${planName}`} role="region">
+      <div className="acct-checkout__inner">
+        <div className="acct-checkout__card">
+          <div className="acct-checkout__head">
+            <div>
+              <div className="acct-checkout__eyebrow">Secure checkout</div>
+              <div className="acct-checkout__title">{planName} <span>{price}</span></div>
+            </div>
+            <button type="button" className="acct-checkout__cancel" onClick={close}>Cancel</button>
           </div>
-        )}
-        <div ref={mountRef} style={{ minHeight: ready ? 400 : 0, paddingBottom: 8 }} />
-      </DialogContent>
-    </Dialog>
+          {!ready && (
+            <div className="acct-checkout__loading" aria-live="polite">
+              <div className="acct-checkout__shimmer" />
+              <div className="acct-checkout__shimmer" style={{ width: "70%" }} />
+              <div className="acct-checkout__shimmer" style={{ height: 44 }} />
+              <span className="sr-only">Loading secure checkout</span>
+            </div>
+          )}
+          <div ref={mountRef} className={ready ? "acct-checkout__form is-ready" : "acct-checkout__form"} />
+        </div>
+      </div>
+    </div>
   );
 }
