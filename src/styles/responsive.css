@@ -583,8 +583,10 @@
 .acct-plan__reqs { font-size: 12px; color: #6b7280; }
 .acct-plan__current { font-size: 12px; font-weight: 700; color: #0369a1; }
 /* While a plan is being bought: the others step back, the picked one is outlined. */
-.acct-plan { transition: opacity 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease; }
-.acct-plans.is-buying .acct-plan { opacity: 0.45; }
+/* The fade goes on the card's contents: the stagger-in animation owns the card's own opacity. */
+.acct-plan { transition: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease; }
+.acct-plan > * { transition: opacity 0.35s ease; }
+.acct-plans.is-buying .acct-plan:not(.is-picked) > * { opacity: 0.4; }
 .acct-plans.is-buying .acct-plan.is-picked { opacity: 1; border-color: #0ea5e9; box-shadow: 0 0 0 3px #e0f2fe; transform: translateY(-2px); }
 /* Checkout opens in place under the plans: the height grows (grid 0fr to 1fr), the card rises in. */
 .acct-checkout { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.42s cubic-bezier(0.2, 0.7, 0.2, 1), margin-top 0.42s cubic-bezier(0.2, 0.7, 0.2, 1); margin-top: 0; scroll-margin-top: 16px; }
