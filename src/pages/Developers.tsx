@@ -377,7 +377,7 @@ X-API-Key: nzvf_your_key`}</Pre>
               </div>
             </Link>
           ))}
-          <a href="#custom" className="doc-plan" style={{ borderColor: "#bae6fd", background: "#f0f9ff" }}>
+          <a href="#custom" className="doc-plan" onClick={() => captureEvent("custom_report_viewed", { source: "docs_pricing" })} style={{ borderColor: "#bae6fd", background: "#f0f9ff" }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#0369a1" }}>Custom</div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", margin: "4px 0" }}>Quote</div>
             <div style={{ fontSize: 13, color: "#374151" }}>Bulk extracts and one-off breakdowns</div>
@@ -406,7 +406,7 @@ Pick a plan and you go straight from sign-in to checkout. Card payments by Strip
           ))}
           {/* Its own cell in the same grid: column 1 of a new row, so it is
               exactly one card wide and left-aligned under the first card. */}
-          <a href={CONTACT} style={{ gridColumn: 1, alignSelf: "start", display: "block", boxSizing: "border-box", textAlign: "center", background: "#0ea5e9", color: "#ffffff", fontWeight: 700, fontSize: 14, padding: "11px 18px", borderRadius: 8, textDecoration: "none" }}>
+          <a href={CONTACT} onClick={() => captureEvent("custom_report_requested", { source: "docs_custom" })} style={{ gridColumn: 1, alignSelf: "start", display: "block", boxSizing: "border-box", textAlign: "center", background: "#0ea5e9", color: "#ffffff", fontWeight: 700, fontSize: 14, padding: "11px 18px", borderRadius: 8, textDecoration: "none" }}>
             Ask for a quote
           </a>
         </div>
