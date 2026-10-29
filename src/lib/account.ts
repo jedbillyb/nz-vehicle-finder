@@ -138,6 +138,11 @@ export const revokeApiKey = (id: number) => call<{ ok: true }>(`/api/account/key
 export const startCheckout = (tier: string) =>
   call<{ url: string }>("/api/billing/checkout", { method: "POST", body: JSON.stringify({ tier }) });
 
+/** The same checkout, shown inside the page: returns the secret Stripe.js opens it with. */
+export const startEmbeddedCheckout = (tier: string) =>
+  call<{ clientSecret: string }>("/api/billing/checkout", { method: "POST", body: JSON.stringify({ tier, embedded: true }) })
+    .then((r) => r.clientSecret);
+
 export const openBillingPortal = () => call<{ url: string }>("/api/billing/portal", { method: "POST" });
 
 export const syncBilling = () => call<{ ok: true }>("/api/billing/sync", { method: "POST" });
