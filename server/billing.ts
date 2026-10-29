@@ -104,6 +104,9 @@ export function createBilling(store: AccountStore, opts: BillingOptions) {
     if (store.billingFor(user.id).subscriptionId) {
       return res.status(409).json({ error: "You already have a subscription. Use Manage billing to change plan." });
     }
+    // Embedded: the form opens inside the account page and reports back in the browser.
+    // Hosted: the browser is sent to a stripe.com page that returns to these URLs.
+    const embedded = req.body?.embedded === true;
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: await customerFor(user),
@@ -111,10 +114,11 @@ export function createBilling(store: AccountStore, opts: BillingOptions) {
       client_reference_id: String(user.id),
       subscription_data: { metadata: { user_id: String(user.id) } },
       allow_promotion_codes: true,
-      success_url: `${opts.publicUrl}/account?billing=success`,
-      cancel_url: `${opts.publicUrl}/account?billing=cancelled`,
+      ...(embedded
+        ? { ui_mode: "embedded_page" as const, redirect_on_completion: "if_required" as const, return_url: `${opts.publicUrl}/account?billing=success` }
+        : { success_url: `${opts.publicUrl}/account?billing=success`, cancel_url: `${opts.publicUrl}/account?billing=cancelled` }),
     });
-    res.json({ url: session.url });
+    res.json(embedded ? { clientSecret: session.client_secret } : { url: session.url });
   });
 
   router.post("/billing/portal", async (req, res) => {
